@@ -1,1 +1,7 @@
 project_id = "nlkqzjgsfyiuqjwejlss"
+
+[functions.chat]
+verify_jwt = false
+
+[functions.generate-album]
+verify_jwt = false
