@@ -30,14 +30,18 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "그때 그장면" },
+      { name: "description", content: "대화로 정리한 자세한 기억을 사진과 함께 저장해보세요, 그 기억을 오래동안 간직할 수 있어요! (폰에서만 저장되니 안심하셔도됩니다)" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "그때 그장면" },
+      { property: "og:description", content: "대화로 정리한 자세한 기억을 사진과 함께 저장해보세요, 그 기억을 오래동안 간직할 수 있어요! (폰에서만 저장되니 안심하셔도됩니다)" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "그때 그장면" },
+      { name: "twitter:description", content: "대화로 정리한 자세한 기억을 사진과 함께 저장해보세요, 그 기억을 오래동안 간직할 수 있어요! (폰에서만 저장되니 안심하셔도됩니다)" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2dfe9c12-a09e-4195-9cc7-a2ced21ae88c/id-preview-49d6fd9d--162dd268-7e6b-4995-b7e1-11331e7ad910.lovable.app-1777819462951.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2dfe9c12-a09e-4195-9cc7-a2ced21ae88c/id-preview-49d6fd9d--162dd268-7e6b-4995-b7e1-11331e7ad910.lovable.app-1777819462951.png" },
     ],
     links: [
       {
