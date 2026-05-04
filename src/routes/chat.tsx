@@ -8,7 +8,7 @@ import type { PhotoMeta } from "@/lib/photoMeta";
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
-  head: () => ({ meta: [{ title: "Chat — Mora" }] }),
+  head: () => ({ meta: [{ title: "Chat — Moara" }] }),
 });
 
 type Msg = { role: "user" | "assistant"; content: string };
