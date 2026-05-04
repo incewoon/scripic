@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download } from "lucide-react";
+import { toPng } from "html-to-image";
 import { getAlbums, deleteAlbum, updateAlbum, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
@@ -10,17 +11,23 @@ export const Route = createFileRoute("/album/$id")({
 });
 
 function EditableText({
+  editKey, activeKey, setActiveKey,
   value, onSave, multiline = false, className = "", placeholder = "",
-}: { value: string; onSave: (v: string) => void; multiline?: boolean; className?: string; placeholder?: string }) {
+}: {
+  editKey: string;
+  activeKey: string | null;
+  setActiveKey: (k: string | null) => void;
+  value: string; onSave: (v: string) => void; multiline?: boolean; className?: string; placeholder?: string;
+}) {
   const { t } = useT();
-  const [editing, setEditing] = useState(false);
+  const editing = activeKey === editKey;
   const [draft, setDraft] = useState(value);
-  useEffect(() => setDraft(value), [value]);
+  useEffect(() => { if (editing) setDraft(value); }, [editing, value]);
 
   if (!editing) {
     return (
       <button
-        onClick={() => setEditing(true)}
+        onClick={() => setActiveKey(editKey)}
         className={`group relative text-left w-full ${className}`}
         aria-label={t.edit}
       >
@@ -41,8 +48,8 @@ function EditableText({
         className={`w-full bg-card border border-border rounded-lg px-2.5 py-1.5 text-foreground outline-none focus:border-primary ${className}`}
       />
       <div className="flex gap-2 mt-2 justify-end">
-        <button onClick={() => { setEditing(false); setDraft(value); }} className="text-xs warm-muted px-2 py-1 flex items-center gap-1"><X size={12}/>{t.cancel}</button>
-        <button onClick={() => { onSave(draft); setEditing(false); toast.success(t.saved); }} className="text-xs bg-primary text-primary-foreground rounded-full px-3 py-1 flex items-center gap-1"><Check size={12}/>{t.save}</button>
+        <button onClick={() => setActiveKey(null)} className="text-xs warm-muted px-2 py-1 flex items-center gap-1"><X size={12}/>{t.cancel}</button>
+        <button onClick={() => { onSave(draft); setActiveKey(null); toast.success(t.saved); }} className="text-xs bg-primary text-primary-foreground rounded-full px-3 py-1 flex items-center gap-1"><Check size={12}/>{t.save}</button>
       </div>
     </div>
   );
@@ -52,6 +59,9 @@ function AlbumView() {
   const { id } = Route.useParams();
   const { t } = useT();
   const [album, setAlbum] = useState<Album | null | undefined>(undefined);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -71,6 +81,29 @@ function AlbumView() {
     await patch({ photos });
   }
 
+  async function downloadImage() {
+    if (!shareRef.current || !album) return;
+    setDownloading(true);
+    setActiveKey(null);
+    try {
+      await new Promise(r => setTimeout(r, 50));
+      const dataUrl = await toPng(shareRef.current, {
+        pixelRatio: 2,
+        backgroundColor: "#fdf6f1",
+        cacheBust: true,
+      });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${(album.title || "memory-weaver").replace(/[^\w가-힣\- ]/g, "")}.png`;
+      a.click();
+      toast.success(t.downloaded);
+    } catch {
+      toast.error(t.failed);
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   if (album === undefined) return <div className="p-10 text-center text-sm warm-muted">{t.loading}</div>;
   if (album === null) return (
     <div className="p-10 text-center">
@@ -78,6 +111,8 @@ function AlbumView() {
       <Link to="/" className="text-primary text-sm">{t.home}</Link>
     </div>
   );
+
+  const shareLink = typeof window !== "undefined" ? window.location.origin : "";
 
   return (
     <div className="mx-auto max-w-md min-h-screen pb-20">
@@ -94,70 +129,95 @@ function AlbumView() {
         ><Trash2 size={18}/></button>
       </header>
 
-      <div className="px-6 pt-10 pb-4 text-center">
-        <EditableText
-          value={album.title}
-          onSave={(v) => patch({ title: v })}
-          className="font-display text-3xl text-foreground mb-2 text-center"
-          placeholder={t.title}
-        />
-        <EditableText
-          value={album.subtitle}
-          onSave={(v) => patch({ subtitle: v })}
-          className="text-sm warm-muted italic text-center"
-          placeholder={t.subtitle}
-        />
+      <div ref={shareRef} className="bg-background">
+        <div className="px-6 pt-10 pb-4 text-center">
+          <EditableText
+            editKey="title" activeKey={activeKey} setActiveKey={setActiveKey}
+            value={album.title}
+            onSave={(v) => patch({ title: v })}
+            className="font-display text-3xl text-foreground mb-2 text-center"
+            placeholder={t.title}
+          />
+          <EditableText
+            editKey="subtitle" activeKey={activeKey} setActiveKey={setActiveKey}
+            value={album.subtitle}
+            onSave={(v) => patch({ subtitle: v })}
+            className="text-sm warm-muted italic text-center"
+            placeholder={t.subtitle}
+          />
 
-        <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
-          <div className="flex items-center gap-1.5">
-            <Calendar size={12}/>
-            <EditableText value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" />
+          <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
+            <div className="flex items-center gap-1.5">
+              <Calendar size={12}/>
+              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MapPin size={12}/>
+              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" />
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <MapPin size={12}/>
-            <EditableText value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" />
-          </div>
+        </div>
+
+        <div className="px-6 mb-8">
+          <EditableText
+            editKey="intro" activeKey={activeKey} setActiveKey={setActiveKey}
+            value={album.intro}
+            onSave={(v) => patch({ intro: v })}
+            multiline
+            className="text-[15px] leading-relaxed text-foreground/85 font-display"
+            placeholder={t.intro}
+          />
+        </div>
+
+        <div className="space-y-8 px-5">
+          {album.photos.map((p, i) => (
+            <figure key={i} className={`polaroid ${i % 2 === 0 ? "rotate-[-1.5deg]" : "rotate-[1.5deg]"}`}>
+              <img src={p.dataUrl} alt={p.caption} className="w-full aspect-[4/3] object-cover rounded-sm" loading="lazy" crossOrigin="anonymous" />
+              <figcaption className="text-center font-display text-[15px] mt-3 text-foreground/80 px-2">
+                <EditableText
+                  editKey={`caption-${i}`} activeKey={activeKey} setActiveKey={setActiveKey}
+                  value={p.caption}
+                  onSave={(v) => patchCaption(i, v)}
+                  multiline
+                  className="text-center font-display text-[15px]"
+                  placeholder={t.caption}
+                />
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+
+        <div className="px-6 mt-12 text-center">
+          <EditableText
+            editKey="closing" activeKey={activeKey} setActiveKey={setActiveKey}
+            value={album.closing}
+            onSave={(v) => patch({ closing: v })}
+            multiline
+            className="text-[15px] leading-relaxed text-foreground/85 font-display italic text-center"
+            placeholder={t.closing}
+          />
+          <p className="text-[10px] warm-muted mt-8">
+            {new Date(album.createdAt).toLocaleDateString()} · {t.onlyOnDevice}
+          </p>
+        </div>
+
+        {/* Watermark — visible in downloaded image */}
+        <div className="mt-10 px-6 py-5 text-center border-t border-border/40">
+          <div className="font-display text-base text-foreground/80">Memory Weaver</div>
+          <div className="text-[11px] warm-muted mt-1">{t.madeWith}</div>
+          <div className="text-[11px] text-primary mt-1 break-all">{shareLink}</div>
         </div>
       </div>
 
-      <div className="px-6 mb-8">
-        <EditableText
-          value={album.intro}
-          onSave={(v) => patch({ intro: v })}
-          multiline
-          className="text-[15px] leading-relaxed text-foreground/85 font-display"
-          placeholder={t.intro}
-        />
-      </div>
-
-      <div className="space-y-8 px-5">
-        {album.photos.map((p, i) => (
-          <figure key={i} className={`polaroid ${i % 2 === 0 ? "rotate-[-1.5deg]" : "rotate-[1.5deg]"}`}>
-            <img src={p.dataUrl} alt={p.caption} className="w-full aspect-[4/3] object-cover rounded-sm" loading="lazy" />
-            <figcaption className="text-center font-display text-[15px] mt-3 text-foreground/80 px-2">
-              <EditableText
-                value={p.caption}
-                onSave={(v) => patchCaption(i, v)}
-                multiline
-                className="text-center font-display text-[15px]"
-                placeholder={t.caption}
-              />
-            </figcaption>
-          </figure>
-        ))}
-      </div>
-
-      <div className="px-6 mt-12 text-center">
-        <EditableText
-          value={album.closing}
-          onSave={(v) => patch({ closing: v })}
-          multiline
-          className="text-[15px] leading-relaxed text-foreground/85 font-display italic text-center"
-          placeholder={t.closing}
-        />
-        <p className="text-[10px] warm-muted mt-8">
-          {new Date(album.createdAt).toLocaleDateString()} · {t.onlyOnDevice}
-        </p>
+      <div className="px-6 mt-6">
+        <button
+          onClick={downloadImage}
+          disabled={downloading}
+          className="w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-[14px] text-primary-foreground shadow-[var(--shadow-warm)] disabled:opacity-60 active:scale-[0.98] transition-transform"
+          style={{ background: "var(--gradient-warm)" }}
+        >
+          <Download size={16}/> {downloading ? t.preparing : t.download}
+        </button>
       </div>
     </div>
   );
