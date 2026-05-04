@@ -64,6 +64,20 @@ function Home() {
     if (!hasSeenStorageNotice()) setNoticeOpen(true);
   }, []);
 
+  // Hydrate sort preference.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SORT_KEY);
+      if (saved === "created" || saved === "photo") setSortMode(saved);
+    } catch {}
+  }, []);
+
+  const changeSort = (m: SortMode) => {
+    setSortMode(m);
+    setSortOpen(false);
+    try { localStorage.setItem(SORT_KEY, m); } catch {}
+  };
+
   useEffect(() => {
     let cancelled = false;
     const reload = () => { getAlbums().then((list) => { if (!cancelled) setAlbums(list); }); };
