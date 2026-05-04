@@ -11,6 +11,23 @@ import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageN
 
 const PAYWALL_AFTER_LOGIN_KEY = "memori_paywall_after_login";
 const FREE_MAX = 5;
+const SORT_KEY = "moara_album_sort_v1";
+type SortMode = "created" | "photo";
+
+function parsePeriodDate(period?: string): number {
+  if (!period) return 0;
+  // Try to extract a parseable date; fall back to first 4-digit year.
+  const direct = Date.parse(period);
+  if (!Number.isNaN(direct)) return direct;
+  const m = period.match(/(\d{4})[.\-/년\s]*(\d{1,2})?[.\-/월\s]*(\d{1,2})?/);
+  if (m) {
+    const y = Number(m[1]);
+    const mo = m[2] ? Number(m[2]) - 1 : 0;
+    const d = m[3] ? Number(m[3]) : 1;
+    return new Date(y, mo, d).getTime();
+  }
+  return 0;
+}
 
 export const Route = createFileRoute("/")({
   component: Home,
