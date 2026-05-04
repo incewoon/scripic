@@ -281,8 +281,8 @@ function Home() {
       <div className="fixed bottom-6 left-0 right-0 px-5 mx-auto max-w-md">
         <button
           onClick={onCreate}
-          className="w-full text-primary-foreground rounded-full py-4 text-[15px] font-medium flex items-center justify-center gap-2 shadow-[var(--shadow-warm)] active:scale-[0.98] transition-transform"
-          style={{ background: "var(--gradient-warm)" }}
+          className="w-full rounded-full py-4 text-[15px] font-semibold flex items-center justify-center gap-2 shadow-[var(--shadow-warm)] active:scale-[0.98] transition-transform"
+          style={{ background: "var(--gradient-warm)", color: "oklch(0.2 0.02 30)" }}
         >
           <Plus size={18}/> {t.newAlbum}
         </button>
