@@ -118,6 +118,9 @@ const dict = {
     notifToggleLabel: "Get memory reminders",
     notifPermissionDenied: "Notifications are off in your phone's settings.",
     backHome: "Back",
+    storageNoticeTitle: "Stored only on this device",
+    storageNoticeBody: "Your photos and the captions woven from your conversation are kept only on this device. Even with the same account, they don't sync to other devices.",
+    gotIt: "Got it",
   },
   ko: {
 
@@ -230,6 +233,9 @@ const dict = {
     notifToggleLabel: "기억 알림 받기",
     notifPermissionDenied: "기기 설정에서 알림이 꺼져 있어요.",
     backHome: "뒤로",
+    storageNoticeTitle: "이 기기에만 저장돼요",
+    storageNoticeBody: "사진과 정리된 대화 내용은 이 기기에만 저장되며, 동일 계정이라도 다른 기기와는 연동되지 않아요.",
+    gotIt: "확인했어요",
   },
 } as const;
 
