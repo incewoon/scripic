@@ -250,6 +250,51 @@ function Home() {
 
       <Paywall open={paywall} onClose={() => setPaywall(false)} onSuccess={reloadProfile} />
       <StorageNoticeDialog open={noticeOpen} onClose={() => setNoticeOpen(false)} />
+
+      {/* Limit-reached bottom popup */}
+      {limitOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => { setLimitOpen(false); setLimitDismissed(true); }}
+        >
+          <div
+            className="w-full sm:max-w-md bg-background rounded-t-[28px] border border-border/60 shadow-2xl p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "var(--gradient-warm)" }}>
+                  <Sparkles size={16} className="text-primary-foreground" />
+                </div>
+                <h2 className="font-display text-[20px] warm-text leading-tight">{t.limitReachedTitle}</h2>
+              </div>
+              <button
+                onClick={() => { setLimitOpen(false); setLimitDismissed(true); }}
+                className="p-1.5 -mr-1 -mt-1 text-muted-foreground hover:text-foreground"
+                aria-label={t.close}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-[13.5px] warm-muted leading-relaxed mb-5">
+              {t.limitReachedBodyGuest}
+            </p>
+            <button
+              onClick={onLimitSignIn}
+              className="w-full text-primary-foreground rounded-full py-3 text-[14px] font-medium active:scale-[0.98] transition-transform"
+              style={{ background: "var(--gradient-warm)" }}
+            >
+              {user ? t.paywallTitle : t.limitReachedSignIn}
+            </button>
+            <button
+              onClick={() => { setLimitOpen(false); setLimitDismissed(true); }}
+              className="w-full text-center text-[12.5px] warm-muted mt-3 py-2"
+            >
+              {t.limitReachedDismiss}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
