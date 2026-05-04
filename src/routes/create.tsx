@@ -200,14 +200,14 @@ function Create() {
   };
 
   const count = items.length;
-  const pct = Math.min(100, (count / 10) * 100);
+  const pct = Math.min(100, (count / photoMax) * 100);
 
   return (
     <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-6 pb-4">
         <header className="flex items-center justify-between mb-6">
           <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
-          <span className="text-xs warm-muted">{count} / 10</span>
+          <span className="text-xs warm-muted">{count} / {photoMax}</span>
         </header>
 
         <h1 className="font-display text-[28px] leading-tight warm-text mb-2">{t.pickPhotos}</h1>
@@ -269,9 +269,9 @@ function Create() {
                   onRemove={() => setItems(ps => ps.filter(x => x.id !== it.id))}
                 />
               ))}
-              {items.length < 10 && items.length === 0 && (
+              {items.length === 0 && (
                 <button
-                  onClick={() => inputRef.current?.click()}
+                  onClick={tryOpenPicker}
                   disabled={busy}
                   className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
                 >
@@ -287,14 +287,22 @@ function Create() {
       </div>
 
       <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
-        {items.length > 0 && items.length < 10 && (
+        {items.length > 0 && items.length < photoMax && (
           <button
-            onClick={() => inputRef.current?.click()}
+            onClick={tryOpenPicker}
             disabled={busy}
             className="w-full rounded-full py-3 text-[14px] font-medium flex items-center justify-center gap-2 border-2 border-dashed border-primary/40 text-primary bg-card/50 active:scale-[0.98] transition-transform disabled:opacity-50"
           >
             <ImagePlus size={18} strokeWidth={1.8}/>
             {busy ? t.processing : t.addPhoto}
+          </button>
+        )}
+        {items.length > 0 && items.length >= photoMax && !isPremium && (
+          <button
+            onClick={() => setPaywallOpen(true)}
+            className="w-full rounded-full py-3 text-[13px] font-medium border border-primary/40 text-primary bg-card/50 active:scale-[0.98] transition-transform"
+          >
+            {t.photoLimitFreeReached}
           </button>
         )}
         <button
