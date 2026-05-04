@@ -19,7 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type PhotoMeta } from "@/lib/photoMeta";
-import { useT, getLang } from "@/lib/i18n";
+import { useT, getLang, type ChatMode } from "@/lib/i18n";
 
 export const Route = createFileRoute("/create")({
   component: Create,
@@ -81,6 +81,7 @@ function Create() {
   const { t } = useT();
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<ChatMode>("creative");
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -137,6 +138,7 @@ function Create() {
         period: summarizePeriod(metas, lang),
         location: summarizeLocations(metas),
       }));
+      sessionStorage.setItem("memori_mode", mode);
       navigate({ to: "/chat" });
     } finally {
       setBusy(false);
@@ -164,6 +166,33 @@ function Create() {
         <div className="text-[13.5px] leading-relaxed warm-text">
           <b>{t.minMax}</b><br/>
           <span className="warm-muted">{t.dragHint}</span>
+        </div>
+      </div>
+
+      <div className="mb-5">
+        <div className="text-[12px] font-medium warm-muted mb-2">{t.chatMode}</div>
+        <div className="flex gap-1.5 mb-2">
+          {(["creative", "fact", "brief"] as ChatMode[]).map(m => {
+            const label = m === "creative" ? t.modeCreative : m === "fact" ? t.modeFact : t.modeBrief;
+            const active = mode === m;
+            return (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={`flex-1 px-3 py-2 rounded-full text-[13px] font-medium transition-all active:scale-[0.97] ${
+                  active
+                    ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                    : "border border-border/60 warm-text bg-card/50"
+                }`}
+                style={active ? { background: "var(--gradient-warm)" } : undefined}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="text-[12px] warm-muted leading-relaxed">
+          {mode === "creative" ? t.modeCreativeDesc : mode === "fact" ? t.modeFactDesc : t.modeBriefDesc}
         </div>
       </div>
 

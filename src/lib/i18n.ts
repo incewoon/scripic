@@ -73,6 +73,13 @@ const dict = {
     keepGoing: "Keep chatting",
     weaving: "Weaving your album…",
     weavingDesc: "Reading the conversation and arranging your photos.",
+    chatMode: "Chat mode",
+    modeCreative: "Creative",
+    modeFact: "Fact",
+    modeBrief: "Brief",
+    modeCreativeDesc: "Warm, story-rich conversation that weaves feelings into prose.",
+    modeFactDesc: "Asks only what's visible in the photo; keeps the conversation as-is.",
+    modeBriefDesc: "Short, simple questions and a brief album summary.",
   },
   ko: {
     appTagline: "사진 한 장에 담긴 그날의 이야기",
@@ -139,8 +146,17 @@ const dict = {
     keepGoing: "계속 이야기하기",
     weaving: "앨범을 엮는 중…",
     weavingDesc: "대화를 읽고 사진을 정리하고 있어요.",
+    chatMode: "대화 모드",
+    modeCreative: "Creative",
+    modeFact: "Fact",
+    modeBrief: "Brief",
+    modeCreativeDesc: "감정을 담아 풍부한 산문으로 엮는 따뜻한 대화 모드예요.",
+    modeFactDesc: "사진에서 객관적으로 보이는 것만 묻고, 대화 그대로 정리해요.",
+    modeBriefDesc: "간단히 묻고 앨범도 짧게 요약해요.",
   },
 } as const;
+
+export type ChatMode = "creative" | "fact" | "brief";
 
 export function useT() {
   const lang = getLang();
