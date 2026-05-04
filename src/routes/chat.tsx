@@ -341,7 +341,7 @@ function Chat() {
   }, [hasConversation, generating]);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen flex flex-col">
+    <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
       <div className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border/40">
         <header className="flex items-center justify-between px-5 pt-6 pb-3">
           <Link to="/create" onClick={tryLeave} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
