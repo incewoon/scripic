@@ -19,7 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type PhotoMeta } from "@/lib/photoMeta";
-import { useT, getLang } from "@/lib/i18n";
+import { useT, getLang, type ChatMode } from "@/lib/i18n";
 
 export const Route = createFileRoute("/create")({
   component: Create,
@@ -81,6 +81,7 @@ function Create() {
   const { t } = useT();
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<ChatMode>("creative");
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -137,6 +138,7 @@ function Create() {
         period: summarizePeriod(metas, lang),
         location: summarizeLocations(metas),
       }));
+      sessionStorage.setItem("memori_mode", mode);
       navigate({ to: "/chat" });
     } finally {
       setBusy(false);
