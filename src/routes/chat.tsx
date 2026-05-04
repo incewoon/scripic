@@ -162,6 +162,9 @@ function Chat() {
         body: JSON.stringify({
           messages: newMsgs,
           photos: prior.length === 0 ? ph : undefined,
+          // Always send the count so the server prompt stays accurate
+          // even after the first turn (when `photos` is omitted).
+          photoCount: ph.length,
           lang: getLang(),
           mode,
         }),
