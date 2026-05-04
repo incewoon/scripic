@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar } from "lucide-react";
 import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
-import { useT, getLang } from "@/lib/i18n";
+import { useT, getLang, type ChatMode } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
 
 export const Route = createFileRoute("/chat")({
@@ -48,6 +48,11 @@ function Chat() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoMetas, setPhotoMetas] = useState<PhotoMeta[]>([]);
   const [meta, setMeta] = useState<{ period?: string; location?: string }>({});
+  const [mode] = useState<ChatMode>(() => {
+    if (typeof sessionStorage === "undefined") return "creative";
+    const m = sessionStorage.getItem("memori_mode");
+    return m === "fact" || m === "brief" ? m : "creative";
+  });
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
