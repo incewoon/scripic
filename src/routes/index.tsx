@@ -193,6 +193,7 @@ function Home() {
       </div>
 
       <Paywall open={paywall} onClose={() => setPaywall(false)} onSuccess={reloadProfile} />
+      <StorageNoticeDialog open={noticeOpen} onClose={() => setNoticeOpen(false)} />
     </div>
   );
 }
