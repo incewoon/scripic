@@ -135,10 +135,7 @@ function Home() {
     navigate({ to: "/create" });
   };
 
-  const onDelete = async (id: string) => {
-    await deleteAlbum(id);
-    toast.success(t.deleted);
-  };
+  // album deletion is handled inside the album detail page
 
   const onLimitSignIn = () => {
     setLimitOpen(false);
