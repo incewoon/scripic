@@ -141,6 +141,17 @@ function Home() {
 
   return (
     <div className="mx-auto max-w-md min-h-screen px-5 pt-14 pb-32">
+      {/* Top-right small auth button */}
+      {!user && !authLoading && (
+        <Link
+          to="/auth"
+          className="fixed top-3 right-3 z-30 inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 backdrop-blur px-3 py-1.5 text-[11.5px] font-medium warm-text shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
+          aria-label={t.signIn}
+        >
+          <LogIn size={12} className="text-primary" /> {t.signIn}
+        </Link>
+      )}
+
       <header className="mb-10 text-center">
         <button
           type="button"
