@@ -266,20 +266,8 @@ function Home() {
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[12px] warm-muted">{t.photosCount(a.photos.length)}</span>
-                    <span aria-hidden className="w-20 h-5" />
                   </div>
                 </Link>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (confirm(t.confirmDelete)) onDelete(a.id);
-                  }}
-                  className="absolute bottom-2 right-2 z-10 text-muted-foreground/70 hover:text-destructive text-[12px] flex items-center gap-1 px-2 py-1 rounded-md bg-card/80 backdrop-blur-sm"
-                >
-                  <Trash2 size={12} /> {t.delete}
-                </button>
               </div>
             );
           })}
