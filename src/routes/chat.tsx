@@ -188,18 +188,20 @@ function Chat() {
     }
   }
 
-  // When preview opens, push a history entry so the device back button just closes the popup
+  // When preview opens, push a history entry so the device back button just closes the popup.
+  // Only re-run when transitioning between open/closed (not on index change), otherwise
+  // navigating between photos would pop the history entry and close the popup.
+  const previewOpen = previewIdx != null;
   useEffect(() => {
-    if (previewIdx == null) return;
+    if (!previewOpen) return;
     window.history.pushState({ memoriPreview: true }, "");
     const onPop = () => setPreviewIdx(null);
     window.addEventListener("popstate", onPop);
     return () => {
       window.removeEventListener("popstate", onPop);
-      // if popup is being closed by us (not by back), pop the dummy entry
       if (window.history.state?.memoriPreview) window.history.back();
     };
-  }, [previewIdx]);
+  }, [previewOpen]);
 
   const previewMeta = previewIdx != null ? photoMetas[previewIdx] : undefined;
   const previewWhen = fmtTakenAt(previewMeta?.takenAt, lang);
