@@ -204,12 +204,12 @@ function Create() {
       <div className="fixed bottom-6 left-0 right-0 px-5 mx-auto max-w-md">
         <button
           onClick={next}
-          disabled={items.length < 5 || busy}
+          disabled={items.length < 1 || busy}
           className="w-full rounded-full py-4 text-[15px] font-medium flex items-center justify-center gap-2 disabled:opacity-50 text-primary-foreground shadow-[var(--shadow-warm)] active:scale-[0.98] transition-transform"
           style={{ background: "var(--gradient-warm)" }}
         >
-          {items.length < 5
-            ? t.photosLeft(5 - items.length)
+          {items.length < 1
+            ? t.pickAtLeastOne
             : <>{t.chatWithAi} <ArrowRight size={18}/></>}
         </button>
       </div>
