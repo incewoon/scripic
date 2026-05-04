@@ -308,8 +308,8 @@ function Create() {
         <button
           onClick={next}
           disabled={items.length < 1 || busy}
-          className="w-full rounded-full py-4 text-[15px] font-medium flex items-center justify-center gap-2 disabled:opacity-50 text-primary-foreground shadow-[var(--shadow-warm)] active:scale-[0.98] transition-transform"
-          style={{ background: "var(--gradient-warm)" }}
+          className="w-full rounded-full py-4 text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-50 shadow-[var(--shadow-warm)] active:scale-[0.98] transition-transform"
+          style={{ background: "var(--gradient-warm)", color: "oklch(0.2 0.02 30)" }}
         >
           {items.length < 1
             ? t.pickAtLeastOne
