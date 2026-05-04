@@ -190,9 +190,11 @@ function Chat() {
     }
   }
 
-  // When preview opens, push a history entry so the device back button just closes the popup.
-  // Only re-run when transitioning between open/closed (not on index change), otherwise
-  // navigating between photos would pop the history entry and close the popup.
+  // History stack juggling: each owner increments expectedPopsRef before
+  // calling history.back() on cleanup, so the other listener can ignore that
+  // pop instead of treating it as a user back-button press.
+  const expectedPopsRef = useRef(0);
+
   const previewOpen = previewIdx != null;
   useEffect(() => {
     if (!previewOpen) return;
@@ -201,7 +203,10 @@ function Chat() {
     window.addEventListener("popstate", onPop);
     return () => {
       window.removeEventListener("popstate", onPop);
-      if (window.history.state?.memoriPreview) window.history.back();
+      if (window.history.state?.memoriPreview) {
+        expectedPopsRef.current++;
+        window.history.back();
+      }
     };
   }, [previewOpen]);
 
@@ -231,13 +236,17 @@ function Chat() {
   }
 
   // Intercept device/browser back button while a conversation is in progress.
-  // Skip while preview popup is open (it owns its own history entry) or while generating.
+  // Skip while generating. This guard does NOT depend on previewOpen — the
+  // preview owns its own history entry on top.
   useEffect(() => {
-    if (!hasConversation || previewOpen || generating) return;
+    if (!hasConversation || generating) return;
     window.history.pushState({ memoriChatGuard: true }, "");
     const onPop = () => {
       if (leavingRef.current) return;
-      // Re-push so the user stays on the chat until they confirm.
+      if (expectedPopsRef.current > 0) {
+        expectedPopsRef.current--;
+        return;
+      }
       window.history.pushState({ memoriChatGuard: true }, "");
       setConfirmLeave(true);
     };
@@ -245,10 +254,11 @@ function Chat() {
     return () => {
       window.removeEventListener("popstate", onPop);
       if (window.history.state?.memoriChatGuard && !leavingRef.current) {
+        expectedPopsRef.current++;
         window.history.back();
       }
     };
-  }, [hasConversation, previewOpen, generating]);
+  }, [hasConversation, generating]);
 
   return (
     <div className="mx-auto max-w-md min-h-screen flex flex-col">
