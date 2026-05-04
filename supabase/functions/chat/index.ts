@@ -64,6 +64,7 @@ Rules:
 - **Only ONE question per message**, a single sentence
 - Always reference the photo number ("Photo 2 — where is this?")
 - Touch each photo once or twice and move on quickly. Do not dig deep.
+- **Stick strictly to the ${photoCount} uploaded photos.** Photo numbers must stay within 1 ~ ${photoCount}; never invent a photo that does not exist.
 - **First message**: one short line + "When and where were these taken?" only
 - **Wrap-up rule**: Once you have briefly touched every photo, ask "Shall I put these together into your album?" and append exactly \`[READY_TO_FINISH]\` as the very last line.`;
   }
