@@ -31,8 +31,8 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
   head: () => ({
     meta: [
-      { title: "Settings — Mora" },
-      { name: "description", content: "Manage your Mora account, purchases and album backups." },
+      { title: "Settings — Moara" },
+      { name: "description", content: "Manage your Moara account, purchases and album backups." },
     ],
   }),
 });

@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
-  head: () => ({ meta: [{ title: "Sign in — Mora" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Moara" }] }),
 });
 
 function AuthPage() {
@@ -69,7 +69,7 @@ function AuthPage() {
       </header>
 
       <div className="flex-1 flex flex-col justify-center">
-        <h1 className="font-display text-[34px] leading-tight warm-text mb-2 text-center">Mora</h1>
+        <h1 className="font-display text-[34px] leading-tight warm-text mb-2 text-center">Moara</h1>
         <p className="text-[14px] warm-muted text-center mb-8">
           {mode === "signin" ? t.welcomeBack : t.createAccount}
         </p>
