@@ -210,7 +210,7 @@ function Home() {
   const showCounter = albums !== null;
 
   return (
-    <div className="mx-auto max-w-md min-h-screen px-5 pt-8 pb-32">
+    <div className="mx-auto max-w-md min-h-screen px-5 pt-8 pb-44">
       <header className="mb-6 text-center">
         <button
           type="button"
