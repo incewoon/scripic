@@ -18,7 +18,7 @@ const ALBUM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-al
 const READY_TOKEN = "[READY_TO_FINISH]";
 
 const AFFIRMATIVE_EN = /\b(yes|yeah|yep|sure|ok|okay|sounds good|let'?s|please do|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
-const AFFIRMATIVE_KO = /(네|예|좋아|좋아요|응|그래|그래요|끝|완성|마무리|충분|괜찮|해주세요|해줘|부탁)/;
+const AFFIRMATIVE_KO = /(네|예|좋아|좋아요|응|그래|그래요|끝|완성|마무리|충분|괜찮|해주세요|해줘|부탁|ㅇㅇ|ㅇㅋ)/;
 
 function isAffirmative(text: string) {
   return AFFIRMATIVE_EN.test(text) || AFFIRMATIVE_KO.test(text);
