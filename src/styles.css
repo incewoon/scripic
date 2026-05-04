@@ -38,9 +38,12 @@
   --font-display: 'Gowun Batang', serif;
 }
 
-:root {
+/* ============================================
+   THEME: Warm (default) — rose & cream paper
+   ============================================ */
+:root,
+[data-theme="warm"] {
   --radius: 1.25rem;
-  /* Warm cream paper background */
   --background: oklch(0.97 0.022 65);
   --foreground: oklch(0.30 0.05 30);
 
@@ -49,7 +52,6 @@
   --popover: oklch(0.99 0.014 75);
   --popover-foreground: oklch(0.30 0.05 30);
 
-  /* Warmer rose */
   --primary: oklch(0.74 0.11 25);
   --primary-foreground: oklch(0.99 0.005 80);
 
@@ -69,21 +71,127 @@
   --input: oklch(0.93 0.022 60);
   --ring: oklch(0.74 0.11 25);
 
-  /* palette */
   --blush: oklch(0.84 0.08 18);
   --peach: oklch(0.87 0.09 50);
   --cream: oklch(0.96 0.035 75);
   --lavender: oklch(0.85 0.06 300);
   --mint: oklch(0.88 0.05 170);
 
+  --warm-text: oklch(0.42 0.06 30);
+  --warm-muted: oklch(0.55 0.05 35);
+
   --gradient-soft: linear-gradient(135deg, oklch(0.97 0.045 55), oklch(0.95 0.05 30), oklch(0.94 0.04 340));
   --gradient-warm: linear-gradient(180deg, oklch(0.96 0.045 60), oklch(0.92 0.07 25));
   --gradient-sunset: linear-gradient(135deg, oklch(0.92 0.07 35), oklch(0.88 0.08 20), oklch(0.86 0.07 340));
+  --gradient-page: var(--gradient-soft);
   --shadow-soft: 0 6px 24px -10px oklch(0.65 0.1 30 / 0.28);
   --shadow-card: 0 12px 36px -14px oklch(0.55 0.12 30 / 0.22);
   --shadow-warm: 0 10px 40px -16px oklch(0.7 0.12 35 / 0.35);
 }
 
+/* ============================================
+   THEME: Midnight Ink — deep navy + warm gold
+   Inspired by Things 3 / Bear (dark)
+   ============================================ */
+[data-theme="midnight"] {
+  --radius: 1.25rem;
+  --background: oklch(0.20 0.025 260);
+  --foreground: oklch(0.94 0.015 80);
+
+  --card: oklch(0.26 0.03 260);
+  --card-foreground: oklch(0.94 0.015 80);
+  --popover: oklch(0.26 0.03 260);
+  --popover-foreground: oklch(0.94 0.015 80);
+
+  --primary: oklch(0.80 0.13 78);
+  --primary-foreground: oklch(0.20 0.03 260);
+
+  --secondary: oklch(0.32 0.035 260);
+  --secondary-foreground: oklch(0.92 0.02 80);
+
+  --muted: oklch(0.30 0.025 260);
+  --muted-foreground: oklch(0.72 0.025 80);
+
+  --accent: oklch(0.74 0.12 78);
+  --accent-foreground: oklch(0.20 0.03 260);
+
+  --destructive: oklch(0.68 0.18 28);
+  --destructive-foreground: oklch(0.98 0.01 80);
+
+  --border: oklch(0.36 0.03 260);
+  --input: oklch(0.30 0.025 260);
+  --ring: oklch(0.80 0.13 78);
+
+  --blush: oklch(0.74 0.10 18);
+  --peach: oklch(0.82 0.12 70);
+  --cream: oklch(0.85 0.08 80);
+  --lavender: oklch(0.72 0.08 290);
+  --mint: oklch(0.78 0.07 175);
+
+  --warm-text: oklch(0.92 0.02 80);
+  --warm-muted: oklch(0.70 0.025 75);
+
+  --gradient-soft: linear-gradient(135deg, oklch(0.22 0.03 260), oklch(0.20 0.025 270), oklch(0.18 0.025 250));
+  --gradient-warm: linear-gradient(180deg, oklch(0.82 0.13 78), oklch(0.68 0.12 50));
+  --gradient-sunset: linear-gradient(135deg, oklch(0.30 0.05 280), oklch(0.26 0.04 260), oklch(0.22 0.04 240));
+  --gradient-page: linear-gradient(160deg, oklch(0.20 0.025 260), oklch(0.18 0.022 250));
+  --shadow-soft: 0 6px 24px -10px oklch(0.05 0.02 260 / 0.55);
+  --shadow-card: 0 14px 40px -16px oklch(0.05 0.02 260 / 0.65);
+  --shadow-warm: 0 12px 44px -16px oklch(0.05 0.02 260 / 0.7);
+}
+
+/* ============================================
+   THEME: Linen Paper — bookish white + ink blue
+   Inspired by Notion / iA Writer
+   ============================================ */
+[data-theme="linen"] {
+  --radius: 1.25rem;
+  --background: oklch(0.975 0.008 95);
+  --foreground: oklch(0.22 0.025 250);
+
+  --card: oklch(0.995 0.004 95);
+  --card-foreground: oklch(0.22 0.025 250);
+  --popover: oklch(0.995 0.004 95);
+  --popover-foreground: oklch(0.22 0.025 250);
+
+  --primary: oklch(0.42 0.10 250);
+  --primary-foreground: oklch(0.99 0.004 95);
+
+  --secondary: oklch(0.94 0.012 95);
+  --secondary-foreground: oklch(0.28 0.03 250);
+
+  --muted: oklch(0.94 0.008 95);
+  --muted-foreground: oklch(0.48 0.025 245);
+
+  --accent: oklch(0.86 0.04 240);
+  --accent-foreground: oklch(0.22 0.04 250);
+
+  --destructive: oklch(0.58 0.18 25);
+  --destructive-foreground: oklch(0.99 0.004 95);
+
+  --border: oklch(0.88 0.01 95);
+  --input: oklch(0.93 0.01 95);
+  --ring: oklch(0.42 0.10 250);
+
+  --blush: oklch(0.86 0.06 20);
+  --peach: oklch(0.88 0.06 60);
+  --cream: oklch(0.96 0.012 95);
+  --lavender: oklch(0.84 0.05 280);
+  --mint: oklch(0.86 0.05 170);
+
+  --warm-text: oklch(0.28 0.03 250);
+  --warm-muted: oklch(0.50 0.025 245);
+
+  --gradient-soft: linear-gradient(135deg, oklch(0.98 0.008 95), oklch(0.96 0.01 90), oklch(0.97 0.012 100));
+  --gradient-warm: linear-gradient(180deg, oklch(0.55 0.09 250), oklch(0.42 0.10 250));
+  --gradient-sunset: linear-gradient(135deg, oklch(0.94 0.02 240), oklch(0.92 0.025 230), oklch(0.94 0.02 250));
+  --gradient-page: linear-gradient(180deg, oklch(0.975 0.008 95), oklch(0.965 0.01 90));
+  --shadow-soft: 0 4px 18px -10px oklch(0.30 0.04 250 / 0.18);
+  --shadow-card: 0 10px 30px -14px oklch(0.30 0.04 250 / 0.18);
+  --shadow-warm: 0 8px 28px -14px oklch(0.30 0.04 250 / 0.20);
+}
+
+/* legacy .dark utility kept as alias for any existing usage */
 .dark {
   --background: oklch(0.22 0.02 30);
   --foreground: oklch(0.95 0.02 60);
@@ -102,7 +210,7 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', 'Noto Sans KR', sans-serif;
     -webkit-font-smoothing: antialiased;
-    background: var(--gradient-soft);
+    background: var(--gradient-page);
     background-attachment: fixed;
     min-height: 100vh;
     font-size: 16px;
@@ -137,5 +245,5 @@
 }
 .album-card:active { transform: scale(0.98); }
 
-.warm-text { color: oklch(0.42 0.06 30); }
-.warm-muted { color: oklch(0.55 0.05 35); }
+.warm-text { color: var(--warm-text); }
+.warm-muted { color: var(--warm-muted); }
