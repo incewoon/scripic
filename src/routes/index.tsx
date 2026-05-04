@@ -1,13 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { getAlbums, deleteAlbum, subscribeAlbums, type Album } from "@/lib/storage";
-import { Plus, BookHeart, Trash2, MapPin, Sparkles, LogOut } from "lucide-react";
+import { Plus, BookHeart, Trash2, MapPin, Sparkles, LogOut, LogIn, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { fetchProfile, hasActiveSubscription, canCreateAlbum, type Profile } from "@/lib/premium";
 import { Paywall } from "@/components/Paywall";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
+
+const PAYWALL_AFTER_LOGIN_KEY = "memori_paywall_after_login";
+const FREE_MAX = 5;
 
 export const Route = createFileRoute("/")({
   component: Home,
