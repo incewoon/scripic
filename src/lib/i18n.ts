@@ -67,6 +67,10 @@ const dict = {
     preparing: "Preparing image…",
     downloaded: "Image saved",
     madeWith: "Made with Memory Weaver",
+    leaveTitle: "Leave the conversation?",
+    leaveDesc: "Your chat will be discarded. The album hasn't been created yet.",
+    leaveConfirm: "Leave",
+    keepGoing: "Keep chatting",
   },
   ko: {
     appTagline: "사진 한 장에 담긴 그날의 이야기",
@@ -127,6 +131,10 @@ const dict = {
     preparing: "이미지 만드는 중…",
     downloaded: "이미지를 저장했어요",
     madeWith: "Memory Weaver로 만든 추억",
+    leaveTitle: "정말 나갈까요?",
+    leaveDesc: "지금 나가면 대화 내용은 사라져요. 앨범은 아직 만들어지지 않았어요.",
+    leaveConfirm: "나가기",
+    keepGoing: "계속 이야기하기",
   },
 } as const;
 

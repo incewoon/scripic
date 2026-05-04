@@ -208,32 +208,52 @@ function Chat() {
   const previewWhere = previewMeta?.city;
   const hasMeta = !!(previewWhen || previewWhere);
 
+  const hasConversation = messages.some(m => m.role === "user");
+  const [confirmLeave, setConfirmLeave] = useState(false);
+
+  function tryLeave(e?: React.MouseEvent) {
+    if (hasConversation && !generating) {
+      e?.preventDefault();
+      setConfirmLeave(true);
+    }
+  }
+
+  function doLeave() {
+    sessionStorage.removeItem("memori_photos");
+    sessionStorage.removeItem("memori_meta");
+    sessionStorage.removeItem("memori_photo_metas");
+    setConfirmLeave(false);
+    navigate({ to: "/" });
+  }
+
   return (
     <div className="mx-auto max-w-md min-h-screen flex flex-col">
-      <header className="flex items-center justify-between px-5 pt-6 pb-3">
-        <Link to="/create" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
-        <div className="text-xs text-muted-foreground">{t.chatPhotos(photos.length)}</div>
-        <button
-          onClick={finish}
-          disabled={generating || busy}
-          className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-50"
-        >
-          <Sparkles size={12}/> {generating ? t.creating : t.finish}
-        </button>
-      </header>
-
-      <div className="px-5 mb-3 flex gap-1.5 overflow-x-auto">
-        {photos.map((p, i) => (
+      <div className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border/40">
+        <header className="flex items-center justify-between px-5 pt-6 pb-3">
+          <Link to="/create" onClick={tryLeave} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
+          <div className="text-xs text-muted-foreground">{t.chatPhotos(photos.length)}</div>
           <button
-            key={i}
-            onClick={() => setPreviewIdx(i)}
-            className="relative flex-shrink-0 active:scale-95 transition-transform"
-            aria-label={t.photoOf(i + 1)}
+            onClick={finish}
+            disabled={generating || busy}
+            className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-50"
           >
-            <img src={p} alt="" className="w-12 h-12 object-cover rounded-md" />
-            <span className="absolute -top-1 -left-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{i+1}</span>
+            <Sparkles size={12}/> {generating ? t.creating : t.finish}
           </button>
-        ))}
+        </header>
+
+        <div className="px-5 pb-3 flex gap-1.5 overflow-x-auto">
+          {photos.map((p, i) => (
+            <button
+              key={i}
+              onClick={() => setPreviewIdx(i)}
+              className="relative flex-shrink-0 active:scale-95 transition-transform"
+              aria-label={t.photoOf(i + 1)}
+            >
+              <img src={p} alt="" className="w-12 h-12 object-cover rounded-md" />
+              <span className="absolute -top-1 -left-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{i+1}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-4 space-y-3">
@@ -329,6 +349,19 @@ function Chat() {
               ) : (
                 <div className="warm-muted italic">{t.noMeta}</div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmLeave && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-5" onClick={() => setConfirmLeave(false)}>
+          <div className="bg-card rounded-2xl max-w-sm w-full p-5 shadow-[var(--shadow-warm)]" onClick={e => e.stopPropagation()}>
+            <div className="font-display text-lg mb-1.5">{t.leaveTitle}</div>
+            <div className="text-sm warm-muted mb-5 leading-relaxed">{t.leaveDesc}</div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirmLeave(false)} className="px-4 py-2 text-sm rounded-full border border-border/60">{t.keepGoing}</button>
+              <button onClick={doLeave} className="px-4 py-2 text-sm rounded-full bg-destructive text-destructive-foreground">{t.leaveConfirm}</button>
             </div>
           </div>
         </div>
