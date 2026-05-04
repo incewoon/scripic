@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
-      { title: "Memori — The story behind every photo" },
+      { title: "Mora — Capture the moments you never want to forget" },
       { name: "description", content: "Turn photos into a tender story album." },
       { name: "theme-color", content: "#f5b9b0" },
     ],
