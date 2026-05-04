@@ -241,6 +241,35 @@ function Home() {
           >
             <Settings size={13} />
           </Link>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setSortOpen((v) => !v)}
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 pl-2 pr-2.5 h-7 text-[11px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
+              aria-label={t.sortBy}
+              title={t.sortBy}
+            >
+              <ArrowUpDown size={11} />
+              <span>{sortMode === "created" ? t.sortCreatedDate : t.sortPhotoDate}</span>
+            </button>
+            {sortOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                <div className="absolute z-20 mt-1 left-0 min-w-[140px] rounded-xl border border-border/60 bg-card shadow-[var(--shadow-soft)] py-1">
+                  {(["created", "photo"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => changeSort(m)}
+                      className={`block w-full text-left px-3 py-1.5 text-[12px] hover:bg-muted/60 transition-colors ${sortMode === m ? "warm-text font-semibold" : "warm-muted"}`}
+                    >
+                      {m === "created" ? t.sortCreatedDate : t.sortPhotoDate}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {badge && (
