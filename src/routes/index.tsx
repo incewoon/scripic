@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { getAlbums, deleteAlbum, subscribeAlbums, type Album } from "@/lib/storage";
-import { Plus, BookHeart, Trash2, MapPin, Sparkles, LogOut, LogIn, X } from "lucide-react";
+import { Plus, BookHeart, Trash2, MapPin, Sparkles, LogOut, LogIn, X, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -203,6 +203,14 @@ function Home() {
               <LogOut size={11} /> {t.signOut}
             </button>
           ) : null}
+          <Link
+            to="/settings"
+            className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 w-7 h-7 warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
+            aria-label={t.settings}
+            title={t.settings}
+          >
+            <Settings size={13} />
+          </Link>
         </div>
         <div className="flex items-center gap-2">
           {badge && (
