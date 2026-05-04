@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { requestNotificationPermission, openAppSettings, isNativeShell } from "@/lib/native";
+import { useTheme, type Theme } from "@/lib/theme";
 import {
   fetchProfile,
   hasActiveSubscription,
