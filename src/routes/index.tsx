@@ -326,6 +326,33 @@ function Home() {
         >
           <Plus size={18}/> {t.newAlbum}
         </button>
+        <div className="mt-3 flex items-center justify-center gap-2">
+          {!user && !authLoading ? (
+            <Link
+              to="/auth"
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-3 py-1.5 text-[12px] font-medium warm-text shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
+              aria-label={t.signIn}
+            >
+              <LogIn size={12} className="text-primary" /> {t.signIn}
+            </Link>
+          ) : user ? (
+            <button
+              onClick={() => signOut()}
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-3 py-1.5 text-[12px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.98] shadow-[var(--shadow-soft)]"
+              aria-label={t.signOut}
+            >
+              <LogOut size={12} /> {t.signOut}
+            </button>
+          ) : null}
+          <Link
+            to="/settings"
+            className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 w-8 h-8 warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
+            aria-label={t.settings}
+            title={t.settings}
+          >
+            <Settings size={14} />
+          </Link>
+        </div>
       </div>
 
       <Paywall open={paywall} onClose={() => setPaywall(false)} onSuccess={reloadProfile} />
