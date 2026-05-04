@@ -20,8 +20,8 @@ function systemPrompt(lang: string, photoCount: number) {
 - 사진 번호를 메시지에 명시 (예: "사진 3은", "사진 4의...")
 - 모호하면 확인: "방금 말씀하신 풍경은 사진 5가 맞을까요?"
 - 한 번에 1~2개 질문만, 짧게
-- 막연한 질문 금지 ("어땠어?" X). 구체적으로 ("그날 가장 인상 깊었던 한순간은?")
-- 모든 사진을 한 번씩은 짚은 뒤, "이제 멋진 앨범으로 정리해 드릴까요?" 라고 마무리 제안`;
+- 막연한 질문 금지. 구체적으로 ("그날 가장 인상 깊었던 한순간은?")
+- **종료 제안 규칙**: 모든 사진을 한 번씩 짚었거나 충분한 이야기가 모였다고 판단되면, "이쯤에서 앨범으로 정리해드려도 될까요?" 라고 부드럽게 물어보고, 메시지의 **맨 마지막 줄**에 정확히 \`[READY_TO_FINISH]\` 토큰을 추가하세요. 이 토큰은 한 번만, 종료 동의를 구할 때만 붙이세요.`;
   }
   return `You are a warm, empathetic 'memory interviewer'. The user uploaded ${photoCount} photos and you are helping them remember the specific story behind each one.
 
@@ -35,7 +35,7 @@ Rules:
 - If unclear, ask: "Was the view you just described Photo 5?"
 - Ask only 1–2 short questions at a time
 - No vague questions like "How was it?" — be specific ("What's the moment you remember most vividly?")
-- After touching on every photo at least once, suggest: "Shall I weave these into your album now?"`;
+- **Wrap-up rule**: Once you've touched on every photo or gathered enough stories, gently ask "Shall I weave these into your album now?" and append exactly \`[READY_TO_FINISH]\` as the very last line of that message. Use this token only once, only when asking to wrap up.`;
 }
 
 serve(async (req) => {
