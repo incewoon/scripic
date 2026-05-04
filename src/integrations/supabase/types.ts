@@ -14,13 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          album_credits: number
+          albums_created: number
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          is_subscribed: boolean
+          subscription_end_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          album_credits?: number
+          albums_created?: number
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          is_subscribed?: boolean
+          subscription_end_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          album_credits?: number
+          albums_created?: number
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          is_subscribed?: boolean
+          subscription_end_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          amount_usd: number | null
+          created_at: string
+          id: string
+          platform: string
+          platform_purchase_token: string | null
+          product_id: string
+          product_type: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_usd?: number | null
+          created_at?: string
+          id?: string
+          platform?: string
+          platform_purchase_token?: string | null
+          product_id: string
+          product_type: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number | null
+          created_at?: string
+          id?: string
+          platform?: string
+          platform_purchase_token?: string | null
+          product_id?: string
+          product_type?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      activate_subscription: { Args: { _end_date: string }; Returns: undefined }
+      add_album_credits: { Args: { _amount: number }; Returns: undefined }
+      consume_album_credit: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
