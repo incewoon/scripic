@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download } from "lucide-react";
 import { toPng } from "html-to-image";
-import { getAlbums, deleteAlbum, updateAlbum, type Album } from "@/lib/storage";
+import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 
@@ -65,7 +65,13 @@ function AlbumView() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAlbums().then(list => setAlbum(list.find(a => a.id === id) ?? null));
+    let cancelled = false;
+    const reload = () => {
+      getAlbums().then((list) => { if (!cancelled) setAlbum(list.find((a) => a.id === id) ?? null); });
+    };
+    reload();
+    const unsub = subscribeAlbums(reload);
+    return () => { cancelled = true; unsub(); };
   }, [id]);
 
   async function patch(p: Partial<Album>) {
