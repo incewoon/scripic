@@ -31,13 +31,6 @@ function systemFor(lang: string, mode: Mode) {
 - Each caption must be based on the conversation about THAT specific photo (by number). If the conversation has nothing about that photo, write only what is objectively visible in it.
 - **The number of captions must exactly match the number of uploaded photos — no more, no less.**
 - Write in English, neutral and matter-of-fact.`;
-    }
-    return `You are a recorder who organizes album text using only facts stated in the conversation.
-- Use ONLY what the user actually said. No speculation, no emotional embellishment, no poetic language.
-- Preserve the user's wording where possible; clean up only for readability.
-- Do not summarize away facts — keep all concrete details that were mentioned.
-- Each caption must be based on the conversation about THAT specific photo (by number).
-- Write in English, neutral and matter-of-fact.`;
   }
 
   if (mode === "brief") {
