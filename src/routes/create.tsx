@@ -149,88 +149,90 @@ function Create() {
   const pct = Math.min(100, (count / 10) * 100);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen px-5 pt-6 pb-36">
-      <header className="flex items-center justify-between mb-6">
-        <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
-        <span className="text-xs warm-muted">{count} / 10</span>
-      </header>
+    <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
+      <div className="flex-1 overflow-y-auto px-5 pt-6 pb-4">
+        <header className="flex items-center justify-between mb-6">
+          <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
+          <span className="text-xs warm-muted">{count} / 10</span>
+        </header>
 
-      <h1 className="font-display text-[28px] leading-tight warm-text mb-2">{t.pickPhotos}</h1>
-      <p className="text-[15px] warm-muted mb-4 leading-relaxed">{t.pickHint}</p>
+        <h1 className="font-display text-[28px] leading-tight warm-text mb-2">{t.pickPhotos}</h1>
+        <p className="text-[15px] warm-muted mb-4 leading-relaxed">{t.pickHint}</p>
 
-      <div
-        className="mb-5 rounded-2xl px-4 py-3.5 flex items-start gap-3 border border-primary/25"
-        style={{ background: "var(--gradient-warm)" }}
-      >
-        <Info size={18} className="text-primary mt-0.5 flex-shrink-0" />
-        <div className="text-[13.5px] leading-relaxed warm-text">
-          <b>{t.minMax}</b><br/>
-          <span className="warm-muted">{t.dragHint}</span>
-        </div>
-      </div>
-
-      <div className="mb-5">
-        <div className="text-[12px] font-medium warm-muted mb-2">{t.chatMode}</div>
-        <div className="flex gap-1.5 mb-2">
-          {(["creative", "fact", "brief"] as ChatMode[]).map(m => {
-            const label = m === "creative" ? t.modeCreative : m === "fact" ? t.modeFact : t.modeBrief;
-            const active = mode === m;
-            return (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`flex-1 px-3 py-2 rounded-full text-[13px] font-medium transition-all active:scale-[0.97] ${
-                  active
-                    ? "text-primary-foreground shadow-[var(--shadow-warm)]"
-                    : "border border-border/60 warm-text bg-card/50"
-                }`}
-                style={active ? { background: "var(--gradient-warm)" } : undefined}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-        <div className="text-[12px] warm-muted leading-relaxed">
-          {mode === "creative" ? t.modeCreativeDesc : mode === "fact" ? t.modeFactDesc : t.modeBriefDesc}
-        </div>
-      </div>
-
-      <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-5">
         <div
-          className="h-full transition-all duration-500 rounded-full"
-          style={{ width: `${pct}%`, background: "var(--gradient-warm)" }}
-        />
+          className="mb-5 rounded-2xl px-4 py-3.5 flex items-start gap-3 border border-primary/25"
+          style={{ background: "var(--gradient-warm)" }}
+        >
+          <Info size={18} className="text-primary mt-0.5 flex-shrink-0" />
+          <div className="text-[13.5px] leading-relaxed warm-text">
+            <b>{t.minMax}</b><br/>
+            <span className="warm-muted">{t.dragHint}</span>
+          </div>
+        </div>
+
+        <div className="mb-5">
+          <div className="text-[12px] font-medium warm-muted mb-2">{t.chatMode}</div>
+          <div className="flex gap-1.5 mb-2">
+            {(["creative", "fact", "brief"] as ChatMode[]).map(m => {
+              const label = m === "creative" ? t.modeCreative : m === "fact" ? t.modeFact : t.modeBrief;
+              const active = mode === m;
+              return (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`flex-1 px-3 py-2 rounded-full text-[13px] font-medium transition-all active:scale-[0.97] ${
+                    active
+                      ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                      : "border border-border/60 warm-text bg-card/50"
+                  }`}
+                  style={active ? { background: "var(--gradient-warm)" } : undefined}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-[12px] warm-muted leading-relaxed">
+            {mode === "creative" ? t.modeCreativeDesc : mode === "fact" ? t.modeFactDesc : t.modeBriefDesc}
+          </div>
+        </div>
+
+        <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-5">
+          <div
+            className="h-full transition-all duration-500 rounded-full"
+            style={{ width: `${pct}%`, background: "var(--gradient-warm)" }}
+          />
+        </div>
+
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={items.map(i => i.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-3 gap-2.5">
+              {items.map((it, i) => (
+                <SortablePhoto
+                  key={it.id}
+                  item={it}
+                  index={i}
+                  onRemove={() => setItems(ps => ps.filter(x => x.id !== it.id))}
+                />
+              ))}
+              {items.length < 10 && (
+                <button
+                  onClick={() => inputRef.current?.click()}
+                  disabled={busy}
+                  className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
+                >
+                  <ImagePlus size={26} strokeWidth={1.6}/>
+                  <span className="text-[11px] mt-1.5 warm-muted font-medium">{busy ? t.processing : t.addPhoto}</span>
+                </button>
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
+
+        <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={items.map(i => i.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-3 gap-2.5 mb-6">
-            {items.map((it, i) => (
-              <SortablePhoto
-                key={it.id}
-                item={it}
-                index={i}
-                onRemove={() => setItems(ps => ps.filter(x => x.id !== it.id))}
-              />
-            ))}
-            {items.length < 10 && (
-              <button
-                onClick={() => inputRef.current?.click()}
-                disabled={busy}
-                className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
-              >
-                <ImagePlus size={26} strokeWidth={1.6}/>
-                <span className="text-[11px] mt-1.5 warm-muted font-medium">{busy ? t.processing : t.addPhoto}</span>
-              </button>
-            )}
-          </div>
-        </SortableContext>
-      </DndContext>
-
-      <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
-
-      <div className="fixed bottom-6 left-0 right-0 px-5 mx-auto max-w-md">
+      <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent">
         <button
           onClick={next}
           disabled={items.length < 1 || busy}
