@@ -106,8 +106,21 @@ const dict = {
     purchaseFailed: "Purchase failed. Please try again.",
     restorePurchases: "Restore purchases",
     laterCta: "Maybe later",
+    // Permissions & notifications
+    photoPermTitle: "Let memori see your photos",
+    photoPermDesc: "Pick the photos you'd like to weave into a story. memori only opens the ones you choose.",
+    photoPermAllow: "Allow photo access",
+    photoPermDeniedHint: "You can change this anytime in your phone's settings.",
+    openSettings: "Open settings",
+    settings: "Settings",
+    notifSectionTitle: "Memory reminders",
+    notifSectionDesc: "We'll gently nudge you when photos start piling up — never more than once a week.",
+    notifToggleLabel: "Get memory reminders",
+    notifPermissionDenied: "Notifications are off in your phone's settings.",
+    backHome: "Back",
   },
   ko: {
+
     appTagline: "사진 한 장에 담긴 그날의 이야기",
     storedLocally: "모든 데이터는 이 기기에만 저장돼요",
     myAlbums: "내 앨범",
@@ -205,6 +218,18 @@ const dict = {
     purchaseFailed: "결제에 실패했어요. 다시 시도해주세요.",
     restorePurchases: "구매 복원",
     laterCta: "다음에 할게요",
+    // Permissions & notifications
+    photoPermTitle: "사진 라이브러리 접근 권한이 필요해요",
+    photoPermDesc: "소중한 사진을 선택해서 기억을 정리할 수 있게 해주세요. 고르신 사진만 열어볼게요.",
+    photoPermAllow: "사진 접근 허용",
+    photoPermDeniedHint: "설정에서 언제든지 변경할 수 있어요.",
+    openSettings: "설정 열기",
+    settings: "설정",
+    notifSectionTitle: "기억 알림",
+    notifSectionDesc: "사진이 많이 쌓이면 살며시 알려드릴게요. 일주일에 한 번을 넘지 않아요.",
+    notifToggleLabel: "기억 알림 받기",
+    notifPermissionDenied: "기기 설정에서 알림이 꺼져 있어요.",
+    backHome: "뒤로",
   },
 } as const;
 
