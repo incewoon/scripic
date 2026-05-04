@@ -148,14 +148,14 @@ function AlbumView() {
       <div ref={shareRef} className="bg-background">
         <div className="px-6 pt-10 pb-4 text-center">
           <EditableText
-            editKey="title" activeKey={activeKey} setActiveKey={setActiveKey}
+            editKey="title" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
             value={album.title}
             onSave={(v) => patch({ title: v })}
             className="font-display text-3xl text-foreground mb-2 text-center"
             placeholder={t.title}
           />
           <EditableText
-            editKey="subtitle" activeKey={activeKey} setActiveKey={setActiveKey}
+            editKey="subtitle" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
             value={album.subtitle}
             onSave={(v) => patch({ subtitle: v })}
             className="text-sm warm-muted italic text-center"
@@ -165,18 +165,18 @@ function AlbumView() {
           <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
             <div className="flex items-center gap-1.5">
               <Calendar size={12}/>
-              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" />
+              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" />
             </div>
             <div className="flex items-center gap-1.5">
               <MapPin size={12}/>
-              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" />
+              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" />
             </div>
           </div>
         </div>
 
         <div className="px-6 mb-8">
           <EditableText
-            editKey="intro" activeKey={activeKey} setActiveKey={setActiveKey}
+            editKey="intro" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
             value={album.intro}
             onSave={(v) => patch({ intro: v })}
             multiline
@@ -191,7 +191,7 @@ function AlbumView() {
               <img src={p.dataUrl} alt={p.caption} className="w-full aspect-[4/3] object-cover rounded-sm" loading="lazy" crossOrigin="anonymous" />
               <figcaption className="text-center font-display text-[15px] mt-3 text-foreground/80 px-2">
                 <EditableText
-                  editKey={`caption-${i}`} activeKey={activeKey} setActiveKey={setActiveKey}
+                  editKey={`caption-${i}`} activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
                   value={p.caption}
                   onSave={(v) => patchCaption(i, v)}
                   multiline
@@ -205,7 +205,7 @@ function AlbumView() {
 
         <div className="px-6 mt-12 text-center">
           <EditableText
-            editKey="closing" activeKey={activeKey} setActiveKey={setActiveKey}
+            editKey="closing" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
             value={album.closing}
             onSave={(v) => patch({ closing: v })}
             multiline
