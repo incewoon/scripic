@@ -119,7 +119,7 @@ function Create() {
   };
 
   const next = async () => {
-    if (items.length < 5) { toast.error(t.photosLeft(5 - items.length)); return; }
+    if (items.length < 1) { toast.error(t.pickAtLeastOne); return; }
     setBusy(true);
     try {
       const lang = getLang();
@@ -132,6 +132,7 @@ function Create() {
         return i.meta;
       }));
       sessionStorage.setItem("memori_photos", JSON.stringify(items.map(i => i.url)));
+      sessionStorage.setItem("memori_photo_metas", JSON.stringify(metas));
       sessionStorage.setItem("memori_meta", JSON.stringify({
         period: summarizePeriod(metas, lang),
         location: summarizeLocations(metas),
