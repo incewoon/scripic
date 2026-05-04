@@ -149,7 +149,7 @@ const dict = {
     backupHintManualMove: "Move the .zip yourself (USB, AirDrop, Drive…) and import it on the other device. Backups only restore on the same account that created them.",
     backupOwnerMismatch: "This backup belongs to a different account. Sign in with the same account to restore.",
     backupGuestOnlyMismatch: "This backup was made in guest mode. Sign out to restore it.",
-    backupInvalid: "This file isn't a valid memori backup.",
+    backupInvalid: "This file isn't a valid Mora backup.",
     backupDone: (n: number) => `Restored ${n} album${n === 1 ? "" : "s"}`,
     backupSkippedFreeLimit: (n: number) => `${n} album${n === 1 ? "" : "s"} skipped — free limit reached`,
     backupExporting: "Preparing backup…",
