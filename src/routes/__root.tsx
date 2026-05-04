@@ -29,7 +29,7 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "memori" },
       { name: "description", content: "Save special memories with photos and detailed conversation notes. Keep them safe for years to come! Stored only on your phone, so your privacy stays protected." },
       { name: "author", content: "Lovable" },

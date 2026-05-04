@@ -57,10 +57,20 @@ function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  const stickToBottomRef = useRef(true);
+
+  function isNearBottom() {
+    const el = scrollRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }
 
   function scrollToLatest(behavior: ScrollBehavior = "smooth") {
+    const el = scrollRef.current;
+    if (!el) return;
     requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({ block: "end", behavior });
+      el.scrollTo({ top: el.scrollHeight, behavior });
     });
   }
 
@@ -76,8 +86,20 @@ function Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Track scroll position so we don't yank the user away if they're reading.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => { stickToBottomRef.current = isNearBottom(); };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Auto-pin to latest while assistant streams or user just sent a message.
   useLayoutEffect(() => {
-    scrollToLatest(busy ? "auto" : "smooth");
+    if (busy || stickToBottomRef.current) {
+      scrollToLatest(busy ? "auto" : "smooth");
+    }
   }, [messages, busy]);
 
   useEffect(() => {
@@ -87,20 +109,32 @@ function Chat() {
     return () => window.clearTimeout(timer);
   }, [busy, generating]);
 
-  // Keep latest message pinned just above the input when the on-screen keyboard
-  // opens/closes (visualViewport changes height) or when the input gains focus.
+  // Track keyboard via visualViewport. Inset = how much the keyboard covers
+  // the layout viewport. We translate the input up by that amount so it
+  // always sits just above the keyboard, and re-pin the latest message.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const onResize = () => scrollToLatest("auto");
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
+    const update = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardInset(inset);
+      if (stickToBottomRef.current) scrollToLatest("auto");
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
   }, []);
 
   function handleInputFocus() {
-    // Wait a beat for the keyboard to animate in, then pin the latest message.
-    window.setTimeout(() => scrollToLatest("smooth"), 250);
+    stickToBottomRef.current = true;
+    // Re-pin after the keyboard animation settles.
+    window.setTimeout(() => scrollToLatest("smooth"), 300);
   }
+
 
   async function send(text: string, ph = photos, prior = messages) {
     const userMsg: Msg = { role: "user", content: text };
@@ -307,7 +341,10 @@ function Chat() {
   }, [hasConversation, generating]);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen flex flex-col">
+    <div
+      className="mx-auto max-w-md flex flex-col h-[100dvh]"
+      style={{ paddingBottom: keyboardInset }}
+    >
       <div className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border/40">
         <header className="flex items-center justify-between px-5 pt-6 pb-3">
           <Link to="/create" onClick={tryLeave} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
@@ -336,7 +373,7 @@ function Chat() {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-20 space-y-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-3 pb-3 space-y-3">
         {messages.filter((_, i) => i > 0 || messages[0]?.role === "assistant").map((m, i) => (
           <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
             <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
@@ -354,7 +391,7 @@ function Chat() {
         <div ref={bottomRef} aria-hidden="true" className="h-px" />
       </div>
 
-      <div className="sticky bottom-0 px-4 pb-5 pt-2 bg-gradient-to-t from-background to-transparent">
+      <div className="px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-gradient-to-t from-background to-transparent">
         <div className="flex gap-2 items-center glass rounded-full px-2 py-1.5 border border-border/50">
           <input
             ref={inputRef}
