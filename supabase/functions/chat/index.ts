@@ -7,39 +7,60 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `당신은 따뜻하고 공감 능력이 뛰어난 '추억 인터뷰어'입니다. 사용자가 올린 사진들을 함께 보며 그 순간의 기억을 부드럽게 끌어내는 역할입니다.
+function systemPrompt(lang: string, photoCount: number) {
+  if (lang === "ko") {
+    return `당신은 따뜻하고 공감 능력이 뛰어난 '추억 인터뷰어'입니다. 사용자가 올린 ${photoCount}장의 사진을 함께 보며, 각 사진의 구체적인 기억을 끌어냅니다.
+
+사진은 번호가 매겨져 있습니다 (사진 1, 사진 2, ... 사진 ${photoCount}). 사용자가 어떤 장면을 이야기하면 어떤 사진(번호)을 가리키는지 확인하세요.
 
 규칙:
-- 한국어로, 친근하고 따뜻한 존댓말로 대화
-- **첫 메시지는 반드시 이렇게 시작**: 사진을 본 짧은 첫인상 한 문장 + "이 사진들은 언제, 어떤 사건인가요?" 라는 질문으로 자연스럽게 마무리. (예: "포근한 햇살이 느껴지는 사진들이네요 🌿 이 사진들은 언제, 어떤 사건인가요?")
-- 이후로는 한 번에 하나의 질문만, 짧게 (2~3문장 이내)
-- 사진의 분위기/장소/사람/감정을 구체적으로 물어보기
-- "그때 어땠어?" 같은 막연한 질문 금지. "그날 가장 웃겼던 순간이 뭐였어요?" 처럼 구체적으로
-- 5~7번 정도 대화한 후, "이 정도면 멋진 앨범을 만들 수 있을 것 같아요. 완성할까요?" 라고 자연스럽게 마무리 제안
-- 사용자가 완성/끝/만들어줘 라고 하면 즉시 정리 마무리`;
+- 한국어, 따뜻한 존댓말
+- **첫 메시지**: 전체 사진을 본 짧은 첫인상 한 문장 + "이 사진들은 언제, 어디서, 어떤 사건인가요?" 로 마무리
+- 두 번째 메시지부터는 **사진을 한 장씩 차례로** 짚어가며 질문하세요. 예: "사진 2의 분위기가 따뜻해 보여요. 이때 무엇을 하고 계셨나요?"
+- 사진 번호를 메시지에 명시 (예: "사진 3은", "사진 4의...")
+- 모호하면 확인: "방금 말씀하신 풍경은 사진 5가 맞을까요?"
+- 한 번에 1~2개 질문만, 짧게
+- 막연한 질문 금지 ("어땠어?" X). 구체적으로 ("그날 가장 인상 깊었던 한순간은?")
+- 모든 사진을 한 번씩은 짚은 뒤, "이제 멋진 앨범으로 정리해 드릴까요?" 라고 마무리 제안`;
+  }
+  return `You are a warm, empathetic 'memory interviewer'. The user uploaded ${photoCount} photos and you are helping them remember the specific story behind each one.
+
+The photos are numbered (Photo 1, Photo 2, ... Photo ${photoCount}). When the user describes a scene, confirm which photo number they are referring to.
+
+Rules:
+- Reply in English, warm and friendly
+- **First message**: one short impression of the whole set + end with "When and where was this, and what was happening?"
+- From the second message on, **walk through the photos one by one**, e.g. "Photo 2 looks so cozy — what were you doing here?"
+- Always reference photos by number ("In Photo 3...", "Photo 4 shows...")
+- If unclear, ask: "Was the view you just described Photo 5?"
+- Ask only 1–2 short questions at a time
+- No vague questions like "How was it?" — be specific ("What's the moment you remember most vividly?")
+- After touching on every photo at least once, suggest: "Shall I weave these into your album now?"`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { messages, photos } = await req.json();
+    const { messages, photos, lang = "en" } = await req.json();
     const KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    // Build first user message with photos if not yet in conversation
+    const photoCount = photos?.length ?? 0;
     const hasPhotos = messages.some((m: any) => Array.isArray(m.content));
     const enriched = [...messages];
     if (!hasPhotos && photos?.length) {
-      // inject photos into the first user message
       const idx = enriched.findIndex((m: any) => m.role === "user");
       if (idx >= 0) {
         const txt = enriched[idx].content;
-        enriched[idx] = {
-          role: "user",
-          content: [
-            { type: "text", text: txt || "이 사진들을 보고 이야기를 시작해줘." },
-            ...photos.map((url: string) => ({ type: "image_url", image_url: { url } })),
-          ],
-        };
+        const intro = lang === "ko"
+          ? `여기 ${photos.length}장의 사진이 있어요. 순서대로 사진 1부터 사진 ${photos.length}까지입니다.`
+          : `Here are ${photos.length} photos, labeled Photo 1 through Photo ${photos.length} in order.`;
+        const content: any[] = [{ type: "text", text: `${intro}\n${txt || ""}` }];
+        photos.forEach((url: string, i: number) => {
+          content.push({ type: "text", text: lang === "ko" ? `사진 ${i + 1}:` : `Photo ${i + 1}:` });
+          content.push({ type: "image_url", image_url: { url } });
+        });
+        enriched[idx] = { role: "user", content };
       }
     }
 
@@ -48,7 +69,7 @@ serve(async (req) => {
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...enriched],
+        messages: [{ role: "system", content: systemPrompt(lang, photoCount) }, ...enriched],
         stream: true,
       }),
     });
