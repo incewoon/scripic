@@ -35,4 +35,4 @@ export async function deleteAlbum(id: string) {
   await set(KEY, list.filter(a => a.id !== id));
 }
 
-export const FREE_LIMIT = 2;
+export const FREE_LIMIT = 5;
