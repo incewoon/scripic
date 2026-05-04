@@ -126,7 +126,7 @@ function Home() {
     }
   };
 
-  // Badge
+  // Badge — visible for both guests and signed-in users so the tier is always clear.
   let badge: { label: string; cls: string } | null = null;
   if (user && profile) {
     if (subscribed) {
@@ -137,6 +137,9 @@ function Home() {
       const used = Math.min(count, FREE_MAX);
       badge = { label: t.badgeFree(used, FREE_MAX), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
     }
+  } else if (!user && albums !== null) {
+    const used = Math.min(count, FREE_MAX);
+    badge = { label: t.badgeFree(used, FREE_MAX), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
   }
 
   return (
