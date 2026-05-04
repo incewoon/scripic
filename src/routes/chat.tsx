@@ -336,7 +336,7 @@ function Chat() {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-3 space-y-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-20 space-y-3">
         {messages.filter((_, i) => i > 0 || messages[0]?.role === "assistant").map((m, i) => (
           <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
             <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
