@@ -1,58 +1,61 @@
-## 계획
+## Goal
 
-대화 화면의 키보드/입력창/마지막 AI 응답 정렬 문제를 `src/routes/chat.tsx` 중심으로 다시 정리해서 고치겠습니다.
+Let users pick the AI conversation style on the photo-picking screen (`/create`) before chatting. Three modes:
 
-### 1. 채팅 레이아웃을 키보드 대응형으로 재구성
-- 현재 `min-h-screen + sticky bottom-0 + 고정 pb-20` 조합은 모바일 키보드가 올라올 때 실제 보이는 화면 높이와 어긋날 수 있습니다.
-- 채팅 루트를 `100dvh` 기반의 화면 높이에 맞추고, 스크롤 영역과 입력창 영역을 분리된 “측정 가능한 레이아웃”으로 바꾸겠습니다.
-- 필요하면 전역 viewport 메타와 safe-area 처리도 함께 정리해 iOS/모바일 브라우저에서 입력창이 키보드 아래로 숨는 현상을 줄이겠습니다.
+- **Creative** (default, current behavior) — warm, evocative, infers feelings, weaves rich prose.
+- **Fact** — asks only matter-of-fact questions about what is objectively visible in the photo. Album output preserves the conversation as-is (no embellishment, minimal summarization).
+- **Brief** — asks short, simple questions and produces a brief, summarized album.
 
-### 2. 입력창 높이와 키보드 변화를 실제 값으로 측정
-- 입력창 컨테이너에 ref를 두고 실제 높이를 측정하겠습니다.
-- `visualViewport`를 계속 쓰되, 단순히 스크롤만 다시 맞추는 수준이 아니라:
-  - 키보드가 올라왔는지
-  - 현재 보이는 viewport 높이가 얼마인지
-  - 입력창을 화면 하단에서 얼마나 띄워야 하는지
-  를 상태로 관리하겠습니다.
-- 이렇게 해서 “처음 키보드를 올렸을 때는 간격이 과하게 벌어지고, 다시 열면 정상” 같은 타이밍 문제를 줄이겠습니다.
+## UI changes (`src/routes/create.tsx`)
 
-### 3. 마지막 AI 메시지와 입력창 사이 간격을 동적으로 계산
-- 지금처럼 `pb-20` 같은 고정 여백 대신,
-  - 입력창 실측 높이
-  - safe area
-  - 마지막 메시지와 입력창 사이 최소 간격
-  을 합쳐서 스크롤 하단 여백을 동적으로 계산하겠습니다.
-- 목표 동작:
-  - 첫 대화 시작 직후 키보드를 올려도 마지막 AI 응답이 입력창과 과하게 멀어지지 않음
-  - 대화가 길어져 마지막 응답이 아래에 붙어 있을 때도 입력창 바로 위에 자연스럽게 위치함
-  - 키보드를 내렸다 다시 올려도 같은 규칙으로 일관되게 유지됨
+Add a mode selector right above the photo grid (under the info card, above the progress bar):
 
-### 4. 자동 스크롤 조건을 더 안정적으로 조정
-- 현재는 메시지 변경/포커스/viewport resize 때마다 거의 바로 `scrollToLatest`를 호출하는 구조입니다.
-- 이를 다음 기준으로 정리하겠습니다.
-  - AI 응답이 스트리밍 중일 때
-  - 사용자가 이미 하단 근처에 있을 때
-  - 입력창 포커스 또는 키보드 열림/닫힘 직후
-- 반대로 사용자가 위 내용을 읽고 있을 때는 강제로 튀지 않도록 제어하겠습니다.
-- 타이밍도 단순 `setTimeout(250)` 의존을 줄이고, viewport 변화가 실제 반영된 뒤 정렬하도록 보강하겠습니다.
+- A small section labeled "대화 모드 / Chat mode".
+- Three pill buttons in a row: `Creative`, `Fact`, `Brief`.
+- Selected pill uses the warm primary gradient styling already used on the main CTA; unselected pills use `border border-border/60` muted style.
+- Below the pills, a one-line `text-[12px] warm-muted` description of the currently selected mode.
+- `Creative` is selected by default.
 
-### 5. 모바일 케이스 기준으로 재검증
-- 다음 흐름을 기준으로 다시 맞추겠습니다.
-  1. 채팅 첫 진입 후 첫 AI 응답이 보이는 상태에서 입력창 포커스
-  2. 사용자가 여러 번 대화를 주고받은 뒤 포커스
-  3. 키보드 열기 → 닫기 → 다시 열기 반복
-  4. 마지막 AI 응답이 입력창 바로 위에 붙어 있어야 하는 상황
-  5. 입력창이 키보드 아래로 숨지 않아야 하는 상황
+State: `const [mode, setMode] = useState<ChatMode>("creative")`.
 
-## 수정 예정 파일
-- `src/routes/chat.tsx` — 핵심 레이아웃/스크롤/viewport 처리 수정
-- 필요 시 `src/routes/__root.tsx` — viewport 메타 보강
-- 필요 시 `src/styles.css` — `dvh`/safe-area 보조 스타일 추가
+In `next()`, persist the choice to `sessionStorage.setItem("memori_mode", mode)` alongside the existing photo/meta keys.
 
-## 기술 메모
-현재 문제의 핵심은 다음 조합으로 보입니다.
-- `min-h-screen` 이 모바일 키보드가 반영된 실제 표시 영역과 다를 수 있음
-- `sticky bottom-0` 입력창과 스크롤 영역 `pb-20` 이 서로 독립적으로 움직임
-- `visualViewport.resize` 에서 스크롤만 맞추고 레이아웃 자체의 하단 기준은 재계산하지 않음
+## Wiring through to chat (`src/routes/chat.tsx`)
 
-수정 방향은 “고정 padding 보정”이 아니라 “입력창 높이 + 키보드 상태 + 실제 viewport”를 기반으로 하단 공간을 계산하는 방식입니다.
+- Read mode from sessionStorage on mount: `const [mode] = useState<ChatMode>(() => (sessionStorage.getItem("memori_mode") as ChatMode) || "creative")`.
+- Include `mode` in the request body to both `/functions/v1/chat` and `/functions/v1/generate-album`.
+- Clear `memori_mode` in the same places the other `memori_*` session keys are cleared (after finish, on leave).
+
+## i18n (`src/lib/i18n.ts`)
+
+Add strings for both languages:
+
+- `chatMode`: "Chat mode" / "대화 모드"
+- `modeCreative`, `modeFact`, `modeBrief`: labels
+- `modeCreativeDesc`: warm, story-rich conversation (current default).
+- `modeFactDesc`: only asks about what's objectively visible; keeps the conversation verbatim in the album.
+- `modeBriefDesc`: short, simple questions and a brief album summary.
+
+## Edge function: chat (`supabase/functions/chat/index.ts`)
+
+- Accept optional `mode` field on the request body (`"creative" | "fact" | "brief"`, default `"creative"`).
+- Refactor `systemPrompt(lang, photoCount)` → `systemPrompt(lang, photoCount, mode)` and branch per mode for both ko and en.
+  - `creative`: existing prompt unchanged.
+  - `fact`: instruct the model to ask only about objectively observable details in the photo (people present, objects, setting, time of day, weather visible, actions). No emotional inference, no embellishment. Still walks photos one by one and uses the same `[READY_TO_FINISH]` wrap-up token.
+  - `brief`: ask one short question per photo, max ~1 sentence per turn, move on quickly. Same wrap-up token.
+
+## Edge function: generate-album (`supabase/functions/generate-album/index.ts`)
+
+- Accept optional `mode` field; default `"creative"`.
+- Refactor `systemFor(lang)` → `systemFor(lang, mode)` and `userPrompt(...)` to take `mode`.
+  - `creative`: current rich prose behavior.
+  - `fact`: system instruction = "Do NOT embellish or add feelings. Use only what was stated in the conversation. Preserve the user's wording where possible; do not summarize away facts." User prompt asks for a longer `intro` that is essentially the conversation organized into prose with no invented detail, captions that quote/paraphrase only what the user said about that photo, and a neutral 1–2 sentence closing.
+  - `brief`: system instruction = "Be concise. Summarize tightly." User prompt requests shorter intro (2–3 sentences), short captions (~6–10 words / 15자 내외), and a 1-sentence closing.
+
+The JSON schema returned by the tool call stays the same — only prompt text changes.
+
+## Technical notes
+
+- Define `type ChatMode = "creative" | "fact" | "brief"` in a small shared place. Simplest: declare in `src/lib/i18n.ts` (already imported by both routes) or inline in each route — pick inline to avoid touching i18n's shape.
+- Edge functions deploy automatically.
+- No database changes; mode is per-session only.
