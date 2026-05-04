@@ -188,6 +188,19 @@ function Chat() {
     }
   }
 
+  // When preview opens, push a history entry so the device back button just closes the popup
+  useEffect(() => {
+    if (previewIdx == null) return;
+    window.history.pushState({ memoriPreview: true }, "");
+    const onPop = () => setPreviewIdx(null);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      // if popup is being closed by us (not by back), pop the dummy entry
+      if (window.history.state?.memoriPreview) window.history.back();
+    };
+  }, [previewIdx]);
+
   const previewMeta = previewIdx != null ? photoMetas[previewIdx] : undefined;
   const previewWhen = fmtTakenAt(previewMeta?.takenAt, lang);
   const previewWhere = previewMeta?.city;
