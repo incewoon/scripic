@@ -1,41 +1,88 @@
-## 변경 요약
+# 두 가지 버그 수정 계획
 
-메인 화면 상단을 더 컴팩트하게 정리하고, 앨범 카운터와 로그인/로그아웃 버튼을 동일한 한 줄에 배치합니다.
+## 버그 1 — 게스트(무료)인데 한도가 남아있어도 "새 앨범"이 로그인 화면으로 넘어감
 
-## 변경 내용 (모두 `src/routes/index.tsx`)
+**원인** (`src/routes/index.tsx`, `onCreate` 함수, 101–112행)
 
-### 1. 상단 헤더 슬림화
-- 컨테이너 `pt-14` → `pt-8`
-- `<header>`의 `mb-10` → `mb-6`, "Everything stays on this device" 버튼의 `mb-5` → `mb-3`
-- 타이틀 `text-[44px]` → `text-[40px]`, 태그라인 `text-[14px]` → `text-[13px]`
-
-### 2. 우측 상단 fixed 로그인 버튼 제거
-직전 변경에서 추가했던 `fixed top-3 right-3` 로그인 버튼 블록 삭제.
-
-### 3. "내 앨범" 줄을 좌/우 두 그룹으로 재구성
-한 줄에 모두 들어가는 컴팩트 레이아웃:
-
-```text
-[로그인/로그아웃]                       내 앨범  3/5  [무료 3/5]
+```ts
+const onCreate = () => {
+  if (!user) {
+    if (count >= FREE_MAX) { setLimitOpen(true); return; }
+    navigate({ to: "/auth" });   // ← 한도가 남았는데도 무조건 로그인으로 보냄
+    return;
+  }
+  ...
+};
 ```
 
-- **좌측 그룹**: 비로그인이면 `로그인` pill 버튼(LogIn 아이콘+텍스트), 로그인 상태면 `로그아웃` pill 버튼(LogOut 아이콘+텍스트). 둘 다 작은 rounded-full + border + bg-card 스타일.
-- **우측 그룹**: 
-  - "내 앨범" 라벨을 작게 (`text-[13px] warm-muted`)
-  - 큰 숫자 대신 작은 카운터 `3/5` (`text-[14px] tabular-nums`, 분모는 muted)
-  - 그 옆에 기존 티어 뱃지(무료/유료/구독) 그대로 유지
+게스트의 경우 `count < FREE_MAX`이면 **그대로 `/create`로 가야 하는데**, 한도가 안 찼을 때 `/auth`로 보내버리는 잘못된 분기가 들어가 있어요. 첫 화면 안내(“기기에만 저장”) 정책상 게스트도 5개까지는 자유롭게 만들 수 있어야 합니다.
 
-### 4. "전체 가능 앨범 수" 계산 로직 추가
-티어별 분모(total capacity):
-- 구독 중 → `∞`
-- 로그인 + 일회성 크레딧 보유 → `5 + max(0, album_credits - 5)`
-- 로그인 + 무료 → `5`
-- 비로그인 게스트 → `5`
+**수정**
 
-분자(used)는 현재 로컬 앨범 수 `count`로, 분모를 초과하지 않게 `Math.min`. 앨범 로딩 전(`albums === null`)에는 카운터를 숨김.
+```ts
+const onCreate = () => {
+  if (!user) {
+    if (count >= FREE_MAX) { setLimitOpen(true); return; }
+    navigate({ to: "/create" });   // 한도 남으면 바로 생성
+    return;
+  }
+  if (!canCreateAlbum(profile)) { setPaywall(true); return; }
+  navigate({ to: "/create" });
+};
+```
 
-### 5. 게스트 뱃지 표시 (이전 메시지 후속)
-이전에 합의한 대로, 비로그인 상태에서도 "무료 used/5" 에메랄드 뱃지가 보이도록 뱃지 분기에 게스트 케이스 추가.
+## 버그 2 — 앨범 삭제 시 확인 후 다른 앨범 상세화면이 열림
+
+**원인** (`src/routes/index.tsx`, 220–250행)
+
+각 앨범 카드 전체가 `<Link to="/album/$id">`로 감싸져 있고, 그 **링크 내부에** 삭제 버튼이 들어 있어요.
+
+```tsx
+<Link to="/album/$id" ...>
+  ...
+  <button onClick={(e) => { e.preventDefault(); e.stopPropagation();
+    if (confirm(t.confirmDelete)) onDelete(a.id); }}>
+    삭제
+  </button>
+</Link>
+```
+
+문제는:
+1. `confirm()`은 **동기 호출이라 그 사이에 이벤트 처리가 멈췄다가 재개**되는데, React/TanStack Link 환경에서는 confirm 다이얼로그가 뜨는 동안 `preventDefault`의 효과가 보장되지 않는 경우가 있어요. 확인을 누른 뒤 `<Link>`의 클릭 동작이 한 번 더 발화되면서 인접한 다른 앨범의 라우트로 넘어갈 수 있습니다.
+2. 더 근본적으로, **버튼을 링크 내부에 두는 것은 HTML 스펙상 잘못된 중첩**이라 인터랙션이 예측 불가합니다.
+
+**수정 — 삭제 버튼을 Link 바깥으로 빼고, 카드 컨테이너를 `relative`로 만들어 절대배치**
+
+```tsx
+<div key={a.id} className="album-card group relative">
+  <Link to="/album/$id" params={{ id: a.id }} className="block">
+    <div className="aspect-[5/4] ...">...</div>
+    <div className="flex items-center justify-between px-4 py-3">
+      <span className="text-[12px] warm-muted">{t.photosCount(a.photos.length)}</span>
+      <span className="w-16" /> {/* 삭제 버튼 자리 확보 */}
+    </div>
+  </Link>
+
+  {/* Link 바깥, 카드 위에 절대배치 */}
+  <button
+    type="button"
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (confirm(t.confirmDelete)) onDelete(a.id);
+    }}
+    className="absolute bottom-2 right-2 text-muted-foreground/70 hover:text-destructive
+               text-[12px] flex items-center gap-1 px-2 py-1 rounded-md z-10"
+  >
+    <Trash2 size={12} /> {t.delete}
+  </button>
+</div>
+```
+
+이렇게 하면 삭제 버튼 클릭이 `<Link>` 클릭과 완전히 분리되어 다른 앨범으로 넘어가는 일이 없어집니다. 또한 `confirm` 대신 좀 더 안전하게 동작하도록 추후 `AlertDialog`로 바꾸는 것도 고려할 수 있지만, 이번 수정에서는 동작 정상화에 집중합니다.
 
 ## 변경 파일
-- `src/routes/index.tsx` — 위 5개 항목, 약 50줄 범위 한 곳만 교체. 다른 동작/스타일 토큰/i18n은 그대로.
+
+- `src/routes/index.tsx` — `onCreate` 분기 수정, 앨범 카드의 삭제 버튼을 `<Link>` 바깥으로 이동
+
+승인해주시면 바로 적용할게요.
