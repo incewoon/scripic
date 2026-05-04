@@ -24,6 +24,14 @@ function isAffirmative(text: string) {
   return AFFIRMATIVE_EN.test(text) || AFFIRMATIVE_KO.test(text);
 }
 
+const WRAP_HINT_EN = /(weave (these|them|it) into|wrap (this|it) up|finish (the|your) album|create the album now|put (this|these) together)/i;
+const WRAP_HINT_KO = /(앨범으로 정리|앨범을 정리|마무리해|마무리할까|정리해드려|정리해 드려|정리할까|완성해드려|완성해 드려|완성할까)/;
+function isWrapProposal(text: string | undefined) {
+  if (!text) return false;
+  if (text.includes(READY_TOKEN)) return true;
+  return WRAP_HINT_EN.test(text) || WRAP_HINT_KO.test(text);
+}
+
 function fmtTakenAt(iso: string | undefined, lang: string) {
   if (!iso) return undefined;
   try {
@@ -74,7 +82,7 @@ function Chat() {
 
     // detect: user is responding to a wrap-up suggestion
     const lastAssistant = [...prior].reverse().find(m => m.role === "assistant");
-    const wrapProposed = !!lastAssistant?.content.includes(READY_TOKEN);
+    const wrapProposed = isWrapProposal(lastAssistant?.content);
     const userAgreed = wrapProposed && isAffirmative(text);
 
     try {
