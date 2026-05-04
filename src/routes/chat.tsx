@@ -24,6 +24,14 @@ function isAffirmative(text: string) {
   return AFFIRMATIVE_EN.test(text) || AFFIRMATIVE_KO.test(text);
 }
 
+const WRAP_HINT_EN = /(weave (these|them|it) into|wrap (this|it) up|finish (the|your) album|create the album now|put (this|these) together)/i;
+const WRAP_HINT_KO = /(앨범으로 정리|앨범을 정리|마무리해|마무리할까|정리해드려|정리해 드려|정리할까|완성해드려|완성해 드려|완성할까)/;
+function isWrapProposal(text: string | undefined) {
+  if (!text) return false;
+  if (text.includes(READY_TOKEN)) return true;
+  return WRAP_HINT_EN.test(text) || WRAP_HINT_KO.test(text);
+}
+
 function fmtTakenAt(iso: string | undefined, lang: string) {
   if (!iso) return undefined;
   try {
@@ -74,7 +82,7 @@ function Chat() {
 
     // detect: user is responding to a wrap-up suggestion
     const lastAssistant = [...prior].reverse().find(m => m.role === "assistant");
-    const wrapProposed = !!lastAssistant?.content.includes(READY_TOKEN);
+    const wrapProposed = isWrapProposal(lastAssistant?.content);
     const userAgreed = wrapProposed && isAffirmative(text);
 
     try {
@@ -190,10 +198,15 @@ function Chat() {
     }
   }
 
-  // When preview opens, push a history entry so the device back button just closes the popup.
-  // Only re-run when transitioning between open/closed (not on index change), otherwise
-  // navigating between photos would pop the history entry and close the popup.
+  // History stack juggling: each owner increments expectedPopsRef before
+  // calling history.back() on cleanup, so the other listener can ignore that
+  // pop instead of treating it as a user back-button press.
+  const expectedPopsRef = useRef(0);
+  const previewOpenRef = useRef(false);
+
   const previewOpen = previewIdx != null;
+  useEffect(() => { previewOpenRef.current = previewOpen; }, [previewOpen]);
+
   useEffect(() => {
     if (!previewOpen) return;
     window.history.pushState({ memoriPreview: true }, "");
@@ -201,7 +214,10 @@ function Chat() {
     window.addEventListener("popstate", onPop);
     return () => {
       window.removeEventListener("popstate", onPop);
-      if (window.history.state?.memoriPreview) window.history.back();
+      if (window.history.state?.memoriPreview) {
+        expectedPopsRef.current++;
+        window.history.back();
+      }
     };
   }, [previewOpen]);
 
@@ -230,14 +246,20 @@ function Chat() {
     navigate({ to: "/" });
   }
 
-  // Intercept device/browser back button while a conversation is in progress.
-  // Skip while preview popup is open (it owns its own history entry) or while generating.
+  // Device/browser back button guard. Stays active during preview too — the
+  // preview entry sits on top of the guard entry in history.
   useEffect(() => {
-    if (!hasConversation || previewOpen || generating) return;
+    if (!hasConversation || generating) return;
     window.history.pushState({ memoriChatGuard: true }, "");
     const onPop = () => {
       if (leavingRef.current) return;
-      // Re-push so the user stays on the chat until they confirm.
+      // Pop consumed by another owner (e.g. preview cleanup): ignore.
+      if (expectedPopsRef.current > 0) {
+        expectedPopsRef.current--;
+        return;
+      }
+      // Device back while preview is open: preview handles its own close.
+      if (previewOpenRef.current) return;
       window.history.pushState({ memoriChatGuard: true }, "");
       setConfirmLeave(true);
     };
@@ -245,10 +267,11 @@ function Chat() {
     return () => {
       window.removeEventListener("popstate", onPop);
       if (window.history.state?.memoriChatGuard && !leavingRef.current) {
+        expectedPopsRef.current++;
         window.history.back();
       }
     };
-  }, [hasConversation, previewOpen, generating]);
+  }, [hasConversation, generating]);
 
   return (
     <div className="mx-auto max-w-md min-h-screen flex flex-col">
@@ -388,6 +411,17 @@ function Chat() {
               <button onClick={doLeave} className="px-4 py-2 text-sm rounded-full bg-destructive text-destructive-foreground">{t.leaveConfirm}</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {generating && (
+        <div className="fixed inset-0 z-[60] bg-background/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+          <div className="relative mb-5">
+            <div className="w-14 h-14 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+            <Sparkles size={20} className="absolute inset-0 m-auto text-primary" />
+          </div>
+          <div className="font-display text-lg mb-1.5">{t.weaving}</div>
+          <div className="text-sm warm-muted max-w-xs leading-relaxed">{t.weavingDesc}</div>
         </div>
       )}
     </div>
