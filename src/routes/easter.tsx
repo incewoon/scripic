@@ -81,7 +81,7 @@ function EasterPage() {
           <span className="italic text-rose-500">all forever</span>
           <span className="inline-block ml-2 animate-pulse text-rose-500">♡</span>
         </h1>
-        <p className="mt-5 text-[13px] warm-muted">— a little secret from memori</p>
+        <p className="mt-5 text-[13px] warm-muted">— a little secret from Mora</p>
       </div>
 
       <style>{`
