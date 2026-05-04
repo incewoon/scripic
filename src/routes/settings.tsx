@@ -406,6 +406,13 @@ function SettingsPage() {
       )}
 
       <Paywall open={paywall} onClose={() => setPaywall(false)} onSuccess={reloadProfile} />
+
+      <p
+        onClick={handleCopyrightTap}
+        className="mt-10 mb-2 text-center text-[11px] warm-muted select-none cursor-default"
+      >
+        © {new Date().getFullYear()} copyright by ince
+      </p>
     </div>
   );
 }
