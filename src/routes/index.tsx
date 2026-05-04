@@ -96,6 +96,17 @@ function Home() {
 
   const count = albums?.length ?? 0;
 
+  const sortedAlbums = albums
+    ? [...albums].sort((a, b) => {
+        if (sortMode === "photo") {
+          const ad = parsePeriodDate(a.period) || a.createdAt;
+          const bd = parsePeriodDate(b.period) || b.createdAt;
+          return bd - ad;
+        }
+        return b.createdAt - a.createdAt;
+      })
+    : null;
+
   // Badge / status
   const subscribed = hasActiveSubscription(profile);
 
