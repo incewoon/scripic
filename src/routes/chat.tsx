@@ -57,10 +57,20 @@ function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  const stickToBottomRef = useRef(true);
+
+  function isNearBottom() {
+    const el = scrollRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }
 
   function scrollToLatest(behavior: ScrollBehavior = "smooth") {
+    const el = scrollRef.current;
+    if (!el) return;
     requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({ block: "end", behavior });
+      el.scrollTo({ top: el.scrollHeight, behavior });
     });
   }
 
