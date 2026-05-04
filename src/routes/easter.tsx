@@ -6,7 +6,7 @@ export const Route = createFileRoute("/easter")({
   component: EasterPage,
   head: () => ({
     meta: [
-      { title: "♡ — memori" },
+      { title: "♡ — Mora" },
       { name: "description", content: "A little secret note." },
     ],
   }),
