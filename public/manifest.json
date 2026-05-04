@@ -1,7 +1,7 @@
 {
-  "name": "Memori - 사진으로 기억을 이야기하다",
-  "short_name": "Memori",
-  "description": "사진과 AI 대화로 만드는 나만의 추억 앨범",
+  "name": "Mora — Capture the moments you never want to forget",
+  "short_name": "Mora",
+  "description": "Capture the moments you never want to forget — photos and AI conversations woven into your own memory album.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
