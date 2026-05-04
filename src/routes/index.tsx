@@ -187,16 +187,16 @@ function Home() {
           ) : null}
         </div>
         <div className="flex items-center gap-2">
-          <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
-          {showCounter && (
-            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
-              {usedCount}<span className="warm-muted">/{totalCapacity}</span>
-            </span>
-          )}
           {badge && (
             <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>
               {subscribed && <Sparkles size={10} />}
               {badge.label}
+            </span>
+          )}
+          <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
+          {showCounter && (
+            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
+              {usedCount}<span className="warm-muted">/{totalCapacity}</span>
             </span>
           )}
         </div>
