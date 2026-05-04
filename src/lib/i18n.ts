@@ -110,8 +110,8 @@ const dict = {
     restorePurchases: "Restore purchases",
     laterCta: "Maybe later",
     // Permissions & notifications
-    photoPermTitle: "Let memori see your photos",
-    photoPermDesc: "Pick the photos you'd like to weave into a story. memori only opens the ones you choose.",
+    photoPermTitle: "Let Mora see your photos",
+    photoPermDesc: "Pick the photos you'd like to weave into a story. Mora only opens the ones you choose.",
     photoPermAllow: "Allow photo access",
     photoPermDeniedHint: "You can change this anytime in your phone's settings.",
     openSettings: "Open settings",
