@@ -316,6 +316,7 @@ function Create() {
             : <>{t.chatWithAi} <ArrowRight size={18}/></>}
         </button>
       </div>
+      <Paywall open={paywallOpen} onClose={() => setPaywallOpen(false)} onSuccess={reloadProfile} />
     </div>
   );
 }
