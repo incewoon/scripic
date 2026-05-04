@@ -31,8 +31,8 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
   head: () => ({
     meta: [
-      { title: "Settings — memori" },
-      { name: "description", content: "Manage your memori account, purchases and album backups." },
+      { title: "Settings — Mora" },
+      { name: "description", content: "Manage your Mora account, purchases and album backups." },
     ],
   }),
 });
