@@ -38,11 +38,13 @@ function systemFor(lang: string, mode: Mode) {
       return `당신은 대화 내용을 짧고 간결하게 요약하는 작가입니다.
 - 핵심만 짧게. 군더더기 없이.
 - 각 캡션은 해당 사진(번호)에 대한 대화 내용에 기반.
+- **캡션 개수는 정확히 업로드된 사진 개수와 같아야 합니다.**
 - 한국어, 단정한 문체.`;
     }
     return `You are a writer who summarizes conversations concisely.
 - Keep it short and essential. No filler.
 - Each caption must match the conversation about THAT specific photo (by number).
+- **The number of captions must exactly match the number of uploaded photos.**
 - Write in English, clean and tight.`;
   }
 
