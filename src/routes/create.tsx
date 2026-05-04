@@ -215,7 +215,7 @@ function Create() {
                   onRemove={() => setItems(ps => ps.filter(x => x.id !== it.id))}
                 />
               ))}
-              {items.length < 10 && (
+              {items.length < 10 && items.length === 0 && (
                 <button
                   onClick={() => inputRef.current?.click()}
                   disabled={busy}
