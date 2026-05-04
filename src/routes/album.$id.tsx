@@ -70,6 +70,7 @@ function AlbumView() {
   const { t } = useT();
   const [album, setAlbum] = useState<Album | null | undefined>(undefined);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
