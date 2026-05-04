@@ -23,6 +23,10 @@ export type Database = {
           email: string | null
           id: string
           is_subscribed: boolean
+          last_album_created_at: string | null
+          last_reminder_sent_at: string | null
+          notifications_enabled: boolean
+          notifications_updated_at: string | null
           subscription_end_date: string | null
           updated_at: string
           user_id: string
@@ -35,6 +39,10 @@ export type Database = {
           email?: string | null
           id?: string
           is_subscribed?: boolean
+          last_album_created_at?: string | null
+          last_reminder_sent_at?: string | null
+          notifications_enabled?: boolean
+          notifications_updated_at?: string | null
           subscription_end_date?: string | null
           updated_at?: string
           user_id: string
@@ -47,6 +55,10 @@ export type Database = {
           email?: string | null
           id?: string
           is_subscribed?: boolean
+          last_album_created_at?: string | null
+          last_reminder_sent_at?: string | null
+          notifications_enabled?: boolean
+          notifications_updated_at?: string | null
           subscription_end_date?: string | null
           updated_at?: string
           user_id?: string
