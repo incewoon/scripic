@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { getAlbums, subscribeAlbums, type Album } from "@/lib/storage";
-import { Plus, BookHeart, MapPin, Sparkles, LogOut, LogIn, X, Settings } from "lucide-react";
+import { Plus, BookHeart, MapPin, Sparkles, LogOut, LogIn, X, Settings, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
