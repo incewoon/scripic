@@ -105,12 +105,16 @@ Rules:
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { messages, photos, lang = "en", mode = "creative" } = await req.json();
+    const { messages, photos, photoCount: photoCountFromClient, lang = "en", mode = "creative" } = await req.json();
     const m: Mode = mode === "fact" || mode === "brief" ? mode : "creative";
     const KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    const photoCount = photos?.length ?? 0;
+    // Prefer the explicit count from the client (sent on every turn).
+    // Fall back to photos.length only if the client forgot to include it.
+    const photoCount = typeof photoCountFromClient === "number" && photoCountFromClient > 0
+      ? photoCountFromClient
+      : (photos?.length ?? 0);
     const hasPhotos = messages.some((msg: any) => Array.isArray(msg.content));
     const enriched = [...messages];
     if (!hasPhotos && photos?.length) {
