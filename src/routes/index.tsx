@@ -210,7 +210,7 @@ function Home() {
   const showCounter = albums !== null;
 
   return (
-    <div className="mx-auto max-w-md min-h-screen px-5 pt-8 pb-32">
+    <div className="mx-auto max-w-md min-h-screen px-5 pt-8 pb-44">
       <header className="mb-6 text-center">
         <button
           type="button"
@@ -224,76 +224,49 @@ function Home() {
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
       </header>
 
-      {/* Auth (left) + album counter & tier badge (right) */}
+      {/* Top row: My Albums + count + badge (left) | sort filter (right) */}
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          {!user && !authLoading ? (
-            <Link
-              to="/auth"
-              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-2.5 py-1 text-[11.5px] font-medium warm-text shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
-              aria-label={t.signIn}
-            >
-              <LogIn size={11} className="text-primary" /> {t.signIn}
-            </Link>
-          ) : user ? (
-            <button
-              onClick={() => signOut()}
-              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-2.5 py-1 text-[11.5px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.98]"
-              aria-label={t.signOut}
-            >
-              <LogOut size={11} /> {t.signOut}
-            </button>
-          ) : null}
-          <Link
-            to="/settings"
-            className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 w-7 h-7 warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
-            aria-label={t.settings}
-            title={t.settings}
-          >
-            <Settings size={13} />
-          </Link>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setSortOpen((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 pl-2 pr-2.5 h-7 text-[11px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
-              aria-label={t.sortBy}
-              title={t.sortBy}
-            >
-              <ArrowUpDown size={11} />
-              <span>{sortMode === "created" ? t.sortCreatedDate : t.sortPhotoDate}</span>
-            </button>
-            {sortOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
-                <div className="absolute z-20 mt-1 left-0 min-w-[140px] rounded-xl border border-border/60 bg-card shadow-[var(--shadow-soft)] py-1">
-                  {(["created", "photo"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => changeSort(m)}
-                      className={`block w-full text-left px-3 py-1.5 text-[12px] hover:bg-muted/60 transition-colors ${sortMode === m ? "warm-text font-semibold" : "warm-muted"}`}
-                    >
-                      {m === "created" ? t.sortCreatedDate : t.sortPhotoDate}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+          <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
+          {showCounter && (
+            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
+              {usedCount}<span className="warm-muted">/{totalCapacity}</span>
+            </span>
+          )}
           {badge && (
             <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>
               {subscribed && <Sparkles size={10} />}
               {badge.label}
             </span>
           )}
-          <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
-          {showCounter && (
-            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
-              {usedCount}<span className="warm-muted">/{totalCapacity}</span>
-            </span>
+        </div>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setSortOpen((v) => !v)}
+            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 pl-2 pr-2.5 h-7 text-[11px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
+            aria-label={t.sortBy}
+            title={t.sortBy}
+          >
+            <ArrowUpDown size={11} />
+            <span>{sortMode === "created" ? t.sortCreatedDate : t.sortPhotoDate}</span>
+          </button>
+          {sortOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+              <div className="absolute z-20 mt-1 right-0 min-w-[140px] rounded-xl border border-border/60 bg-card shadow-[var(--shadow-soft)] py-1">
+                {(["created", "photo"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => changeSort(m)}
+                    className={`block w-full text-left px-3 py-1.5 text-[12px] hover:bg-muted/60 transition-colors ${sortMode === m ? "warm-text font-semibold" : "warm-muted"}`}
+                  >
+                    {m === "created" ? t.sortCreatedDate : t.sortPhotoDate}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -353,6 +326,33 @@ function Home() {
         >
           <Plus size={18}/> {t.newAlbum}
         </button>
+        <div className="mt-3 flex items-center justify-center gap-2">
+          {!user && !authLoading ? (
+            <Link
+              to="/auth"
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-3 py-1.5 text-[12px] font-medium warm-text shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
+              aria-label={t.signIn}
+            >
+              <LogIn size={12} className="text-primary" /> {t.signIn}
+            </Link>
+          ) : user ? (
+            <button
+              onClick={() => signOut()}
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-3 py-1.5 text-[12px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.98] shadow-[var(--shadow-soft)]"
+              aria-label={t.signOut}
+            >
+              <LogOut size={12} /> {t.signOut}
+            </button>
+          ) : null}
+          <Link
+            to="/settings"
+            className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 w-8 h-8 warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
+            aria-label={t.settings}
+            title={t.settings}
+          >
+            <Settings size={14} />
+          </Link>
+        </div>
       </div>
 
       <Paywall open={paywall} onClose={() => setPaywall(false)} onSuccess={reloadProfile} />
