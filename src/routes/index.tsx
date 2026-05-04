@@ -310,7 +310,7 @@ function Home() {
         </button>
       ) : (
         <div className="space-y-5">
-          {albums.map((a) => {
+          {(sortedAlbums ?? albums).map((a) => {
             const date = a.period || new Date(a.createdAt).toLocaleDateString(lang === "ko" ? "ko-KR" : "en-US", { year: "numeric", month: "short", day: "numeric" });
             return (
               <div key={a.id} className="album-card group relative">
@@ -336,6 +336,7 @@ function Home() {
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[12px] warm-muted">{t.photosCount(a.photos.length)}</span>
+                    <span className="text-[12px] warm-muted tabular-nums">{date}</span>
                   </div>
                 </Link>
               </div>
