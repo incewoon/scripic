@@ -128,19 +128,35 @@ function Create() {
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
   );
 
+  const tryOpenPicker = () => {
+    // Free user already at the free cap → show paywall instead of opening picker.
+    if (!isPremium && items.length >= FREE_PHOTO_MAX) {
+      toast(t.photoLimitFreeReached);
+      setPaywallOpen(true);
+      return;
+    }
+    inputRef.current?.click();
+  };
+
   const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     setBusy(true);
     try {
-      const remaining = 10 - items.length;
-      if (files.length > remaining) toast(t.max10);
-      const slice = files.slice(0, remaining);
+      const remaining = photoMax - items.length;
+      // Free user trying to add a 4th+ photo in a single batch → upsell.
+      if (!isPremium && items.length + files.length > FREE_PHOTO_MAX) {
+        toast(t.photoLimitFreeReached);
+        setPaywallOpen(true);
+      } else if (files.length > remaining) {
+        toast(isPremium ? t.max10 : t.max3Free);
+      }
+      const slice = files.slice(0, Math.max(0, remaining));
       const processed = await Promise.all(slice.map(async f => {
         const [url, meta] = await Promise.all([fileToDataUrl(f), extractMeta(f)]);
         return { id: crypto.randomUUID(), url, meta };
       }));
-      setItems(p => [...p, ...processed]);
+      if (processed.length) setItems(p => [...p, ...processed]);
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
