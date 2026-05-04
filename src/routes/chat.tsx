@@ -194,8 +194,11 @@ function Chat() {
   // calling history.back() on cleanup, so the other listener can ignore that
   // pop instead of treating it as a user back-button press.
   const expectedPopsRef = useRef(0);
+  const previewOpenRef = useRef(false);
 
   const previewOpen = previewIdx != null;
+  useEffect(() => { previewOpenRef.current = previewOpen; }, [previewOpen]);
+
   useEffect(() => {
     if (!previewOpen) return;
     window.history.pushState({ memoriPreview: true }, "");
@@ -235,18 +238,20 @@ function Chat() {
     navigate({ to: "/" });
   }
 
-  // Intercept device/browser back button while a conversation is in progress.
-  // Skip while generating. This guard does NOT depend on previewOpen — the
-  // preview owns its own history entry on top.
+  // Device/browser back button guard. Stays active during preview too — the
+  // preview entry sits on top of the guard entry in history.
   useEffect(() => {
     if (!hasConversation || generating) return;
     window.history.pushState({ memoriChatGuard: true }, "");
     const onPop = () => {
       if (leavingRef.current) return;
+      // Pop consumed by another owner (e.g. preview cleanup): ignore.
       if (expectedPopsRef.current > 0) {
         expectedPopsRef.current--;
         return;
       }
+      // Device back while preview is open: preview handles its own close.
+      if (previewOpenRef.current) return;
       window.history.pushState({ memoriChatGuard: true }, "");
       setConfirmLeave(true);
     };
