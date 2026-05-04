@@ -83,7 +83,19 @@ function Create() {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<ChatMode>("creative");
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (items.length > prevCountRef.current && scrollRef.current) {
+      const el = scrollRef.current;
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      });
+    }
+    prevCountRef.current = items.length;
+  }, [items.length]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
