@@ -86,8 +86,20 @@ function Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Track scroll position so we don't yank the user away if they're reading.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => { stickToBottomRef.current = isNearBottom(); };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Auto-pin to latest while assistant streams or user just sent a message.
   useLayoutEffect(() => {
-    scrollToLatest(busy ? "auto" : "smooth");
+    if (busy || stickToBottomRef.current) {
+      scrollToLatest(busy ? "auto" : "smooth");
+    }
   }, [messages, busy]);
 
   useEffect(() => {
@@ -97,20 +109,32 @@ function Chat() {
     return () => window.clearTimeout(timer);
   }, [busy, generating]);
 
-  // Keep latest message pinned just above the input when the on-screen keyboard
-  // opens/closes (visualViewport changes height) or when the input gains focus.
+  // Track keyboard via visualViewport. Inset = how much the keyboard covers
+  // the layout viewport. We translate the input up by that amount so it
+  // always sits just above the keyboard, and re-pin the latest message.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const onResize = () => scrollToLatest("auto");
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
+    const update = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardInset(inset);
+      if (stickToBottomRef.current) scrollToLatest("auto");
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
   }, []);
 
   function handleInputFocus() {
-    // Wait a beat for the keyboard to animate in, then pin the latest message.
-    window.setTimeout(() => scrollToLatest("smooth"), 250);
+    stickToBottomRef.current = true;
+    // Re-pin after the keyboard animation settles.
+    window.setTimeout(() => scrollToLatest("smooth"), 300);
   }
+
 
   async function send(text: string, ph = photos, prior = messages) {
     const userMsg: Msg = { role: "user", content: text };
