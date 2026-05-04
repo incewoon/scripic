@@ -1,61 +1,64 @@
-## Goal
+# 계정별 앨범 분리 (옵션 A)
 
-Let users pick the AI conversation style on the photo-picking screen (`/create`) before chatting. Three modes:
+## 동작 결과
 
-- **Creative** (default, current behavior) — warm, evocative, infers feelings, weaves rich prose.
-- **Fact** — asks only matter-of-fact questions about what is objectively visible in the photo. Album output preserves the conversation as-is (no embellishment, minimal summarization).
-- **Brief** — asks short, simple questions and produces a brief, summarized album.
+| 상황 | 보이는 앨범 |
+|---|---|
+| A 로그인 | A의 앨범만 |
+| B로 전환 | B의 앨범만 (A 것은 안 보임, 데이터는 보존) |
+| 다시 A로 | A 앨범 그대로 부활 |
+| 로그아웃 | 게스트 슬롯 (보통 비어있음) |
+| 첫 로그인 + 이미 게스트 앨범 있음 | 그 계정으로 1회 자동 이관, 게스트 슬롯 비움 |
 
-## UI changes (`src/routes/create.tsx`)
+같은 기기 안에서 계정을 몇 번 오가도 각 계정의 앨범은 IndexedDB에 그대로 살아 있어요. 다른 기기에선 여전히 보이지 않아요(이건 옵션 A의 한계, 클라우드 동기화는 안 함).
 
-Add a mode selector right above the photo grid (under the info card, above the progress bar):
+## 변경 파일
 
-- A small section labeled "대화 모드 / Chat mode".
-- Three pill buttons in a row: `Creative`, `Fact`, `Brief`.
-- Selected pill uses the warm primary gradient styling already used on the main CTA; unselected pills use `border border-border/60` muted style.
-- Below the pills, a one-line `text-[12px] warm-muted` description of the currently selected mode.
-- `Creative` is selected by default.
+### 1. `src/lib/storage.ts` — 저장 키를 계정별로 분기
 
-State: `const [mode, setMode] = useState<ChatMode>("creative")`.
+저장 키 규칙:
+- 게스트(로그아웃): `memori_albums_v1`
+- 로그인 계정: `memori_albums_v1__<user_id>`
 
-In `next()`, persist the choice to `sessionStorage.setItem("memori_mode", mode)` alongside the existing photo/meta keys.
+새 API:
+- `setStorageUserId(uid: string | null)` — auth가 바뀔 때마다 호출. 활성 키를 갱신하고 구독자에게 알림.
+- `subscribeAlbums(fn)` — 저장소 스코프나 내용이 바뀔 때 화면이 다시 읽도록 구독.
 
-## Wiring through to chat (`src/routes/chat.tsx`)
+자동 이관 로직 (`setStorageUserId` 안):
+- uid가 null→실제값으로 바뀐 첫 호출일 때, 그 계정 키가 비었고 게스트 키에 데이터가 있으면:
+  - 게스트 리스트를 계정 키로 복사
+  - 게스트 키 삭제
+- 같은 uid에 대해서는 두 번 이관하지 않도록 메모리 Set으로 가드.
 
-- Read mode from sessionStorage on mount: `const [mode] = useState<ChatMode>(() => (sessionStorage.getItem("memori_mode") as ChatMode) || "creative")`.
-- Include `mode` in the request body to both `/functions/v1/chat` and `/functions/v1/generate-album`.
-- Clear `memori_mode` in the same places the other `memori_*` session keys are cleared (after finish, on leave).
+기존 `getAlbums / saveAlbum / updateAlbum / deleteAlbum`은 시그니처 그대로, 내부적으로 `activeKey()`를 사용. mutation 후엔 `notify()` 호출.
 
-## i18n (`src/lib/i18n.ts`)
+### 2. `src/lib/auth.tsx` — 세션 변화 시 storage 바인딩
 
-Add strings for both languages:
+`onAuthStateChange`와 초기 `getSession` 콜백 안에서 `setStorageUserId(s?.user?.id ?? null)` 호출. 로그아웃 시 `null`을 넘겨 게스트 슬롯으로 복귀.
 
-- `chatMode`: "Chat mode" / "대화 모드"
-- `modeCreative`, `modeFact`, `modeBrief`: labels
-- `modeCreativeDesc`: warm, story-rich conversation (current default).
-- `modeFactDesc`: only asks about what's objectively visible; keeps the conversation verbatim in the album.
-- `modeBriefDesc`: short, simple questions and a brief album summary.
+### 3. `src/routes/index.tsx` (홈) — 구독으로 자동 reload
 
-## Edge function: chat (`supabase/functions/chat/index.ts`)
+```text
+useEffect(() => {
+  const reload = () => getAlbums().then(setAlbums);
+  reload();
+  return subscribeAlbums(reload);
+}, []);
+```
 
-- Accept optional `mode` field on the request body (`"creative" | "fact" | "brief"`, default `"creative"`).
-- Refactor `systemPrompt(lang, photoCount)` → `systemPrompt(lang, photoCount, mode)` and branch per mode for both ko and en.
-  - `creative`: existing prompt unchanged.
-  - `fact`: instruct the model to ask only about objectively observable details in the photo (people present, objects, setting, time of day, weather visible, actions). No emotional inference, no embellishment. Still walks photos one by one and uses the same `[READY_TO_FINISH]` wrap-up token.
-  - `brief`: ask one short question per photo, max ~1 sentence per turn, move on quickly. Same wrap-up token.
+`useEffect([])`로 한 번만 읽던 부분을 구독 패턴으로 교체. 계정 전환 즉시 리스트가 갱신됨. 크레딧 뱃지의 `Math.min(count, 5)`도 새 리스트 기준으로 자연스럽게 다시 계산됨.
 
-## Edge function: generate-album (`supabase/functions/generate-album/index.ts`)
+### 4. `src/routes/album.$id.tsx` — 같은 패턴
 
-- Accept optional `mode` field; default `"creative"`.
-- Refactor `systemFor(lang)` → `systemFor(lang, mode)` and `userPrompt(...)` to take `mode`.
-  - `creative`: current rich prose behavior.
-  - `fact`: system instruction = "Do NOT embellish or add feelings. Use only what was stated in the conversation. Preserve the user's wording where possible; do not summarize away facts." User prompt asks for a longer `intro` that is essentially the conversation organized into prose with no invented detail, captions that quote/paraphrase only what the user said about that photo, and a neutral 1–2 sentence closing.
-  - `brief`: system instruction = "Be concise. Summarize tightly." User prompt requests shorter intro (2–3 sentences), short captions (~6–10 words / 15자 내외), and a 1-sentence closing.
+상세 화면에서도 `subscribeAlbums`로 재조회. 다른 계정으로 전환하면 그 앨범이 더 이상 존재하지 않으므로 자동으로 "앨범을 찾을 수 없어요" 상태로 떨어지게 됨.
 
-The JSON schema returned by the tool call stays the same — only prompt text changes.
+### 5. `src/routes/chat.tsx` — 변경 없음
 
-## Technical notes
+`saveAlbum` 호출이 알아서 활성 계정 키에 저장됨. (대화 진입 자체가 로그인 사용자만 가능하도록 홈에서 이미 게이트 중)
 
-- Define `type ChatMode = "creative" | "fact" | "brief"` in a small shared place. Simplest: declare in `src/lib/i18n.ts` (already imported by both routes) or inline in each route — pick inline to avoid touching i18n's shape.
-- Edge functions deploy automatically.
-- No database changes; mode is per-session only.
+## 주의 / 한계
+
+- 기기를 바꾸면 같은 계정으로 로그인해도 앨범은 따라오지 않음(여전히 IndexedDB에만 있음). 멀티 디바이스 동기화가 필요해지면 옵션 B/C로 확장.
+- 자동 이관은 "그 계정 슬롯이 비어있을 때만" 실행. 이미 그 계정의 앨범이 있다면 게스트 데이터는 건드리지 않고 그대로 둠(데이터 손실 방지).
+- 한 번 이관된 게스트 데이터는 게스트 슬롯에서 사라지므로, 같은 기기에서 다른 계정에 또 이관되지 않음.
+- 브라우저 데이터 삭제 / 시크릿 모드는 IndexedDB 자체가 사라지므로 기존과 동일하게 데이터가 비어 보임.
