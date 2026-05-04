@@ -210,6 +210,7 @@ function Chat() {
 
   const hasConversation = messages.some(m => m.role === "user");
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const leavingRef = useRef(false);
 
   function tryLeave(e?: React.MouseEvent) {
     if (hasConversation && !generating) {
@@ -223,8 +224,29 @@ function Chat() {
     sessionStorage.removeItem("memori_meta");
     sessionStorage.removeItem("memori_photo_metas");
     setConfirmLeave(false);
+    leavingRef.current = true;
     navigate({ to: "/" });
   }
+
+  // Intercept device/browser back button while a conversation is in progress.
+  // Skip while preview popup is open (it owns its own history entry) or while generating.
+  useEffect(() => {
+    if (!hasConversation || previewOpen || generating) return;
+    window.history.pushState({ memoriChatGuard: true }, "");
+    const onPop = () => {
+      if (leavingRef.current) return;
+      // Re-push so the user stays on the chat until they confirm.
+      window.history.pushState({ memoriChatGuard: true }, "");
+      setConfirmLeave(true);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.memoriChatGuard && !leavingRef.current) {
+        window.history.back();
+      }
+    };
+  }, [hasConversation, previewOpen, generating]);
 
   return (
     <div className="mx-auto max-w-md min-h-screen flex flex-col">
