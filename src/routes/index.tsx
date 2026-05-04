@@ -132,21 +132,20 @@ function Home() {
     if (subscribed) {
       badge = { label: t.badgeSubscribed, cls: "bg-amber-100 text-amber-800 border-amber-300" };
     } else if (profile.album_credits > FREE_MAX) {
-      badge = { label: t.badgePaid(profile.album_credits), cls: "bg-violet-100 text-violet-800 border-violet-300" };
+      badge = { label: t.badgePaid, cls: "bg-violet-100 text-violet-800 border-violet-300" };
     } else {
-      const used = Math.min(count, FREE_MAX);
-      badge = { label: t.badgeFree(used, FREE_MAX), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
+      badge = { label: t.badgeFree, cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
     }
   } else if (!user && albums !== null) {
-    const used = Math.min(count, FREE_MAX);
-    badge = { label: t.badgeFree(used, FREE_MAX), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
+    badge = { label: t.badgeFree, cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
   }
 
   // Total album capacity for the small "used/total" indicator next to the title.
-  const totalCapacity: number | "∞" = subscribed
-    ? "∞"
+  // Subscribers: unlimited → shown as "—". One-time purchases add to FREE_MAX via album_credits.
+  const totalCapacity: number | "—" = subscribed
+    ? "—"
     : user && profile
-      ? FREE_MAX + Math.max(0, profile.album_credits - FREE_MAX)
+      ? Math.max(FREE_MAX, profile.album_credits)
       : FREE_MAX;
   const usedCount = typeof totalCapacity === "number" ? Math.min(count, totalCapacity) : count;
   const showCounter = albums !== null;
