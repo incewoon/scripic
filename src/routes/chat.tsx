@@ -87,6 +87,21 @@ function Chat() {
     return () => window.clearTimeout(timer);
   }, [busy, generating]);
 
+  // Keep latest message pinned just above the input when the on-screen keyboard
+  // opens/closes (visualViewport changes height) or when the input gains focus.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => scrollToLatest("auto");
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
+
+  function handleInputFocus() {
+    // Wait a beat for the keyboard to animate in, then pin the latest message.
+    window.setTimeout(() => scrollToLatest("smooth"), 250);
+  }
+
   async function send(text: string, ph = photos, prior = messages) {
     const userMsg: Msg = { role: "user", content: text };
     const newMsgs = [...prior, userMsg];
