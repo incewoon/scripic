@@ -263,19 +263,45 @@ function Chat() {
           <div
             className="relative max-w-md w-full bg-card rounded-2xl overflow-hidden shadow-[var(--shadow-warm)]"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => { (e.currentTarget as any)._tx = e.touches[0].clientX; }}
+            onTouchEnd={(e) => {
+              const sx = (e.currentTarget as any)._tx as number | undefined;
+              if (sx == null) return;
+              const dx = e.changedTouches[0].clientX - sx;
+              if (Math.abs(dx) < 40) return;
+              if (dx < 0 && previewIdx < photos.length - 1) setPreviewIdx(previewIdx + 1);
+              else if (dx > 0 && previewIdx > 0) setPreviewIdx(previewIdx - 1);
+            }}
           >
             <button
               onClick={() => setPreviewIdx(null)}
               className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur rounded-full p-2 text-foreground/70"
               aria-label={t.close}
             ><X size={16} /></button>
+            {previewIdx > 0 && (
+              <button
+                onClick={() => setPreviewIdx(previewIdx - 1)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur rounded-full p-2 text-foreground/70"
+                aria-label="prev"
+              >‹</button>
+            )}
+            {previewIdx < photos.length - 1 && (
+              <button
+                onClick={() => setPreviewIdx(previewIdx + 1)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur rounded-full p-2 text-foreground/70"
+                aria-label="next"
+              >›</button>
+            )}
             <img
               src={photos[previewIdx]}
               alt={t.photoOf(previewIdx + 1)}
               className="w-full max-h-[70vh] object-contain bg-black/5"
             />
             <div className="px-5 py-4 text-[13px] warm-text">
-              <div className="font-display text-base mb-2">{t.photoOf(previewIdx + 1)}</div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-display text-base">{t.photoOf(previewIdx + 1)}</div>
+                <div className="text-[11px] warm-muted">{previewIdx + 1} / {photos.length}</div>
+              </div>
               {hasMeta ? (
                 <div className="space-y-1.5 warm-muted">
                   {previewWhen && (

@@ -63,6 +63,10 @@ const dict = {
     notFound: "Album not found",
     home: "Home",
     onlyOnDevice: "Stored only on this device",
+    download: "Save as image",
+    preparing: "Preparing image…",
+    downloaded: "Image saved",
+    madeWith: "Made with Memory Weaver",
   },
   ko: {
     appTagline: "사진 한 장에 담긴 그날의 이야기",
@@ -119,6 +123,10 @@ const dict = {
     notFound: "앨범을 찾을 수 없어요",
     home: "홈으로",
     onlyOnDevice: "이 기기에만 저장됨",
+    download: "이미지로 저장",
+    preparing: "이미지 만드는 중…",
+    downloaded: "이미지를 저장했어요",
+    madeWith: "Memory Weaver로 만든 추억",
   },
 } as const;
 
