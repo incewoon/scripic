@@ -244,6 +244,10 @@ function Chat() {
       if (!resp.ok) throw new Error();
       const album = await resp.json();
       const id = crypto.randomUUID();
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        await supabase.rpc("consume_album_credit");
+      } catch (e) { console.error("[credit]", e); }
       await saveAlbum({
         id,
         title: album.title,
