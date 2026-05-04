@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar } from "lucide-react";
 import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
@@ -54,7 +54,15 @@ function Chat() {
   const [generating, setGenerating] = useState(false);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
+
+  function scrollToLatest(behavior: ScrollBehavior = "smooth") {
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ block: "end", behavior });
+    });
+  }
 
   useEffect(() => {
     const raw = sessionStorage.getItem("memori_photos");
@@ -68,11 +76,16 @@ function Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  useLayoutEffect(() => {
+    scrollToLatest(busy ? "auto" : "smooth");
   }, [messages, busy]);
+
+  useEffect(() => {
+    if (!busy && !generating) return;
+    inputRef.current?.blur();
+    const timer = window.setTimeout(() => scrollToLatest("auto"), 120);
+    return () => window.clearTimeout(timer);
+  }, [busy, generating]);
 
   async function send(text: string, ph = photos, prior = messages) {
     const userMsg: Msg = { role: "user", content: text };
@@ -149,6 +162,7 @@ function Chat() {
   async function onSend() {
     const v = input.trim();
     if (!v || busy) return;
+    inputRef.current?.blur();
     setInput("");
     await send(v);
   }
@@ -322,11 +336,13 @@ function Chat() {
         {busy && messages[messages.length - 1]?.role === "user" && (
           <div className="flex justify-start"><div className="glass px-4 py-2.5 rounded-2xl text-sm border border-border/50">...</div></div>
         )}
+        <div ref={bottomRef} aria-hidden="true" className="h-px" />
       </div>
 
       <div className="sticky bottom-0 px-4 pb-5 pt-2 bg-gradient-to-t from-background to-transparent">
         <div className="flex gap-2 items-center glass rounded-full px-2 py-1.5 border border-border/50">
           <input
+            ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && onSend()}
