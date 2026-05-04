@@ -315,7 +315,7 @@ function Chat() {
               aria-label={t.photoOf(i + 1)}
             >
               <img src={p} alt="" className="w-12 h-12 object-cover rounded-md" />
-              <span className="absolute -top-1 -left-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{i+1}</span>
+              <span className="absolute top-0.5 left-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-[18px] h-[18px] flex items-center justify-center ring-1 ring-background shadow-sm">{i+1}</span>
             </button>
           ))}
         </div>
