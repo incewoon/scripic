@@ -121,6 +121,10 @@ const dict = {
     storageNoticeTitle: "Stored only on this device",
     storageNoticeBody: "Your photos and the captions woven from your conversation are kept only on this device. Even with the same account, they don't sync to other devices.",
     gotIt: "Got it",
+    limitReachedTitle: "You've filled every album slot",
+    limitReachedBodyGuest: "Sign in to keep weaving more memories — your existing albums stay right here on this device.",
+    limitReachedSignIn: "Sign in to make more",
+    limitReachedDismiss: "Not now",
   },
   ko: {
 
@@ -236,6 +240,10 @@ const dict = {
     storageNoticeTitle: "이 기기에만 저장돼요",
     storageNoticeBody: "사진과 정리된 대화 내용은 이 기기에만 저장되며, 동일 계정이라도 다른 기기와는 연동되지 않아요.",
     gotIt: "확인했어요",
+    limitReachedTitle: "앨범을 모두 사용했어요",
+    limitReachedBodyGuest: "더 많은 추억을 만들려면 로그인해 주세요. 지금까지 만든 앨범은 이 기기에 그대로 남아 있어요.",
+    limitReachedSignIn: "로그인하고 더 만들기",
+    limitReachedDismiss: "다음에",
   },
 } as const;
 
