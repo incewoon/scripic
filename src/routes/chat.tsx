@@ -413,6 +413,17 @@ function Chat() {
           </div>
         </div>
       )}
+
+      {generating && (
+        <div className="fixed inset-0 z-[60] bg-background/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+          <div className="relative mb-5">
+            <div className="w-14 h-14 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+            <Sparkles size={20} className="absolute inset-0 m-auto text-primary" />
+          </div>
+          <div className="font-display text-lg mb-1.5">{t.weaving}</div>
+          <div className="text-sm warm-muted max-w-xs leading-relaxed">{t.weavingDesc}</div>
+        </div>
+      )}
     </div>
   );
 }
