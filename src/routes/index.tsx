@@ -186,14 +186,7 @@ function Home() {
         </div>
       </div>
 
-      {!user && !authLoading && (
-        <div className="mb-5 rounded-2xl border border-border/60 bg-card/60 p-4 text-center">
-          <p className="text-[13px] warm-muted mb-3">{t.authIntro}</p>
-          <Link to="/auth" className="inline-block rounded-full px-5 py-2 text-[13px] font-medium text-primary-foreground" style={{ background: "var(--gradient-warm)" }}>
-            {t.signIn}
-          </Link>
-        </div>
-      )}
+
 
       {albums === null ? (
         <div className="text-center text-sm warm-muted py-20">{t.loading}</div>
