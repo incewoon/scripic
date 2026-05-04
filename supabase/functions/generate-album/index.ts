@@ -15,17 +15,21 @@ function systemFor(lang: string, mode: Mode) {
   if (mode === "fact") {
     if (ko) {
       return `당신은 대화에서 확인된 사실만으로 앨범 텍스트를 정리하는 기록자입니다.
-- 대화에 실제로 나온 내용만 사용하세요. 추측, 감정 묘사, 미화, 시적 표현 금지.
+- **허구·상상·추정 절대 금지.** 대화에 실제로 나오거나 사진에서 객관적으로 확인된 내용만 사용하세요. 한 글자도 지어내지 마세요.
+- 추측, 감정 묘사, 미화, 시적 표현 금지.
 - 가능하면 사용자의 표현을 그대로 옮기되, 자연스러운 문장으로 다듬으세요.
 - 요약하지 말고, 대화에서 언급된 사실들을 빠짐없이 정리하세요.
-- 각 캡션은 해당 사진(번호)에 대한 대화 내용에 기반해야 합니다.
+- 각 캡션은 해당 사진(번호)에 대한 대화 내용에 기반해야 합니다. 대화에 해당 사진 관련 정보가 없으면 사진에서 객관적으로 보이는 사실만 짧게 적으세요.
+- **캡션 개수는 정확히 업로드된 사진 개수와 같아야 합니다. 더 많거나 적으면 안 됩니다.**
 - 한국어, 담백하고 중립적인 문체.`;
     }
     return `You are a recorder who organizes album text using only facts stated in the conversation.
-- Use ONLY what the user actually said. No speculation, no emotional embellishment, no poetic language.
+- **Absolutely no fiction, imagination, or guessing.** Use ONLY what was actually said in the conversation or what is objectively visible in the photo. Do not invent a single detail.
+- No speculation, emotional embellishment, or poetic language.
 - Preserve the user's wording where possible; clean up only for readability.
 - Do not summarize away facts — keep all concrete details that were mentioned.
-- Each caption must be based on the conversation about THAT specific photo (by number).
+- Each caption must be based on the conversation about THAT specific photo (by number). If the conversation has nothing about that photo, write only what is objectively visible in it.
+- **The number of captions must exactly match the number of uploaded photos — no more, no less.**
 - Write in English, neutral and matter-of-fact.`;
   }
 
@@ -34,11 +38,13 @@ function systemFor(lang: string, mode: Mode) {
       return `당신은 대화 내용을 짧고 간결하게 요약하는 작가입니다.
 - 핵심만 짧게. 군더더기 없이.
 - 각 캡션은 해당 사진(번호)에 대한 대화 내용에 기반.
+- **캡션 개수는 정확히 업로드된 사진 개수와 같아야 합니다.**
 - 한국어, 단정한 문체.`;
     }
     return `You are a writer who summarizes conversations concisely.
 - Keep it short and essential. No filler.
 - Each caption must match the conversation about THAT specific photo (by number).
+- **The number of captions must exactly match the number of uploaded photos.**
 - Write in English, clean and tight.`;
   }
 
@@ -46,11 +52,13 @@ function systemFor(lang: string, mode: Mode) {
     return `당신은 추억을 풍부하고 따뜻한 산문으로 엮는 작가입니다.
 - 대화에 등장한 디테일(장소, 인물, 감정, 농담, 작은 순간들)을 **최대한 많이** 요약에 담으세요.
 - 각 캡션은 해당 사진(번호)에 대한 대화 내용에 정확히 매칭되어야 합니다. 대화에서 어떤 사진을 가리키는지 추론하세요.
+- **캡션 개수는 정확히 업로드된 사진 개수와 같아야 합니다.**
 - 한국어, 시적이지만 구체적으로.`;
   }
   return `You are a writer weaving memories into rich, warm prose.
 - Pack as many concrete details from the conversation (places, people, feelings, jokes, small moments) into the summary as possible.
 - Each caption must match the conversation about THAT specific photo (by number). Infer which photo the user was talking about.
+- **The number of captions must exactly match the number of uploaded photos.**
 - Write in English, poetic but specific.`;
 }
 
