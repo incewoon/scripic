@@ -71,6 +71,8 @@ const dict = {
     leaveDesc: "Your chat will be discarded. The album hasn't been created yet.",
     leaveConfirm: "Leave",
     keepGoing: "Keep chatting",
+    weaving: "Weaving your album…",
+    weavingDesc: "Reading the conversation and arranging your photos.",
   },
   ko: {
     appTagline: "사진 한 장에 담긴 그날의 이야기",
@@ -135,6 +137,8 @@ const dict = {
     leaveDesc: "지금 나가면 대화 내용은 사라져요. 앨범은 아직 만들어지지 않았어요.",
     leaveConfirm: "나가기",
     keepGoing: "계속 이야기하기",
+    weaving: "앨범을 엮는 중…",
+    weavingDesc: "대화를 읽고 사진을 정리하고 있어요.",
   },
 } as const;
 
