@@ -179,8 +179,9 @@ function Home() {
         >
           <BookHeart size={12} className="text-primary" /> {t.storedLocally}
         </button>
-        <h1 className="text-[40px] font-display warm-text mb-1 leading-none">memori</h1>
+        <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Mora</h1>
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
+        <p className="text-[12px] warm-muted/80 mt-1.5 italic">{t.appSubtitle}</p>
       </header>
 
       {/* Auth (left) + album counter & tier badge (right) */}
