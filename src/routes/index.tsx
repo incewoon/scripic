@@ -66,14 +66,30 @@ function Home() {
   // Badge / status
   const subscribed = hasActiveSubscription(profile);
 
-  // Limit detection — true when user has used all available album slots (free + one-time credits)
-  // and is not subscribed. For guests we approximate by their local album count vs FREE_MAX.
+  // Total capacity for the current viewer.
+  // - Subscribers: unlimited ("—")
+  // - Signed-in non-subscribers: FREE_MAX baseline + any extra one-time credits
+  //   they purchased on top. We approximate "extras" as max(album_credits - FREE_MAX, 0)
+  //   so that the default 5 free credits granted on signup don't double-count
+  //   on top of the local FREE_MAX (otherwise a guest who hits the limit and
+  //   signs in would suddenly get 5 more slots for free).
+  // - Guests: FREE_MAX flat.
+  const extraPaidCredits = user && profile && !subscribed
+    ? Math.max(0, profile.album_credits - FREE_MAX)
+    : 0;
+  const totalCapacity: number | "—" = subscribed
+    ? "—"
+    : FREE_MAX + extraPaidCredits;
+
+  // Limit detection — based on actual local album count vs total capacity.
+  // This is the source of truth: cloud `album_credits` alone is not enough,
+  // because albums live in local storage and guest albums get migrated into
+  // the account on first sign-in.
   const limitReached = (() => {
     if (subscribed) return false;
-    if (user) {
-      return profile !== null && !canCreateAlbum(profile);
-    }
-    return count >= FREE_MAX;
+    if (albums === null) return false; // still loading
+    if (typeof totalCapacity !== "number") return false;
+    return count >= totalCapacity;
   })();
 
   // After login, if a paywall was queued (from limit popup), open it.
@@ -81,13 +97,12 @@ function Home() {
     if (!user || !profile) return;
     if (typeof window === "undefined") return;
     const queued = sessionStorage.getItem(PAYWALL_AFTER_LOGIN_KEY);
-    if (queued && !canCreateAlbum(profile)) {
-      sessionStorage.removeItem(PAYWALL_AFTER_LOGIN_KEY);
-      setPaywall(true);
-    } else if (queued) {
-      sessionStorage.removeItem(PAYWALL_AFTER_LOGIN_KEY);
-    }
-  }, [user, profile]);
+    if (!queued) return;
+    sessionStorage.removeItem(PAYWALL_AFTER_LOGIN_KEY);
+    // Re-evaluate against the merged (local + cloud) state. If they still
+    // can't create an album after login, surface the paywall.
+    if (limitReached) setPaywall(true);
+  }, [user, profile, limitReached]);
 
   // Auto-show the limit popup once when reached (per session).
   useEffect(() => {
@@ -98,13 +113,22 @@ function Home() {
     }
   }, [limitReached, limitDismissed, paywall, noticeOpen]);
 
-  const onCreate = () => {
+  const onCreate = async () => {
+    // Always re-check against the freshest state at click time.
+    // Guests: pure local count vs FREE_MAX.
     if (!user) {
       if (count >= FREE_MAX) { setLimitOpen(true); return; }
       navigate({ to: "/create" });
       return;
     }
-    if (!canCreateAlbum(profile)) {
+    // Signed-in: refresh profile, then check local count vs total capacity.
+    const fresh = await fetchProfile();
+    setProfile(fresh);
+    const subActive = hasActiveSubscription(fresh);
+    if (subActive) { navigate({ to: "/create" }); return; }
+    const extras = fresh ? Math.max(0, fresh.album_credits - FREE_MAX) : 0;
+    const cap = FREE_MAX + extras;
+    if (count >= cap) {
       setPaywall(true);
       return;
     }
@@ -140,13 +164,7 @@ function Home() {
     badge = { label: t.badgeFree, cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
   }
 
-  // Total album capacity for the small "used/total" indicator next to the title.
-  // Subscribers: unlimited → shown as "—". One-time purchases add to FREE_MAX via album_credits.
-  const totalCapacity: number | "—" = subscribed
-    ? "—"
-    : user && profile
-      ? Math.max(FREE_MAX, profile.album_credits)
-      : FREE_MAX;
+  // Used count clamped against total capacity for the "used/total" indicator.
   const usedCount = typeof totalCapacity === "number" ? Math.min(count, totalCapacity) : count;
   const showCounter = albums !== null;
 
