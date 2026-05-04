@@ -11,18 +11,28 @@ export const Route = createFileRoute("/album/$id")({
 });
 
 function EditableText({
-  editKey, activeKey, setActiveKey,
+  editKey, activeKey, setActiveKey, editingMode,
   value, onSave, multiline = false, className = "", placeholder = "",
 }: {
   editKey: string;
   activeKey: string | null;
   setActiveKey: (k: string | null) => void;
+  editingMode: boolean;
   value: string; onSave: (v: string) => void; multiline?: boolean; className?: string; placeholder?: string;
 }) {
   const { t } = useT();
-  const editing = activeKey === editKey;
+  const editing = editingMode && activeKey === editKey;
   const [draft, setDraft] = useState(value);
   useEffect(() => { if (editing) setDraft(value); }, [editing, value]);
+
+  // Read-only mode: just plain text, no click affordance
+  if (!editingMode) {
+    return (
+      <div className={className}>
+        {value || <span className="warm-muted italic">{placeholder || "—"}</span>}
+      </div>
+    );
+  }
 
   if (!editing) {
     return (
@@ -32,7 +42,7 @@ function EditableText({
         aria-label={t.edit}
       >
         <span>{value || <span className="warm-muted italic">{placeholder || "—"}</span>}</span>
-        <Pencil size={11} className="inline ml-1.5 opacity-0 group-hover:opacity-60 warm-muted" />
+        <Pencil size={11} className="inline ml-1.5 opacity-60 warm-muted" />
       </button>
     );
   }
@@ -60,6 +70,7 @@ function AlbumView() {
   const { t } = useT();
   const [album, setAlbum] = useState<Album | null | undefined>(undefined);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -124,28 +135,44 @@ function AlbumView() {
     <div className="mx-auto max-w-md min-h-screen pb-20">
       <header className="sticky top-0 z-10 glass flex items-center justify-between px-5 py-3 border-b border-border/40">
         <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
-        <button
-          onClick={async () => {
-            if (confirm(t.confirmDelete)) {
-              await deleteAlbum(album.id);
-              navigate({ to: "/" });
-            }
-          }}
-          className="p-2 text-muted-foreground hover:text-destructive"
-        ><Trash2 size={18}/></button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !editMode;
+              setEditMode(next);
+              if (!next) setActiveKey(null);
+            }}
+            className={`p-2 rounded-full transition-colors ${
+              editMode ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+            }`}
+            aria-label={t.edit}
+            aria-pressed={editMode}
+          ><Pencil size={18}/></button>
+          <button
+            onClick={async () => {
+              if (confirm(t.confirmDelete)) {
+                await deleteAlbum(album.id);
+                navigate({ to: "/" });
+              }
+            }}
+            className="p-2 text-muted-foreground hover:text-destructive"
+            aria-label={t.delete}
+          ><Trash2 size={18}/></button>
+        </div>
       </header>
 
       <div ref={shareRef} className="bg-background">
         <div className="px-6 pt-10 pb-4 text-center">
           <EditableText
-            editKey="title" activeKey={activeKey} setActiveKey={setActiveKey}
+            editKey="title" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
             value={album.title}
             onSave={(v) => patch({ title: v })}
             className="font-display text-3xl text-foreground mb-2 text-center"
             placeholder={t.title}
           />
           <EditableText
-            editKey="subtitle" activeKey={activeKey} setActiveKey={setActiveKey}
+            editKey="subtitle" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
             value={album.subtitle}
             onSave={(v) => patch({ subtitle: v })}
             className="text-sm warm-muted italic text-center"
@@ -155,18 +182,18 @@ function AlbumView() {
           <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
             <div className="flex items-center gap-1.5">
               <Calendar size={12}/>
-              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" />
+              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" />
             </div>
             <div className="flex items-center gap-1.5">
               <MapPin size={12}/>
-              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" />
+              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" />
             </div>
           </div>
         </div>
 
         <div className="px-6 mb-8">
           <EditableText
-            editKey="intro" activeKey={activeKey} setActiveKey={setActiveKey}
+            editKey="intro" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
             value={album.intro}
             onSave={(v) => patch({ intro: v })}
             multiline
@@ -181,7 +208,7 @@ function AlbumView() {
               <img src={p.dataUrl} alt={p.caption} className="w-full aspect-[4/3] object-cover rounded-sm" loading="lazy" crossOrigin="anonymous" />
               <figcaption className="text-center font-display text-[15px] mt-3 text-foreground/80 px-2">
                 <EditableText
-                  editKey={`caption-${i}`} activeKey={activeKey} setActiveKey={setActiveKey}
+                  editKey={`caption-${i}`} activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
                   value={p.caption}
                   onSave={(v) => patchCaption(i, v)}
                   multiline
@@ -195,7 +222,7 @@ function AlbumView() {
 
         <div className="px-6 mt-12 text-center">
           <EditableText
-            editKey="closing" activeKey={activeKey} setActiveKey={setActiveKey}
+            editKey="closing" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
             value={album.closing}
             onSave={(v) => patch({ closing: v })}
             multiline
