@@ -162,7 +162,7 @@ function Create() {
 
   return (
     <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
-      <div className="flex-1 overflow-y-auto px-5 pt-6 pb-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-6 pb-4">
         <header className="flex items-center justify-between mb-6">
           <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
           <span className="text-xs warm-muted">{count} / 10</span>
