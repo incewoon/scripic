@@ -20,6 +20,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type PhotoMeta } from "@/lib/photoMeta";
 import { useT, getLang, type ChatMode } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
+import { fetchProfile, hasActiveSubscription, type Profile } from "@/lib/premium";
+import { Paywall } from "@/components/Paywall";
+
+const FREE_PHOTO_MAX = 3;
+const PAID_PHOTO_MAX = 10;
 
 export const Route = createFileRoute("/create")({
   component: Create,
@@ -79,6 +85,9 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
 
 function Create() {
   const { t } = useT();
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<ChatMode>("creative");
@@ -86,6 +95,23 @@ function Create() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
   const navigate = useNavigate();
+
+  // Premium = active subscription OR purchased extra credits beyond the free baseline.
+  // Guests are always free-tier.
+  const isPremium = (() => {
+    if (!user || !profile) return false;
+    if (hasActiveSubscription(profile)) return true;
+    return profile.album_credits > 5; // > FREE_MAX from index → indicates extra paid credits
+  })();
+  const photoMax = isPremium ? PAID_PHOTO_MAX : FREE_PHOTO_MAX;
+
+  const reloadProfile = async () => {
+    if (!user) { setProfile(null); return; }
+    const p = await fetchProfile();
+    setProfile(p);
+  };
+
+  useEffect(() => { void reloadProfile(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user]);
 
   useEffect(() => {
     if (items.length > prevCountRef.current && scrollRef.current) {
