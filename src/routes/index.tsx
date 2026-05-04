@@ -7,6 +7,7 @@ import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { fetchProfile, hasActiveSubscription, canCreateAlbum, type Profile } from "@/lib/premium";
 import { Paywall } from "@/components/Paywall";
+import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -31,7 +32,13 @@ function Home() {
   const [albums, setAlbums] = useState<Album[] | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [paywall, setPaywall] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
   const navigate = useNavigate();
+
+  // First-run: show the storage notice automatically.
+  useEffect(() => {
+    if (!hasSeenStorageNotice()) setNoticeOpen(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,9 +90,14 @@ function Home() {
   return (
     <div className="mx-auto max-w-md min-h-screen px-5 pt-14 pb-32">
       <header className="mb-10 text-center">
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3.5 py-1.5 text-[11px] warm-muted mb-5 border border-border/60 shadow-[var(--shadow-soft)]">
+        <button
+          type="button"
+          onClick={() => setNoticeOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3.5 py-1.5 text-[11px] warm-muted mb-5 border border-border/60 shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
+          aria-label={t.storageNoticeTitle}
+        >
           <BookHeart size={12} className="text-primary" /> {t.storedLocally}
-        </div>
+        </button>
         <h1 className="text-[44px] font-display warm-text mb-2 leading-none">memori</h1>
         <p className="text-[14px] warm-muted">{t.appTagline}</p>
       </header>
@@ -181,6 +193,7 @@ function Home() {
       </div>
 
       <Paywall open={paywall} onClose={() => setPaywall(false)} onSuccess={reloadProfile} />
+      <StorageNoticeDialog open={noticeOpen} onClose={() => setNoticeOpen(false)} />
     </div>
   );
 }
