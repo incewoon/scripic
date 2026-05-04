@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
-  head: () => ({ meta: [{ title: "Sign in — Memori" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Mora" }] }),
 });
 
 function AuthPage() {
