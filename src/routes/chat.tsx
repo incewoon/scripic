@@ -163,6 +163,7 @@ function Chat() {
           messages: newMsgs,
           photos: prior.length === 0 ? ph : undefined,
           lang: getLang(),
+          mode,
         }),
       });
 
@@ -237,6 +238,7 @@ function Chat() {
           lang: getLang(),
           period: meta.period,
           location: meta.location,
+          mode,
         }),
       });
       if (!resp.ok) throw new Error();
@@ -256,6 +258,7 @@ function Chat() {
       sessionStorage.removeItem("memori_photos");
       sessionStorage.removeItem("memori_meta");
       sessionStorage.removeItem("memori_photo_metas");
+      sessionStorage.removeItem("memori_mode");
       setMessages([]);
       toast.success(t.completed);
       // Mark as leaving so back-guard cleanup doesn't pop history.
@@ -313,6 +316,7 @@ function Chat() {
     sessionStorage.removeItem("memori_photos");
     sessionStorage.removeItem("memori_meta");
     sessionStorage.removeItem("memori_photo_metas");
+    sessionStorage.removeItem("memori_mode");
     setConfirmLeave(false);
     leavingRef.current = true;
     navigate({ to: "/" });
