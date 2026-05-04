@@ -163,6 +163,9 @@ const dict = {
     themeLinen: "Linen Paper",
     themeLinenDesc: "Bookish white with calm ink blue.",
     themeChanged: "Theme updated",
+    sortBy: "Sort by",
+    sortCreatedDate: "Date created",
+    sortPhotoDate: "Photo date",
   },
   ko: {
 
