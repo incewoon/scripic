@@ -126,7 +126,7 @@ function Home() {
     }
   };
 
-  // Badge
+  // Badge — visible for both guests and signed-in users so the tier is always clear.
   let badge: { label: string; cls: string } | null = null;
   if (user && profile) {
     if (subscribed) {
@@ -137,51 +137,68 @@ function Home() {
       const used = Math.min(count, FREE_MAX);
       badge = { label: t.badgeFree(used, FREE_MAX), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
     }
+  } else if (!user && albums !== null) {
+    const used = Math.min(count, FREE_MAX);
+    badge = { label: t.badgeFree(used, FREE_MAX), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
   }
 
-  return (
-    <div className="mx-auto max-w-md min-h-screen px-5 pt-14 pb-32">
-      {/* Top-right small auth button */}
-      {!user && !authLoading && (
-        <Link
-          to="/auth"
-          className="fixed top-3 right-3 z-30 inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 backdrop-blur px-3 py-1.5 text-[11.5px] font-medium warm-text shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
-          aria-label={t.signIn}
-        >
-          <LogIn size={12} className="text-primary" /> {t.signIn}
-        </Link>
-      )}
+  // Total album capacity for the small "used/total" indicator next to the title.
+  const totalCapacity: number | "∞" = subscribed
+    ? "∞"
+    : user && profile
+      ? FREE_MAX + Math.max(0, profile.album_credits - FREE_MAX)
+      : FREE_MAX;
+  const usedCount = typeof totalCapacity === "number" ? Math.min(count, totalCapacity) : count;
+  const showCounter = albums !== null;
 
-      <header className="mb-10 text-center">
+  return (
+    <div className="mx-auto max-w-md min-h-screen px-5 pt-8 pb-32">
+      <header className="mb-6 text-center">
         <button
           type="button"
           onClick={() => setNoticeOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3.5 py-1.5 text-[11px] warm-muted mb-5 border border-border/60 shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
+          className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3.5 py-1.5 text-[11px] warm-muted mb-3 border border-border/60 shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
           aria-label={t.storageNoticeTitle}
         >
           <BookHeart size={12} className="text-primary" /> {t.storedLocally}
         </button>
-        <h1 className="text-[44px] font-display warm-text mb-2 leading-none">memori</h1>
-        <p className="text-[14px] warm-muted">{t.appTagline}</p>
+        <h1 className="text-[40px] font-display warm-text mb-1 leading-none">memori</h1>
+        <p className="text-[13px] warm-muted">{t.appTagline}</p>
       </header>
 
-      {/* Album count + status badge */}
-      <div className="mb-5 flex items-center justify-between px-1">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-[15px] font-medium warm-text">{t.myAlbums}</h2>
-          <span className="font-display text-[26px] warm-text leading-none">{count}</span>
+      {/* Auth (left) + album counter & tier badge (right) */}
+      <div className="mb-5 flex items-center justify-between px-1 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {!user && !authLoading ? (
+            <Link
+              to="/auth"
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-2.5 py-1 text-[11.5px] font-medium warm-text shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
+              aria-label={t.signIn}
+            >
+              <LogIn size={11} className="text-primary" /> {t.signIn}
+            </Link>
+          ) : user ? (
+            <button
+              onClick={() => signOut()}
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-2.5 py-1 text-[11.5px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.98]"
+              aria-label={t.signOut}
+            >
+              <LogOut size={11} /> {t.signOut}
+            </button>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
+          <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
+          {showCounter && (
+            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
+              {usedCount}<span className="warm-muted">/{totalCapacity}</span>
+            </span>
+          )}
           {badge && (
             <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>
               {subscribed && <Sparkles size={10} />}
               {badge.label}
             </span>
-          )}
-          {user && (
-            <button onClick={() => signOut()} className="p-1.5 text-muted-foreground hover:text-foreground" aria-label="sign out">
-              <LogOut size={14} />
-            </button>
           )}
         </div>
       </div>
