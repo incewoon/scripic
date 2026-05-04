@@ -55,6 +55,8 @@ function Home() {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
   const [limitDismissed, setLimitDismissed] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("created");
+  const [sortOpen, setSortOpen] = useState(false);
   const navigate = useNavigate();
 
   // First-run: show the storage notice automatically.
