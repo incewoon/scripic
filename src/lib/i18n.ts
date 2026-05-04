@@ -323,6 +323,9 @@ const dict = {
     themeLinen: "리넨 페이퍼",
     themeLinenDesc: "차분한 잉크 블루가 어울리는 종이 같은 화이트.",
     themeChanged: "테마가 변경됐어요",
+    sortBy: "정렬",
+    sortCreatedDate: "만든 날짜",
+    sortPhotoDate: "사진 날짜",
   },
 } as const;
 
