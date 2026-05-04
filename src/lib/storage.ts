@@ -6,6 +6,8 @@ export type Album = {
   subtitle: string;
   intro: string;
   closing: string;
+  period?: string;
+  location?: string;
   photos: { dataUrl: string; caption: string }[];
   createdAt: number;
 };
@@ -20,6 +22,12 @@ export async function saveAlbum(album: Album) {
   const list = await getAlbums();
   list.unshift(album);
   await set(KEY, list);
+}
+
+export async function updateAlbum(id: string, patch: Partial<Album>) {
+  const list = await getAlbums();
+  const next = list.map(a => (a.id === id ? { ...a, ...patch } : a));
+  await set(KEY, next);
 }
 
 export async function deleteAlbum(id: string) {
