@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { getAlbums, subscribeAlbums, type Album } from "@/lib/storage";
-import { Plus, BookHeart, MapPin, Sparkles, LogOut, LogIn, X, Settings } from "lucide-react";
+import { Plus, BookHeart, MapPin, Sparkles, LogOut, LogIn, X, Settings, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -11,6 +11,23 @@ import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageN
 
 const PAYWALL_AFTER_LOGIN_KEY = "memori_paywall_after_login";
 const FREE_MAX = 5;
+const SORT_KEY = "moara_album_sort_v1";
+type SortMode = "created" | "photo";
+
+function parsePeriodDate(period?: string): number {
+  if (!period) return 0;
+  // Try to extract a parseable date; fall back to first 4-digit year.
+  const direct = Date.parse(period);
+  if (!Number.isNaN(direct)) return direct;
+  const m = period.match(/(\d{4})[.\-/년\s]*(\d{1,2})?[.\-/월\s]*(\d{1,2})?/);
+  if (m) {
+    const y = Number(m[1]);
+    const mo = m[2] ? Number(m[2]) - 1 : 0;
+    const d = m[3] ? Number(m[3]) : 1;
+    return new Date(y, mo, d).getTime();
+  }
+  return 0;
+}
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -38,12 +55,28 @@ function Home() {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
   const [limitDismissed, setLimitDismissed] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("created");
+  const [sortOpen, setSortOpen] = useState(false);
   const navigate = useNavigate();
 
   // First-run: show the storage notice automatically.
   useEffect(() => {
     if (!hasSeenStorageNotice()) setNoticeOpen(true);
   }, []);
+
+  // Hydrate sort preference.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SORT_KEY);
+      if (saved === "created" || saved === "photo") setSortMode(saved);
+    } catch {}
+  }, []);
+
+  const changeSort = (m: SortMode) => {
+    setSortMode(m);
+    setSortOpen(false);
+    try { localStorage.setItem(SORT_KEY, m); } catch {}
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +95,17 @@ function Home() {
   useEffect(() => { reloadProfile(); }, [reloadProfile]);
 
   const count = albums?.length ?? 0;
+
+  const sortedAlbums = albums
+    ? [...albums].sort((a, b) => {
+        if (sortMode === "photo") {
+          const ad = parsePeriodDate(a.period) || a.createdAt;
+          const bd = parsePeriodDate(b.period) || b.createdAt;
+          return bd - ad;
+        }
+        return b.createdAt - a.createdAt;
+      })
+    : null;
 
   // Badge / status
   const subscribed = hasActiveSubscription(profile);
@@ -208,6 +252,35 @@ function Home() {
           >
             <Settings size={13} />
           </Link>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setSortOpen((v) => !v)}
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 pl-2 pr-2.5 h-7 text-[11px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
+              aria-label={t.sortBy}
+              title={t.sortBy}
+            >
+              <ArrowUpDown size={11} />
+              <span>{sortMode === "created" ? t.sortCreatedDate : t.sortPhotoDate}</span>
+            </button>
+            {sortOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                <div className="absolute z-20 mt-1 left-0 min-w-[140px] rounded-xl border border-border/60 bg-card shadow-[var(--shadow-soft)] py-1">
+                  {(["created", "photo"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => changeSort(m)}
+                      className={`block w-full text-left px-3 py-1.5 text-[12px] hover:bg-muted/60 transition-colors ${sortMode === m ? "warm-text font-semibold" : "warm-muted"}`}
+                    >
+                      {m === "created" ? t.sortCreatedDate : t.sortPhotoDate}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {badge && (
@@ -237,7 +310,7 @@ function Home() {
         </button>
       ) : (
         <div className="space-y-5">
-          {albums.map((a) => {
+          {(sortedAlbums ?? albums).map((a) => {
             const date = a.period || new Date(a.createdAt).toLocaleDateString(lang === "ko" ? "ko-KR" : "en-US", { year: "numeric", month: "short", day: "numeric" });
             return (
               <div key={a.id} className="album-card group relative">
@@ -263,6 +336,7 @@ function Home() {
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[12px] warm-muted">{t.photosCount(a.photos.length)}</span>
+                    <span className="text-[12px] warm-muted tabular-nums">{date}</span>
                   </div>
                 </Link>
               </div>
