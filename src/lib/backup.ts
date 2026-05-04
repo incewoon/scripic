@@ -116,7 +116,7 @@ export async function exportBackupZip(opts: {
     compressionOptions: { level: 6 },
   });
 
-  const filename = `memori-backup-${fileTimestamp()}.zip`;
+  const filename = `mora-backup-${fileTimestamp()}.zip`;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
