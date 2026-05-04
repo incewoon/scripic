@@ -132,21 +132,20 @@ function Home() {
     if (subscribed) {
       badge = { label: t.badgeSubscribed, cls: "bg-amber-100 text-amber-800 border-amber-300" };
     } else if (profile.album_credits > FREE_MAX) {
-      badge = { label: t.badgePaid(profile.album_credits), cls: "bg-violet-100 text-violet-800 border-violet-300" };
+      badge = { label: t.badgePaid, cls: "bg-violet-100 text-violet-800 border-violet-300" };
     } else {
-      const used = Math.min(count, FREE_MAX);
-      badge = { label: t.badgeFree(used, FREE_MAX), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
+      badge = { label: t.badgeFree, cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
     }
   } else if (!user && albums !== null) {
-    const used = Math.min(count, FREE_MAX);
-    badge = { label: t.badgeFree(used, FREE_MAX), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
+    badge = { label: t.badgeFree, cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
   }
 
   // Total album capacity for the small "used/total" indicator next to the title.
-  const totalCapacity: number | "∞" = subscribed
-    ? "∞"
+  // Subscribers: unlimited → shown as "—". One-time purchases add to FREE_MAX via album_credits.
+  const totalCapacity: number | "—" = subscribed
+    ? "—"
     : user && profile
-      ? FREE_MAX + Math.max(0, profile.album_credits - FREE_MAX)
+      ? Math.max(FREE_MAX, profile.album_credits)
       : FREE_MAX;
   const usedCount = typeof totalCapacity === "number" ? Math.min(count, totalCapacity) : count;
   const showCounter = albums !== null;
@@ -188,16 +187,16 @@ function Home() {
           ) : null}
         </div>
         <div className="flex items-center gap-2">
-          <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
-          {showCounter && (
-            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
-              {usedCount}<span className="warm-muted">/{totalCapacity}</span>
-            </span>
-          )}
           {badge && (
             <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>
               {subscribed && <Sparkles size={10} />}
               {badge.label}
+            </span>
+          )}
+          <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
+          {showCounter && (
+            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
+              {usedCount}<span className="warm-muted">/{totalCapacity}</span>
             </span>
           )}
         </div>
