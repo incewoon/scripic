@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth";
 import { installBillingBridge, restore } from "@/lib/billing";
+import { applyThemeOnBoot } from "@/lib/theme";
 
 import appCss from "../styles.css?url";
 
