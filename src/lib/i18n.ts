@@ -154,6 +154,15 @@ const dict = {
     backupSkippedFreeLimit: (n: number) => `${n} album${n === 1 ? "" : "s"} skipped — free limit reached`,
     backupExporting: "Preparing backup…",
     backupRestoring: "Restoring…",
+    themeSection: "Theme",
+    themeSectionDesc: "Choose how Moara looks. Changes apply right away.",
+    themeWarm: "Warm Cream",
+    themeWarmDesc: "Soft beige & coral — the original Moara look.",
+    themeMidnight: "Midnight Ink",
+    themeMidnightDesc: "Deep navy with warm gold accents.",
+    themeLinen: "Linen Paper",
+    themeLinenDesc: "Bookish white with calm ink blue.",
+    themeChanged: "Theme updated",
   },
   ko: {
 
