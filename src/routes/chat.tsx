@@ -360,6 +360,7 @@ function Chat() {
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
+            onFocus={handleInputFocus}
             onKeyDown={e => e.key === "Enter" && onSend()}
             placeholder={t.inputPlaceholder}
             disabled={busy}
