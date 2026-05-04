@@ -353,6 +353,19 @@ function Chat() {
           </div>
         </div>
       )}
+
+      {confirmLeave && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-5" onClick={() => setConfirmLeave(false)}>
+          <div className="bg-card rounded-2xl max-w-sm w-full p-5 shadow-[var(--shadow-warm)]" onClick={e => e.stopPropagation()}>
+            <div className="font-display text-lg mb-1.5">{t.leaveTitle}</div>
+            <div className="text-sm warm-muted mb-5 leading-relaxed">{t.leaveDesc}</div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirmLeave(false)} className="px-4 py-2 text-sm rounded-full border border-border/60">{t.keepGoing}</button>
+              <button onClick={doLeave} className="px-4 py-2 text-sm rounded-full bg-destructive text-destructive-foreground">{t.leaveConfirm}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
