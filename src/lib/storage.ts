@@ -28,6 +28,7 @@ export function subscribeAlbums(fn: () => void): () => void {
 function notify() {
   listeners.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
 }
+export function notifyAlbums() { notify(); }
 
 function activeKey(): string {
   return currentUserId ? accountKey(currentUserId) : GUEST_KEY;

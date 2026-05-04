@@ -256,15 +256,8 @@ export async function importBackupZip(
   const merged = [...restored, ...existing];
   await set(activeKey(currentUserId), merged);
 
-  // Notify subscribers
-  // Re-import storage to trigger its listeners
   const storage = await import("./storage");
-  // Touch via a no-op update to fire notify (storage exposes notify only internally;
-  // simplest: write the same list which already happened above, then call a public mutation
-  // No public notify; so trigger one via a dummy update on the first item:
-  if (merged.length > 0) {
-    await storage.updateAlbum(merged[0].id, {});
-  }
+  storage.notifyAlbums();
 
   return { ok: true, imported: restored.length, skippedFreeLimit };
 }
