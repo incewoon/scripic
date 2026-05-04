@@ -297,7 +297,7 @@ const dict = {
     backupHintManualMove: "백업 파일(.zip)은 직접 USB·AirDrop·드라이브 등으로 옮겨주세요. 같은 계정에서 만든 파일만 복원할 수 있어요.",
     backupOwnerMismatch: "이 백업은 다른 계정에서 만들어졌어요. 같은 계정으로 로그인해 주세요.",
     backupGuestOnlyMismatch: "게스트 모드에서 만든 백업이에요. 로그아웃 후 복원해 주세요.",
-    backupInvalid: "올바른 memori 백업 파일이 아니에요.",
+    backupInvalid: "올바른 Mora 백업 파일이 아니에요.",
     backupDone: (n: number) => `${n}개의 앨범을 복원했어요`,
     backupSkippedFreeLimit: (n: number) => `${n}개의 앨범은 무료 한도 때문에 건너뛰었어요`,
     backupExporting: "백업 파일을 준비하는 중…",
