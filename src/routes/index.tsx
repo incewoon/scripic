@@ -36,6 +36,8 @@ function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [paywall, setPaywall] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
+  const [limitDismissed, setLimitDismissed] = useState(false);
   const navigate = useNavigate();
 
   // First-run: show the storage notice automatically.
@@ -59,8 +61,49 @@ function Home() {
 
   useEffect(() => { reloadProfile(); }, [reloadProfile]);
 
+  const count = albums?.length ?? 0;
+
+  // Badge / status
+  const subscribed = hasActiveSubscription(profile);
+
+  // Limit detection — true when user has used all available album slots (free + one-time credits)
+  // and is not subscribed. For guests we approximate by their local album count vs FREE_MAX.
+  const limitReached = (() => {
+    if (subscribed) return false;
+    if (user) {
+      return profile !== null && !canCreateAlbum(profile);
+    }
+    return count >= FREE_MAX;
+  })();
+
+  // After login, if a paywall was queued (from limit popup), open it.
+  useEffect(() => {
+    if (!user || !profile) return;
+    if (typeof window === "undefined") return;
+    const queued = sessionStorage.getItem(PAYWALL_AFTER_LOGIN_KEY);
+    if (queued && !canCreateAlbum(profile)) {
+      sessionStorage.removeItem(PAYWALL_AFTER_LOGIN_KEY);
+      setPaywall(true);
+    } else if (queued) {
+      sessionStorage.removeItem(PAYWALL_AFTER_LOGIN_KEY);
+    }
+  }, [user, profile]);
+
+  // Auto-show the limit popup once when reached (per session).
+  useEffect(() => {
+    if (limitReached && !limitDismissed && !paywall && !noticeOpen) {
+      setLimitOpen(true);
+    } else if (!limitReached) {
+      setLimitOpen(false);
+    }
+  }, [limitReached, limitDismissed, paywall, noticeOpen]);
+
   const onCreate = () => {
-    if (!user) { navigate({ to: "/auth" }); return; }
+    if (!user) {
+      if (count >= FREE_MAX) { setLimitOpen(true); return; }
+      navigate({ to: "/auth" });
+      return;
+    }
     if (!canCreateAlbum(profile)) {
       setPaywall(true);
       return;
@@ -73,11 +116,17 @@ function Home() {
     toast.success(t.deleted);
   };
 
-  const count = albums?.length ?? 0;
-  const FREE_MAX = 5;
+  const onLimitSignIn = () => {
+    setLimitOpen(false);
+    if (user) {
+      setPaywall(true);
+    } else {
+      try { sessionStorage.setItem(PAYWALL_AFTER_LOGIN_KEY, "1"); } catch {}
+      navigate({ to: "/auth" });
+    }
+  };
 
   // Badge
-  const subscribed = hasActiveSubscription(profile);
   let badge: { label: string; cls: string } | null = null;
   if (user && profile) {
     if (subscribed) {
