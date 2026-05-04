@@ -18,10 +18,12 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type PhotoMeta } from "@/lib/photoMeta";
+import { useT, getLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/create")({
   component: Create,
-  head: () => ({ meta: [{ title: "새 앨범 만들기 — Memori" }] }),
+  head: () => ({ meta: [{ title: "New album — Memori" }] }),
 });
 
 async function fileToDataUrl(file: File, maxDim = 1280): Promise<string> {
@@ -40,7 +42,7 @@ async function fileToDataUrl(file: File, maxDim = 1280): Promise<string> {
   return canvas.toDataURL("image/jpeg", 0.82);
 }
 
-type Item = { id: string; url: string };
+type Item = { id: string; url: string; meta: PhotoMeta };
 
 function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
@@ -66,7 +68,7 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
         className="absolute top-1.5 right-1.5 bg-background/90 rounded-full p-1.5 shadow-sm"
-        aria-label="사진 삭제"
+        aria-label="remove"
       ><X size={12} strokeWidth={2.5} /></button>
       <div className="absolute bottom-1.5 right-1.5 bg-background/70 backdrop-blur rounded-md p-0.5 text-foreground/60">
         <GripVertical size={12} />
@@ -76,6 +78,7 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
 }
 
 function Create() {
+  const { t } = useT();
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,10 +95,13 @@ function Create() {
     setBusy(true);
     try {
       const remaining = 10 - items.length;
-      if (files.length > remaining) toast(`최대 10장까지만 추가돼요`);
+      if (files.length > remaining) toast(t.max10);
       const slice = files.slice(0, remaining);
-      const urls = await Promise.all(slice.map(f => fileToDataUrl(f)));
-      setItems(p => [...p, ...urls.map(u => ({ id: crypto.randomUUID(), url: u }))]);
+      const processed = await Promise.all(slice.map(async f => {
+        const [url, meta] = await Promise.all([fileToDataUrl(f), extractMeta(f)]);
+        return { id: crypto.randomUUID(), url, meta };
+      }));
+      setItems(p => [...p, ...processed]);
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -112,10 +118,28 @@ function Create() {
     });
   };
 
-  const next = () => {
-    if (items.length < 5) { toast.error("사진을 5장 이상 골라주세요"); return; }
-    sessionStorage.setItem("memori_photos", JSON.stringify(items.map(i => i.url)));
-    navigate({ to: "/chat" });
+  const next = async () => {
+    if (items.length < 5) { toast.error(t.photosLeft(5 - items.length)); return; }
+    setBusy(true);
+    try {
+      const lang = getLang();
+      // Reverse geocode (best-effort, in parallel with cache)
+      const metas = await Promise.all(items.map(async i => {
+        if (i.meta.lat != null && i.meta.lng != null && !i.meta.city) {
+          const city = await reverseGeocode(i.meta.lat, i.meta.lng, lang);
+          return { ...i.meta, city };
+        }
+        return i.meta;
+      }));
+      sessionStorage.setItem("memori_photos", JSON.stringify(items.map(i => i.url)));
+      sessionStorage.setItem("memori_meta", JSON.stringify({
+        period: summarizePeriod(metas, lang),
+        location: summarizeLocations(metas),
+      }));
+      navigate({ to: "/chat" });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const count = items.length;
@@ -128,10 +152,8 @@ function Create() {
         <span className="text-xs warm-muted">{count} / 10</span>
       </header>
 
-      <h1 className="font-display text-[28px] leading-tight warm-text mb-2">사진을 골라주세요</h1>
-      <p className="text-[15px] warm-muted mb-4 leading-relaxed">
-        한 사건에 담긴 사진을 모아주세요.
-      </p>
+      <h1 className="font-display text-[28px] leading-tight warm-text mb-2">{t.pickPhotos}</h1>
+      <p className="text-[15px] warm-muted mb-4 leading-relaxed">{t.pickHint}</p>
 
       <div
         className="mb-5 rounded-2xl px-4 py-3.5 flex items-start gap-3 border border-primary/25"
@@ -139,8 +161,8 @@ function Create() {
       >
         <Info size={18} className="text-primary mt-0.5 flex-shrink-0" />
         <div className="text-[13.5px] leading-relaxed warm-text">
-          <b>최소 5장 · 최대 10장</b>까지 선택할 수 있어요.<br/>
-          <span className="warm-muted">길게 눌러 드래그하면 순서를 바꿀 수 있어요 ✨</span>
+          <b>{t.minMax}</b><br/>
+          <span className="warm-muted">{t.dragHint}</span>
         </div>
       </div>
 
@@ -169,7 +191,7 @@ function Create() {
                 className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
               >
                 <ImagePlus size={26} strokeWidth={1.6}/>
-                <span className="text-[11px] mt-1.5 warm-muted font-medium">{busy ? "처리중..." : "사진 추가"}</span>
+                <span className="text-[11px] mt-1.5 warm-muted font-medium">{busy ? t.processing : t.addPhoto}</span>
               </button>
             )}
           </div>
@@ -181,13 +203,13 @@ function Create() {
       <div className="fixed bottom-6 left-0 right-0 px-5 mx-auto max-w-md">
         <button
           onClick={next}
-          disabled={items.length < 5}
+          disabled={items.length < 5 || busy}
           className="w-full rounded-full py-4 text-[15px] font-medium flex items-center justify-center gap-2 disabled:opacity-50 text-primary-foreground shadow-[var(--shadow-warm)] active:scale-[0.98] transition-transform"
           style={{ background: "var(--gradient-warm)" }}
         >
           {items.length < 5
-            ? `${5 - items.length}장 더 골라주세요`
-            : <>AI와 이야기하기 <ArrowRight size={18}/></>}
+            ? t.photosLeft(5 - items.length)
+            : <>{t.chatWithAi} <ArrowRight size={18}/></>}
         </button>
       </div>
     </div>

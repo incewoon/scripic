@@ -1,14 +1,56 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Trash2 } from "lucide-react";
-import { getAlbums, deleteAlbum, type Album } from "@/lib/storage";
+import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar } from "lucide-react";
+import { getAlbums, deleteAlbum, updateAlbum, type Album } from "@/lib/storage";
+import { useT } from "@/lib/i18n";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
 });
 
+function EditableText({
+  value, onSave, multiline = false, className = "", placeholder = "",
+}: { value: string; onSave: (v: string) => void; multiline?: boolean; className?: string; placeholder?: string }) {
+  const { t } = useT();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        className={`group relative text-left w-full ${className}`}
+        aria-label={t.edit}
+      >
+        <span>{value || <span className="warm-muted italic">{placeholder || "—"}</span>}</span>
+        <Pencil size={11} className="inline ml-1.5 opacity-0 group-hover:opacity-60 warm-muted" />
+      </button>
+    );
+  }
+
+  const Tag: any = multiline ? "textarea" : "input";
+  return (
+    <div className="w-full">
+      <Tag
+        autoFocus
+        value={draft}
+        onChange={(e: any) => setDraft(e.target.value)}
+        rows={multiline ? 5 : undefined}
+        className={`w-full bg-card border border-border rounded-lg px-2.5 py-1.5 text-foreground outline-none focus:border-primary ${className}`}
+      />
+      <div className="flex gap-2 mt-2 justify-end">
+        <button onClick={() => { setEditing(false); setDraft(value); }} className="text-xs warm-muted px-2 py-1 flex items-center gap-1"><X size={12}/>{t.cancel}</button>
+        <button onClick={() => { onSave(draft); setEditing(false); toast.success(t.saved); }} className="text-xs bg-primary text-primary-foreground rounded-full px-3 py-1 flex items-center gap-1"><Check size={12}/>{t.save}</button>
+      </div>
+    </div>
+  );
+}
+
 function AlbumView() {
   const { id } = Route.useParams();
+  const { t } = useT();
   const [album, setAlbum] = useState<Album | null | undefined>(undefined);
   const navigate = useNavigate();
 
@@ -16,11 +58,24 @@ function AlbumView() {
     getAlbums().then(list => setAlbum(list.find(a => a.id === id) ?? null));
   }, [id]);
 
-  if (album === undefined) return <div className="p-10 text-center text-sm text-muted-foreground">불러오는 중...</div>;
+  async function patch(p: Partial<Album>) {
+    if (!album) return;
+    const next = { ...album, ...p };
+    setAlbum(next);
+    await updateAlbum(album.id, p);
+  }
+
+  async function patchCaption(idx: number, value: string) {
+    if (!album) return;
+    const photos = album.photos.map((ph, i) => i === idx ? { ...ph, caption: value } : ph);
+    await patch({ photos });
+  }
+
+  if (album === undefined) return <div className="p-10 text-center text-sm warm-muted">{t.loading}</div>;
   if (album === null) return (
     <div className="p-10 text-center">
-      <p className="text-sm text-muted-foreground mb-4">앨범을 찾을 수 없어요</p>
-      <Link to="/" className="text-primary text-sm">홈으로</Link>
+      <p className="text-sm warm-muted mb-4">{t.notFound}</p>
+      <Link to="/" className="text-primary text-sm">{t.home}</Link>
     </div>
   );
 
@@ -30,7 +85,7 @@ function AlbumView() {
         <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
         <button
           onClick={async () => {
-            if (confirm("이 앨범을 삭제할까요?")) {
+            if (confirm(t.confirmDelete)) {
               await deleteAlbum(album.id);
               navigate({ to: "/" });
             }
@@ -39,28 +94,69 @@ function AlbumView() {
         ><Trash2 size={18}/></button>
       </header>
 
-      <div className="px-6 pt-10 pb-8 text-center">
-        <h1 className="font-display text-3xl text-foreground mb-2">{album.title}</h1>
-        <p className="text-sm text-muted-foreground italic">{album.subtitle}</p>
+      <div className="px-6 pt-10 pb-4 text-center">
+        <EditableText
+          value={album.title}
+          onSave={(v) => patch({ title: v })}
+          className="font-display text-3xl text-foreground mb-2 text-center"
+          placeholder={t.title}
+        />
+        <EditableText
+          value={album.subtitle}
+          onSave={(v) => patch({ subtitle: v })}
+          className="text-sm warm-muted italic text-center"
+          placeholder={t.subtitle}
+        />
+
+        <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
+          <div className="flex items-center gap-1.5">
+            <Calendar size={12}/>
+            <EditableText value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <MapPin size={12}/>
+            <EditableText value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" />
+          </div>
+        </div>
       </div>
 
       <div className="px-6 mb-8">
-        <p className="text-[15px] leading-relaxed text-foreground/85 font-display">{album.intro}</p>
+        <EditableText
+          value={album.intro}
+          onSave={(v) => patch({ intro: v })}
+          multiline
+          className="text-[15px] leading-relaxed text-foreground/85 font-display"
+          placeholder={t.intro}
+        />
       </div>
 
       <div className="space-y-8 px-5">
         {album.photos.map((p, i) => (
           <figure key={i} className={`polaroid ${i % 2 === 0 ? "rotate-[-1.5deg]" : "rotate-[1.5deg]"}`}>
             <img src={p.dataUrl} alt={p.caption} className="w-full aspect-[4/3] object-cover rounded-sm" loading="lazy" />
-            <figcaption className="text-center font-display text-[15px] mt-3 text-foreground/80">{p.caption}</figcaption>
+            <figcaption className="text-center font-display text-[15px] mt-3 text-foreground/80 px-2">
+              <EditableText
+                value={p.caption}
+                onSave={(v) => patchCaption(i, v)}
+                multiline
+                className="text-center font-display text-[15px]"
+                placeholder={t.caption}
+              />
+            </figcaption>
           </figure>
         ))}
       </div>
 
       <div className="px-6 mt-12 text-center">
-        <p className="text-[15px] leading-relaxed text-foreground/85 font-display italic">— {album.closing}</p>
-        <p className="text-[10px] text-muted-foreground mt-8">
-          {new Date(album.createdAt).toLocaleDateString("ko-KR")} · 이 기기에만 저장됨
+        <EditableText
+          value={album.closing}
+          onSave={(v) => patch({ closing: v })}
+          multiline
+          className="text-[15px] leading-relaxed text-foreground/85 font-display italic text-center"
+          placeholder={t.closing}
+        />
+        <p className="text-[10px] warm-muted mt-8">
+          {new Date(album.createdAt).toLocaleDateString()} · {t.onlyOnDevice}
         </p>
       </div>
     </div>
