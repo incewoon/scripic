@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { setStorageUserId } from "@/lib/storage";
 
 type AuthCtx = {
   user: User | null;
@@ -20,10 +21,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setLoading(false);
+      void setStorageUserId(s?.user?.id ?? null);
     });
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
+      void setStorageUserId(data.session?.user?.id ?? null);
     });
     return () => sub.subscription.unsubscribe();
   }, []);

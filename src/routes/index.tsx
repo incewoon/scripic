@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { getAlbums, deleteAlbum, type Album } from "@/lib/storage";
+import { getAlbums, deleteAlbum, subscribeAlbums, type Album } from "@/lib/storage";
 import { Plus, BookHeart, Trash2, MapPin, Sparkles, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
@@ -33,7 +33,13 @@ function Home() {
   const [paywall, setPaywall] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => { getAlbums().then(setAlbums); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    const reload = () => { getAlbums().then((list) => { if (!cancelled) setAlbums(list); }); };
+    reload();
+    const unsub = subscribeAlbums(reload);
+    return () => { cancelled = true; unsub(); };
+  }, []);
 
   const reloadProfile = useCallback(async () => {
     if (!user) { setProfile(null); return; }
@@ -54,7 +60,6 @@ function Home() {
 
   const onDelete = async (id: string) => {
     await deleteAlbum(id);
-    setAlbums(await getAlbums());
     toast.success(t.deleted);
   };
 
