@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar } from "lucide-react";
 import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
 import { useT, getLang } from "@/lib/i18n";
+import type { PhotoMeta } from "@/lib/photoMeta";
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
@@ -14,17 +15,38 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const ALBUM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-album`;
+const READY_TOKEN = "[READY_TO_FINISH]";
+
+const AFFIRMATIVE_EN = /\b(yes|yeah|yep|sure|ok|okay|sounds good|let'?s|please do|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
+const AFFIRMATIVE_KO = /(네|예|좋아|좋아요|응|그래|그래요|끝|완성|마무리|충분|괜찮|해주세요|해줘|부탁)/;
+
+function isAffirmative(text: string) {
+  return AFFIRMATIVE_EN.test(text) || AFFIRMATIVE_KO.test(text);
+}
+
+function fmtTakenAt(iso: string | undefined, lang: string) {
+  if (!iso) return undefined;
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(lang === "ko" ? "ko-KR" : undefined, {
+      year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+  } catch { return undefined; }
+}
 
 function Chat() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const navigate = useNavigate();
   const [photos, setPhotos] = useState<string[]>([]);
+  const [photoMetas, setPhotoMetas] = useState<PhotoMeta[]>([]);
   const [meta, setMeta] = useState<{ period?: string; location?: string }>({});
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const finishingRef = useRef(false);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("memori_photos");
@@ -32,6 +54,7 @@ function Chat() {
     const ph: string[] = JSON.parse(raw);
     setPhotos(ph);
     try { setMeta(JSON.parse(sessionStorage.getItem("memori_meta") || "{}")); } catch {}
+    try { setPhotoMetas(JSON.parse(sessionStorage.getItem("memori_photo_metas") || "[]")); } catch {}
     const opener = getLang() === "ko" ? "이 사진들 좀 봐줘." : "Take a look at these photos with me.";
     void send(opener, ph, []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -46,6 +69,11 @@ function Chat() {
     const newMsgs = [...prior, userMsg];
     setMessages(newMsgs);
     setBusy(true);
+
+    // detect: user is responding to a wrap-up suggestion
+    const lastAssistant = [...prior].reverse().find(m => m.role === "assistant");
+    const wrapProposed = !!lastAssistant?.content.includes(READY_TOKEN);
+    const userAgreed = wrapProposed && isAffirmative(text);
 
     try {
       const resp = await fetch(CHAT_URL, {
@@ -96,6 +124,13 @@ function Chat() {
           }
         }
       }
+
+      // After response: if user agreed to wrap, auto-finish
+      if (userAgreed && !finishingRef.current) {
+        finishingRef.current = true;
+        // small delay so user sees the closing message
+        setTimeout(() => { void finish(); }, 600);
+      }
     } catch {
       toast.error(t.connectionError);
     } finally { setBusy(false); }
@@ -109,7 +144,7 @@ function Chat() {
   }
 
   async function finish() {
-    if (messages.length < 2) { toast.error(t.talkMore); return; }
+    if (messages.length < 2) { toast.error(t.talkMore); finishingRef.current = false; return; }
     setGenerating(true);
     try {
       const resp = await fetch(ALBUM_URL, {
@@ -142,14 +177,21 @@ function Chat() {
       });
       sessionStorage.removeItem("memori_photos");
       sessionStorage.removeItem("memori_meta");
+      sessionStorage.removeItem("memori_photo_metas");
       setMessages([]);
       toast.success(t.completed);
       navigate({ to: "/album/$id", params: { id } });
     } catch {
       toast.error(t.failed);
       setGenerating(false);
+      finishingRef.current = false;
     }
   }
+
+  const previewMeta = previewIdx != null ? photoMetas[previewIdx] : undefined;
+  const previewWhen = fmtTakenAt(previewMeta?.takenAt, lang);
+  const previewWhere = previewMeta?.city;
+  const hasMeta = !!(previewWhen || previewWhere);
 
   return (
     <div className="mx-auto max-w-md min-h-screen flex flex-col">
@@ -167,10 +209,15 @@ function Chat() {
 
       <div className="px-5 mb-3 flex gap-1.5 overflow-x-auto">
         {photos.map((p, i) => (
-          <div key={i} className="relative flex-shrink-0">
+          <button
+            key={i}
+            onClick={() => setPreviewIdx(i)}
+            className="relative flex-shrink-0 active:scale-95 transition-transform"
+            aria-label={t.photoOf(i + 1)}
+          >
             <img src={p} alt="" className="w-12 h-12 object-cover rounded-md" />
             <span className="absolute -top-1 -left-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{i+1}</span>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -182,7 +229,7 @@ function Chat() {
                 ? "bg-primary text-primary-foreground rounded-br-sm"
                 : "glass text-foreground rounded-bl-sm border border-border/50"
             }`}>
-              {m.content || "..."}
+              {(m.content || "...").replaceAll(READY_TOKEN, "").trim() || "..."}
             </div>
           </div>
         ))}
@@ -207,6 +254,44 @@ function Chat() {
           </button>
         </div>
       </div>
+
+      {previewIdx != null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setPreviewIdx(null)}
+        >
+          <div
+            className="relative max-w-md w-full bg-card rounded-2xl overflow-hidden shadow-[var(--shadow-warm)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setPreviewIdx(null)}
+              className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur rounded-full p-2 text-foreground/70"
+              aria-label={t.close}
+            ><X size={16} /></button>
+            <img
+              src={photos[previewIdx]}
+              alt={t.photoOf(previewIdx + 1)}
+              className="w-full max-h-[70vh] object-contain bg-black/5"
+            />
+            <div className="px-5 py-4 text-[13px] warm-text">
+              <div className="font-display text-base mb-2">{t.photoOf(previewIdx + 1)}</div>
+              {hasMeta ? (
+                <div className="space-y-1.5 warm-muted">
+                  {previewWhen && (
+                    <div className="flex items-center gap-2"><Calendar size={13}/> <span>{t.when}: {previewWhen}</span></div>
+                  )}
+                  {previewWhere && (
+                    <div className="flex items-center gap-2"><MapPin size={13}/> <span>{t.where}: {previewWhere}</span></div>
+                  )}
+                </div>
+              ) : (
+                <div className="warm-muted italic">{t.noMeta}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
