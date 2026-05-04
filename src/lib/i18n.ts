@@ -121,6 +121,10 @@ const dict = {
     storageNoticeTitle: "Stored only on this device",
     storageNoticeBody: "Your photos and the captions woven from your conversation are kept only on this device. Even with the same account, they don't sync to other devices.",
     gotIt: "Got it",
+    limitReachedTitle: "You've filled every album slot",
+    limitReachedBodyGuest: "Sign in to keep weaving more memories — your existing albums stay right here on this device.",
+    limitReachedSignIn: "Sign in to make more",
+    limitReachedDismiss: "Not now",
   },
   ko: {
 
