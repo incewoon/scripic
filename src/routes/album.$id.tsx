@@ -11,18 +11,28 @@ export const Route = createFileRoute("/album/$id")({
 });
 
 function EditableText({
-  editKey, activeKey, setActiveKey,
+  editKey, activeKey, setActiveKey, editingMode,
   value, onSave, multiline = false, className = "", placeholder = "",
 }: {
   editKey: string;
   activeKey: string | null;
   setActiveKey: (k: string | null) => void;
+  editingMode: boolean;
   value: string; onSave: (v: string) => void; multiline?: boolean; className?: string; placeholder?: string;
 }) {
   const { t } = useT();
-  const editing = activeKey === editKey;
+  const editing = editingMode && activeKey === editKey;
   const [draft, setDraft] = useState(value);
   useEffect(() => { if (editing) setDraft(value); }, [editing, value]);
+
+  // Read-only mode: just plain text, no click affordance
+  if (!editingMode) {
+    return (
+      <div className={className}>
+        {value || <span className="warm-muted italic">{placeholder || "—"}</span>}
+      </div>
+    );
+  }
 
   if (!editing) {
     return (
@@ -32,7 +42,7 @@ function EditableText({
         aria-label={t.edit}
       >
         <span>{value || <span className="warm-muted italic">{placeholder || "—"}</span>}</span>
-        <Pencil size={11} className="inline ml-1.5 opacity-0 group-hover:opacity-60 warm-muted" />
+        <Pencil size={11} className="inline ml-1.5 opacity-60 warm-muted" />
       </button>
     );
   }
