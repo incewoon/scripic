@@ -164,13 +164,7 @@ function Home() {
     badge = { label: t.badgeFree, cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
   }
 
-  // Total album capacity for the small "used/total" indicator next to the title.
-  // Subscribers: unlimited → shown as "—". One-time purchases add to FREE_MAX via album_credits.
-  const totalCapacity: number | "—" = subscribed
-    ? "—"
-    : user && profile
-      ? Math.max(FREE_MAX, profile.album_credits)
-      : FREE_MAX;
+  // Used count clamped against total capacity for the "used/total" indicator.
   const usedCount = typeof totalCapacity === "number" ? Math.min(count, totalCapacity) : count;
   const showCounter = albums !== null;
 
