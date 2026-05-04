@@ -135,15 +135,31 @@ function AlbumView() {
     <div className="mx-auto max-w-md min-h-screen pb-20">
       <header className="sticky top-0 z-10 glass flex items-center justify-between px-5 py-3 border-b border-border/40">
         <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
-        <button
-          onClick={async () => {
-            if (confirm(t.confirmDelete)) {
-              await deleteAlbum(album.id);
-              navigate({ to: "/" });
-            }
-          }}
-          className="p-2 text-muted-foreground hover:text-destructive"
-        ><Trash2 size={18}/></button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !editMode;
+              setEditMode(next);
+              if (!next) setActiveKey(null);
+            }}
+            className={`p-2 rounded-full transition-colors ${
+              editMode ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+            }`}
+            aria-label={t.edit}
+            aria-pressed={editMode}
+          ><Pencil size={18}/></button>
+          <button
+            onClick={async () => {
+              if (confirm(t.confirmDelete)) {
+                await deleteAlbum(album.id);
+                navigate({ to: "/" });
+              }
+            }}
+            className="p-2 text-muted-foreground hover:text-destructive"
+            aria-label={t.delete}
+          ><Trash2 size={18}/></button>
+        </div>
       </header>
 
       <div ref={shareRef} className="bg-background">
