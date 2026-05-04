@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ImagePlus, ArrowRight, X, GripVertical, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -83,7 +83,19 @@ function Create() {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<ChatMode>("creative");
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (items.length > prevCountRef.current && scrollRef.current) {
+      const el = scrollRef.current;
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      });
+    }
+    prevCountRef.current = items.length;
+  }, [items.length]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -150,7 +162,7 @@ function Create() {
 
   return (
     <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
-      <div className="flex-1 overflow-y-auto px-5 pt-6 pb-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-6 pb-4">
         <header className="flex items-center justify-between mb-6">
           <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
           <span className="text-xs warm-muted">{count} / 10</span>
