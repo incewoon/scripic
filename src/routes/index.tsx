@@ -1,16 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { getAlbums, deleteAlbum, FREE_LIMIT, type Album } from "@/lib/storage";
-import { Plus, BookHeart, Trash2, Lock, MapPin } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { getAlbums, deleteAlbum, type Album } from "@/lib/storage";
+import { Plus, BookHeart, Trash2, MapPin, Sparkles, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
+import { fetchProfile, hasActiveSubscription, canCreateAlbum, type Profile } from "@/lib/premium";
+import { Paywall } from "@/components/Paywall";
 
 export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
       { title: "Memori — The story behind every photo" },
-      { name: "description", content: "Turn photos into a tender story album. Stays only on your device." },
+      { name: "description", content: "Turn photos into a tender story album." },
       { name: "theme-color", content: "#f5b9b0" },
     ],
     links: [
@@ -24,14 +27,26 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const { t, lang } = useT();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [albums, setAlbums] = useState<Album[] | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [paywall, setPaywall] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => { getAlbums().then(setAlbums); }, []);
 
+  const reloadProfile = useCallback(async () => {
+    if (!user) { setProfile(null); return; }
+    const p = await fetchProfile();
+    setProfile(p);
+  }, [user]);
+
+  useEffect(() => { reloadProfile(); }, [reloadProfile]);
+
   const onCreate = () => {
-    if ((albums?.length ?? 0) >= FREE_LIMIT) {
-      toast.error(t.freeLimitToast, { description: t.freeLimitDesc });
+    if (!user) { navigate({ to: "/auth" }); return; }
+    if (!canCreateAlbum(profile)) {
+      setPaywall(true);
       return;
     }
     navigate({ to: "/create" });
@@ -44,7 +59,21 @@ function Home() {
   };
 
   const count = albums?.length ?? 0;
-  const reached = count >= FREE_LIMIT;
+  const FREE_MAX = 5;
+
+  // Badge
+  const subscribed = hasActiveSubscription(profile);
+  let badge: { label: string; cls: string } | null = null;
+  if (user && profile) {
+    if (subscribed) {
+      badge = { label: t.badgeSubscribed, cls: "bg-amber-100 text-amber-800 border-amber-300" };
+    } else if (profile.album_credits > FREE_MAX) {
+      badge = { label: t.badgePaid(profile.album_credits), cls: "bg-violet-100 text-violet-800 border-violet-300" };
+    } else {
+      const used = Math.min(count, FREE_MAX);
+      badge = { label: t.badgeFree(used, FREE_MAX), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
+    }
+  }
 
   return (
     <div className="mx-auto max-w-md min-h-screen px-5 pt-14 pb-32">
@@ -56,10 +85,35 @@ function Home() {
         <p className="text-[14px] warm-muted">{t.appTagline}</p>
       </header>
 
-      <div className="mb-5 flex items-baseline justify-between px-1">
-        <h2 className="text-[15px] font-medium warm-text">{t.myAlbums}</h2>
-        <span className="text-[11px] warm-muted">{count} / {FREE_LIMIT}</span>
+      {/* Album count + status badge */}
+      <div className="mb-5 flex items-center justify-between px-1">
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-[15px] font-medium warm-text">{t.myAlbums}</h2>
+          <span className="font-display text-[26px] warm-text leading-none">{count}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {badge && (
+            <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>
+              {subscribed && <Sparkles size={10} />}
+              {badge.label}
+            </span>
+          )}
+          {user && (
+            <button onClick={() => signOut()} className="p-1.5 text-muted-foreground hover:text-foreground" aria-label="sign out">
+              <LogOut size={14} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {!user && !authLoading && (
+        <div className="mb-5 rounded-2xl border border-border/60 bg-card/60 p-4 text-center">
+          <p className="text-[13px] warm-muted mb-3">{t.authIntro}</p>
+          <Link to="/auth" className="inline-block rounded-full px-5 py-2 text-[13px] font-medium text-primary-foreground" style={{ background: "var(--gradient-warm)" }}>
+            {t.signIn}
+          </Link>
+        </div>
+      )}
 
       {albums === null ? (
         <div className="text-center text-sm warm-muted py-20">{t.loading}</div>
@@ -114,13 +168,14 @@ function Home() {
       <div className="fixed bottom-6 left-0 right-0 px-5 mx-auto max-w-md">
         <button
           onClick={onCreate}
-          disabled={reached}
-          className="w-full text-primary-foreground rounded-full py-4 text-[15px] font-medium flex items-center justify-center gap-2 shadow-[var(--shadow-warm)] disabled:opacity-60 active:scale-[0.98] transition-transform"
-          style={{ background: reached ? "var(--muted)" : "var(--gradient-warm)" }}
+          className="w-full text-primary-foreground rounded-full py-4 text-[15px] font-medium flex items-center justify-center gap-2 shadow-[var(--shadow-warm)] active:scale-[0.98] transition-transform"
+          style={{ background: "var(--gradient-warm)" }}
         >
-          {reached ? <><Lock size={16}/> {t.freeLimitReached}</> : <><Plus size={18}/> {t.newAlbum}</>}
+          <Plus size={18}/> {t.newAlbum}
         </button>
       </div>
+
+      <Paywall open={paywall} onClose={() => setPaywall(false)} onSuccess={reloadProfile} />
     </div>
   );
 }
