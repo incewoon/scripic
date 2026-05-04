@@ -10,6 +10,7 @@ export function getLang(): Lang {
 const dict = {
   en: {
     appTagline: "The story behind every photo",
+    appSubtitle: "Capture the moments you never want to forget",
     storedLocally: "Everything stays on this device",
     myAlbums: "My Albums",
     loading: "Loading…",
