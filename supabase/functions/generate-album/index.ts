@@ -52,11 +52,13 @@ function systemFor(lang: string, mode: Mode) {
     return `당신은 추억을 풍부하고 따뜻한 산문으로 엮는 작가입니다.
 - 대화에 등장한 디테일(장소, 인물, 감정, 농담, 작은 순간들)을 **최대한 많이** 요약에 담으세요.
 - 각 캡션은 해당 사진(번호)에 대한 대화 내용에 정확히 매칭되어야 합니다. 대화에서 어떤 사진을 가리키는지 추론하세요.
+- **캡션 개수는 정확히 업로드된 사진 개수와 같아야 합니다.**
 - 한국어, 시적이지만 구체적으로.`;
   }
   return `You are a writer weaving memories into rich, warm prose.
 - Pack as many concrete details from the conversation (places, people, feelings, jokes, small moments) into the summary as possible.
 - Each caption must match the conversation about THAT specific photo (by number). Infer which photo the user was talking about.
+- **The number of captions must exactly match the number of uploaded photos.**
 - Write in English, poetic but specific.`;
 }
 
