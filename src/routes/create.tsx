@@ -232,7 +232,17 @@ function Create() {
         <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
       </div>
 
-      <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent">
+      <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
+        {items.length > 0 && items.length < 10 && (
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={busy}
+            className="w-full rounded-full py-3 text-[14px] font-medium flex items-center justify-center gap-2 border-2 border-dashed border-primary/40 text-primary bg-card/50 active:scale-[0.98] transition-transform disabled:opacity-50"
+          >
+            <ImagePlus size={18} strokeWidth={1.8}/>
+            {busy ? t.processing : t.addPhoto}
+          </button>
+        )}
         <button
           onClick={next}
           disabled={items.length < 1 || busy}
