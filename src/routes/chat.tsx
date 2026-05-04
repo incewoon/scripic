@@ -87,6 +87,21 @@ function Chat() {
     return () => window.clearTimeout(timer);
   }, [busy, generating]);
 
+  // Keep latest message pinned just above the input when the on-screen keyboard
+  // opens/closes (visualViewport changes height) or when the input gains focus.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => scrollToLatest("auto");
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
+
+  function handleInputFocus() {
+    // Wait a beat for the keyboard to animate in, then pin the latest message.
+    window.setTimeout(() => scrollToLatest("smooth"), 250);
+  }
+
   async function send(text: string, ph = photos, prior = messages) {
     const userMsg: Msg = { role: "user", content: text };
     const newMsgs = [...prior, userMsg];
@@ -321,7 +336,7 @@ function Chat() {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-32 space-y-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-3 space-y-3">
         {messages.filter((_, i) => i > 0 || messages[0]?.role === "assistant").map((m, i) => (
           <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
             <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
@@ -345,6 +360,7 @@ function Chat() {
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
+            onFocus={handleInputFocus}
             onKeyDown={e => e.key === "Enter" && onSend()}
             placeholder={t.inputPlaceholder}
             disabled={busy}
