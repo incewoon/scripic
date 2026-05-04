@@ -154,6 +154,15 @@ const dict = {
     backupSkippedFreeLimit: (n: number) => `${n} album${n === 1 ? "" : "s"} skipped — free limit reached`,
     backupExporting: "Preparing backup…",
     backupRestoring: "Restoring…",
+    themeSection: "Theme",
+    themeSectionDesc: "Choose how Moara looks. Changes apply right away.",
+    themeWarm: "Warm Cream",
+    themeWarmDesc: "Soft beige & coral — the original Moara look.",
+    themeMidnight: "Midnight Ink",
+    themeMidnightDesc: "Deep navy with warm gold accents.",
+    themeLinen: "Linen Paper",
+    themeLinenDesc: "Bookish white with calm ink blue.",
+    themeChanged: "Theme updated",
   },
   ko: {
 
@@ -302,6 +311,15 @@ const dict = {
     backupSkippedFreeLimit: (n: number) => `${n}개의 앨범은 무료 한도 때문에 건너뛰었어요`,
     backupExporting: "백업 파일을 준비하는 중…",
     backupRestoring: "복원하는 중…",
+    themeSection: "테마",
+    themeSectionDesc: "Moara의 분위기를 골라보세요. 바로 적용돼요.",
+    themeWarm: "웜 크림",
+    themeWarmDesc: "포근한 베이지와 코랄 — 기본 Moara 분위기예요.",
+    themeMidnight: "미드나잇 잉크",
+    themeMidnightDesc: "깊은 네이비에 따뜻한 골드 포인트.",
+    themeLinen: "리넨 페이퍼",
+    themeLinenDesc: "차분한 잉크 블루가 어울리는 종이 같은 화이트.",
+    themeChanged: "테마가 변경됐어요",
   },
 } as const;
 

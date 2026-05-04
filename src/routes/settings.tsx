@@ -11,12 +11,15 @@ import {
   Upload,
   Sparkles,
   RefreshCw,
+  Palette,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { requestNotificationPermission, openAppSettings, isNativeShell } from "@/lib/native";
+import { useTheme, type Theme } from "@/lib/theme";
 import {
   fetchProfile,
   hasActiveSubscription,
@@ -54,6 +57,27 @@ function fmtDate(iso: string | null): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+const THEME_PREVIEWS: Record<Theme, { bg: string; swatch1: string; swatch2: string; swatch3: string }> = {
+  warm: {
+    bg: "linear-gradient(135deg, oklch(0.97 0.045 55), oklch(0.94 0.04 340))",
+    swatch1: "oklch(0.74 0.11 25)",
+    swatch2: "oklch(0.87 0.09 50)",
+    swatch3: "oklch(0.99 0.014 75)",
+  },
+  midnight: {
+    bg: "linear-gradient(135deg, oklch(0.22 0.03 260), oklch(0.18 0.025 250))",
+    swatch1: "oklch(0.80 0.13 78)",
+    swatch2: "oklch(0.26 0.03 260)",
+    swatch3: "oklch(0.94 0.015 80)",
+  },
+  linen: {
+    bg: "linear-gradient(135deg, oklch(0.98 0.008 95), oklch(0.96 0.012 100))",
+    swatch1: "oklch(0.42 0.10 250)",
+    swatch2: "oklch(0.86 0.04 240)",
+    swatch3: "oklch(0.995 0.004 95)",
+  },
+};
+
 function SettingsPage() {
   const { t, lang } = useT();
   const { user, loading } = useAuth();
@@ -66,6 +90,7 @@ function SettingsPage() {
   const [restoring, setRestoring] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const [theme, setTheme] = useTheme();
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -282,6 +307,65 @@ function SettingsPage() {
             )}
           </div>
         ) : null}
+      </section>
+
+      {/* Theme picker */}
+      <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--gradient-warm)" }}>
+            <Palette size={18} className="text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-display text-[17px] warm-text leading-tight">{t.themeSection}</h2>
+            <p className="text-[12.5px] warm-muted mt-1 leading-relaxed">{t.themeSectionDesc}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2">
+          {(["warm", "midnight", "linen"] as const).map((id) => {
+            const selected = theme === id;
+            const meta = THEME_PREVIEWS[id];
+            const label = id === "warm" ? t.themeWarm : id === "midnight" ? t.themeMidnight : t.themeLinen;
+            const desc = id === "warm" ? t.themeWarmDesc : id === "midnight" ? t.themeMidnightDesc : t.themeLinenDesc;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  if (selected) return;
+                  setTheme(id as Theme);
+                  toast.success(t.themeChanged);
+                }}
+                className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all active:scale-[0.99] ${
+                  selected
+                    ? "border-primary/70 bg-background/80 shadow-[var(--shadow-soft)]"
+                    : "border-border/60 bg-background/50 hover:bg-background/70"
+                }`}
+                aria-pressed={selected}
+              >
+                <div
+                  className="flex shrink-0 items-center justify-center rounded-xl border border-border/60 p-1.5"
+                  style={{ background: meta.bg }}
+                >
+                  <span className="flex gap-1">
+                    <span className="block w-3 h-6 rounded-sm" style={{ background: meta.swatch1 }} />
+                    <span className="block w-3 h-6 rounded-sm" style={{ background: meta.swatch2 }} />
+                    <span className="block w-3 h-6 rounded-sm" style={{ background: meta.swatch3 }} />
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13.5px] warm-text font-medium leading-tight">{label}</div>
+                  <div className="text-[11.5px] warm-muted mt-0.5 leading-snug">{desc}</div>
+                </div>
+                {selected && (
+                  <div className="shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                    <Check size={14} className="text-primary-foreground" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       {/* B. Purchases (logged in only) */}
