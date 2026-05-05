@@ -5,6 +5,7 @@ import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
 import { useT, getLang, type ChatMode } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
+import { fetchProfile, hasActiveSubscription } from "@/lib/premium";
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
@@ -62,6 +63,8 @@ function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
+  const [isPremium, setIsPremium] = useState(false);
+  useEffect(() => { void fetchProfile().then(p => setIsPremium(hasActiveSubscription(p))); }, []);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const stickToBottomRef = useRef(true);
 
@@ -167,6 +170,7 @@ function Chat() {
           photoCount: ph.length,
           lang: getLang(),
           mode,
+          maxTurnsPerPhoto: isPremium ? 6 : 3,
         }),
       });
 
