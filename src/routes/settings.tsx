@@ -240,7 +240,6 @@ function SettingsPage() {
       : "active";
 
   const productLabel = (id: string) => {
-    if (id === "credits_10") return lang === "ko" ? PRODUCTS.credits_10.titleKo : PRODUCTS.credits_10.titleEn;
     if (id === "sub_monthly") return lang === "ko" ? PRODUCTS.sub_monthly.titleKo : PRODUCTS.sub_monthly.titleEn;
     if (id === "sub_yearly") return lang === "ko" ? PRODUCTS.sub_yearly.titleKo : PRODUCTS.sub_yearly.titleEn;
     return id;

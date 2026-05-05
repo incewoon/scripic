@@ -10,31 +10,22 @@ export type Profile = {
   email: string | null;
 };
 
-export type ProductId = "credits_10" | "sub_monthly" | "sub_yearly";
+export type ProductId = "sub_monthly" | "sub_yearly";
 
 export const PRODUCTS: Record<ProductId, {
   id: ProductId;
   titleEn: string;
   titleKo: string;
   priceUsd: number;
-  priceKrw: number;
   badge?: { en: string; ko: string };
   perEn?: string;
   perKo?: string;
 }> = {
-  credits_10: {
-    id: "credits_10",
-    titleEn: "10 album pack",
-    titleKo: "앨범 10개 추가",
-    priceUsd: 2.99,
-    priceKrw: 4500,
-  },
   sub_monthly: {
     id: "sub_monthly",
     titleEn: "Unlimited monthly",
     titleKo: "월 무제한",
-    priceUsd: 3.99,
-    priceKrw: 5900,
+    priceUsd: 1.99,
     perEn: "/month",
     perKo: "/월",
   },
@@ -42,8 +33,7 @@ export const PRODUCTS: Record<ProductId, {
     id: "sub_yearly",
     titleEn: "Unlimited yearly",
     titleKo: "연 무제한",
-    priceUsd: 29.99,
-    priceKrw: 39000,
+    priceUsd: 19.99,
     perEn: "/year",
     perKo: "/년",
     badge: { en: "Best value", ko: "가장 추천" },

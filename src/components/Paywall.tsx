@@ -32,17 +32,13 @@ export function Paywall({ open, onClose, onSuccess }: {
 
   const fmtPrice = (p: typeof PRODUCTS[ProductId]) => {
     const usd = `$${p.priceUsd.toFixed(2)}`;
-    const krw = `₩${p.priceKrw.toLocaleString()}`;
     const per = lang === "ko" ? p.perKo : p.perEn;
-    return { main: lang === "ko" ? krw : usd, alt: lang === "ko" ? usd : krw, per };
+    return { main: usd, per };
   };
 
-  const yearlyMonthlyEquiv = lang === "ko"
-    ? `₩${Math.round(PRODUCTS.sub_yearly.priceKrw / 12).toLocaleString()}`
-    : `$${(PRODUCTS.sub_yearly.priceUsd / 12).toFixed(2)}`;
+  const yearlyMonthlyEquiv = `$${(PRODUCTS.sub_yearly.priceUsd / 12).toFixed(2)}`;
 
   const cards: { id: ProductId; lines: string[] }[] = [
-    { id: "credits_10", lines: [lang === "ko" ? "앨범 10개 추가 저장" : "Save 10 more albums", lang === "ko" ? "일회성 결제" : "One-time payment"] },
     { id: "sub_monthly", lines: [lang === "ko" ? "무제한 앨범 생성" : "Unlimited albums", lang === "ko" ? "언제든 해지 가능" : "Cancel anytime"] },
     { id: "sub_yearly", lines: [lang === "ko" ? "무제한 앨범 생성" : "Unlimited albums", t.perMonthEquiv(yearlyMonthlyEquiv)] },
   ];
@@ -90,7 +86,7 @@ export function Paywall({ open, onClose, onSuccess }: {
                     <div className="font-display text-[20px] warm-text leading-none">
                       {price.main}<span className="text-[12px] warm-muted font-sans">{price.per ?? ""}</span>
                     </div>
-                    <div className="text-[10.5px] warm-muted mt-0.5">{price.alt}{price.per ?? ""}</div>
+                    
                   </div>
                 </div>
                 <ul className="space-y-1 mb-3">

@@ -42,11 +42,7 @@ async function handlePurchaseSuccess(productId: ProductId, token?: string) {
   // For now (placeholder, no real billing yet), we update the profile directly
   // from the client. This is intentional for the demo flow and will be
   // replaced when Median.co / RevenueCat is wired in.
-  if (productId === "credits_10") {
-    const { data: p } = await supabase.from("profiles").select("album_credits").maybeSingle();
-    const current = p?.album_credits ?? 0;
-    await supabase.from("profiles").update({ album_credits: current + 10 }).eq("user_id", uid);
-  } else if (productId === "sub_monthly") {
+  if (productId === "sub_monthly") {
     const end = new Date(); end.setMonth(end.getMonth() + 1);
     await supabase.from("profiles").update({ is_subscribed: true, subscription_end_date: end.toISOString() }).eq("user_id", uid);
   } else if (productId === "sub_yearly") {
