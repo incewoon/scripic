@@ -15,6 +15,7 @@ const dict = {
     myAlbums: "My Albums",
     loading: "Loading…",
     firstMemoryTitle: "Capture your first memory",
+    firstMemoryTagline: "Bring the moment back to life through a chat with AI",
     firstMemoryHint: "1 to 2 photos is all it takes",
     photosCount: (n: number) => `${n} photo${n === 1 ? "" : "s"}`,
     delete: "Delete",
