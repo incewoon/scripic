@@ -176,6 +176,7 @@ const dict = {
     myAlbums: "내 앨범",
     loading: "불러오는 중…",
     firstMemoryTitle: "첫 추억을 남겨보세요",
+    firstMemoryTagline: "AI와 대화로 그 순간의 기억을 살려보세요",
     firstMemoryHint: "사진 1~2장이면 충분해요",
     photosCount: (n: number) => `사진 ${n}장`,
     delete: "삭제",
