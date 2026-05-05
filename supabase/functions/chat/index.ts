@@ -17,10 +17,8 @@ function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPhoto: num
   return `\n\n[Response cap — VERY IMPORTANT]\n- You may ask/respond about each photo at most ${maxTurnsPerPhoto} times.\n- The total number of assistant messages in this conversation must not exceed ${totalCap} (${photoCount} photos × ${maxTurnsPerPhoto}).\n- Once a photo has reached its ${maxTurnsPerPhoto}-turn cap, do not bring it up again — move to the next photo.\n- When every photo has hit its cap (or the total ${totalCap} is reached), stop asking new questions and immediately ask "Shall I put these together into your album now?" and append exactly \`[READY_TO_FINISH]\` as the very last line.`;
 }
 
-function systemPrompt(lang: string, photoCount: number, mode: Mode, maxTurnsPerPhoto: number) {
+function systemPrompt(lang: string, photoCount: number, mode: Mode) {
   const ko = lang === "ko";
-  const cap = turnLimitClause(lang, photoCount, maxTurnsPerPhoto);
-  const _ko = ko;
 
   if (mode === "fact") {
     if (ko) {
