@@ -279,6 +279,7 @@ function Home() {
         <button onClick={onCreate} className="w-full polaroid rotate-[-2deg] hover:rotate-0 transition-transform py-16 text-center">
           <div className="text-5xl mb-3">📷</div>
           <div className="font-display text-lg warm-text">{t.firstMemoryTitle}</div>
+          <div className="text-sm warm-text mt-2">{t.firstMemoryTagline}</div>
           <div className="text-xs warm-muted mt-1.5">{t.firstMemoryHint}</div>
         </button>
       ) : (
