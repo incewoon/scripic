@@ -63,6 +63,8 @@ function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
+  const [isPremium, setIsPremium] = useState(false);
+  useEffect(() => { void fetchProfile().then(p => setIsPremium(hasActiveSubscription(p))); }, []);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const stickToBottomRef = useRef(true);
 
