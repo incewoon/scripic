@@ -170,6 +170,7 @@ function Chat() {
           photoCount: ph.length,
           lang: getLang(),
           mode,
+          maxTurnsPerPhoto: isPremium ? 6 : 3,
         }),
       });
 
