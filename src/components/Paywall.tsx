@@ -86,7 +86,7 @@ export function Paywall({ open, onClose, onSuccess }: {
                     <div className="font-display text-[20px] warm-text leading-none">
                       {price.main}<span className="text-[12px] warm-muted font-sans">{price.per ?? ""}</span>
                     </div>
-                    <div className="text-[10.5px] warm-muted mt-0.5">{price.alt}{price.per ?? ""}</div>
+                    
                   </div>
                 </div>
                 <ul className="space-y-1 mb-3">
