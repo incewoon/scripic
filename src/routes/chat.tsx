@@ -5,6 +5,7 @@ import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
 import { useT, getLang, type ChatMode } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
+import { fetchProfile, hasActiveSubscription } from "@/lib/premium";
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
