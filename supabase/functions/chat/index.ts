@@ -147,7 +147,7 @@ serve(async (req) => {
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [{ role: "system", content: systemPrompt(lang, photoCount, m) }, ...enriched],
+        messages: [{ role: "system", content: systemPrompt(lang, photoCount, m) + turnLimitClause(lang, photoCount, maxTurnsPerPhoto) }, ...enriched],
         stream: true,
       }),
     });
