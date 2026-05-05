@@ -9,8 +9,18 @@ const corsHeaders = {
 
 type Mode = "creative" | "fact" | "brief";
 
-function systemPrompt(lang: string, photoCount: number, mode: Mode) {
+function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPhoto: number) {
+  const totalCap = Math.max(1, photoCount * maxTurnsPerPhoto);
+  if (lang === "ko") {
+    return `\n\n[응대 횟수 제한 — 매우 중요]\n- 사진 한 장당 최대 ${maxTurnsPerPhoto}번까지만 질문/응답할 수 있습니다.\n- 전체 대화에서 어시스턴트 메시지 수는 최대 ${totalCap}개를 넘지 마세요 (사진 ${photoCount}장 × ${maxTurnsPerPhoto}번).\n- 한 사진에 대해 ${maxTurnsPerPhoto}번을 채우면 그 사진은 더 이상 다루지 말고 다음 사진으로 넘어가세요.\n- 모든 사진의 한도를 소진했거나 전체 한도(${totalCap}개)에 도달하면, 더 이상 새로운 질문을 하지 말고 즉시 "앨범으로 정리해드릴까요?" 라고 묻고 메시지의 마지막 줄에 정확히 \`[READY_TO_FINISH]\` 토큰을 붙이세요.`;
+  }
+  return `\n\n[Response cap — VERY IMPORTANT]\n- You may ask/respond about each photo at most ${maxTurnsPerPhoto} times.\n- The total number of assistant messages in this conversation must not exceed ${totalCap} (${photoCount} photos × ${maxTurnsPerPhoto}).\n- Once a photo has reached its ${maxTurnsPerPhoto}-turn cap, do not bring it up again — move to the next photo.\n- When every photo has hit its cap (or the total ${totalCap} is reached), stop asking new questions and immediately ask "Shall I put these together into your album now?" and append exactly \`[READY_TO_FINISH]\` as the very last line.`;
+}
+
+function systemPrompt(lang: string, photoCount: number, mode: Mode, maxTurnsPerPhoto: number) {
   const ko = lang === "ko";
+  const cap = turnLimitClause(lang, photoCount, maxTurnsPerPhoto);
+  const _ko = ko;
 
   if (mode === "fact") {
     if (ko) {
