@@ -113,8 +113,9 @@ Rules:
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { messages, photos, photoCount: photoCountFromClient, lang = "en", mode = "creative" } = await req.json();
+    const { messages, photos, photoCount: photoCountFromClient, lang = "en", mode = "creative", maxTurnsPerPhoto: rawCap } = await req.json();
     const m: Mode = mode === "fact" || mode === "brief" ? mode : "creative";
+    const maxTurnsPerPhoto = typeof rawCap === "number" && rawCap > 0 ? Math.min(20, Math.floor(rawCap)) : 3;
     const KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!KEY) throw new Error("LOVABLE_API_KEY missing");
 
