@@ -5,7 +5,8 @@ import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
 import { useT, getLang, type ChatMode } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
-import { fetchProfile, hasActiveSubscription } from "@/lib/premium";
+import { aiFetch } from "@/lib/aiClient";
+import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
@@ -14,8 +15,6 @@ export const Route = createFileRoute("/chat")({
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-const ALBUM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-album`;
 const READY_TOKEN = "[READY_TO_FINISH]";
 
 const AFFIRMATIVE_EN = /\b(yes|yeah|yep|sure|ok|okay|sounds good|let'?s|please do|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
@@ -63,8 +62,6 @@ function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
-  const [isPremium, setIsPremium] = useState(false);
-  useEffect(() => { void fetchProfile().then(p => setIsPremium(hasActiveSubscription(p))); }, []);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const stickToBottomRef = useRef(true);
 
