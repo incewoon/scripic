@@ -153,22 +153,13 @@ function Chat() {
     const userAgreed = wrapProposed && isAffirmative(text);
 
     try {
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: newMsgs,
-          photos: prior.length === 0 ? ph : undefined,
-          // Always send the count so the server prompt stays accurate
-          // even after the first turn (when `photos` is omitted).
-          photoCount: ph.length,
-          lang: getLang(),
-          mode,
-          maxTurnsPerPhoto: isPremium ? 6 : 3,
-        }),
+      const resp = await aiFetch("chat", {
+        messages: newMsgs,
+        photos: prior.length === 0 ? ph : undefined,
+        photoCount: ph.length,
+        lang: getLang(),
+        mode,
+        maxTurnsPerPhoto: 3,
       });
 
       if (resp.status === 429) { toast.error(t.rateLimit); setBusy(false); return; }
@@ -230,28 +221,18 @@ function Chat() {
     if (messages.length < 2) { toast.error(t.talkMore); finishingRef.current = false; return; }
     setGenerating(true);
     try {
-      const resp = await fetch(ALBUM_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages,
-          photoCount: photos.length,
-          lang: getLang(),
-          period: meta.period,
-          location: meta.location,
-          mode,
-        }),
+      const resp = await aiFetch("generate-album", {
+        messages,
+        photoCount: photos.length,
+        lang: getLang(),
+        period: meta.period,
+        location: meta.location,
+        mode,
       });
       if (!resp.ok) throw new Error();
       const album = await resp.json();
       const id = crypto.randomUUID();
-      try {
-        const { supabase } = await import("@/integrations/supabase/client");
-        await supabase.rpc("consume_album_credit");
-      } catch (e) { console.error("[credit]", e); }
+      markAlbumCreatedToday();
       await saveAlbum({
         id,
         title: album.title,
