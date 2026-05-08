@@ -1,40 +1,30 @@
+// Encrypted album backup. AES-GCM with a PBKDF2-derived key from a 4-digit PIN.
+// File is a small outer ZIP containing meta.json + payload.enc.
+// Inner payload is the original album-bundle ZIP (manifest + photos).
+
 import JSZip from "jszip";
-import { get, set } from "idb-keyval";
-import { getAlbums, type Album, FREE_LIMIT } from "./storage";
+import { getAlbums, type Album } from "./storage";
+import { set, get } from "idb-keyval";
 
-const SCHEMA_VERSION = 1;
-const APP_NAME = "memori";
+const SCHEMA_VERSION = 2;
+const APP_NAME = "moara";
+const PBKDF2_ITER = 200_000;
 
-type BackupOwner =
-  | { kind: "user"; userId: string; email: string | null }
-  | { kind: "guest"; userId: null; email: null };
+const KEY = "memori_albums_v1";
 
-type Manifest = {
-  schemaVersion: number;
-  app: string;
-  createdAt: string;
-  owner: BackupOwner;
-  albumCount: number;
-  albums: { id: string; title: string; photoCount: number }[];
-};
+// ---------- helpers ----------
 
 function dataUrlToBytes(dataUrl: string): { bytes: Uint8Array; ext: string } {
-  // e.g. data:image/jpeg;base64,XXXX
   const m = /^data:([^;]+);base64,(.*)$/.exec(dataUrl);
-  if (!m) {
-    // Unknown shape; store as .bin
-    return { bytes: new Uint8Array(), ext: "bin" };
-  }
+  if (!m) return { bytes: new Uint8Array(), ext: "bin" };
   const mime = m[1].toLowerCase();
-  const b64 = m[2];
-  const bin = atob(b64);
+  const bin = atob(m[2]);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   let ext = "jpg";
   if (mime.includes("png")) ext = "png";
   else if (mime.includes("webp")) ext = "webp";
   else if (mime.includes("gif")) ext = "gif";
-  else if (mime.includes("jpeg") || mime.includes("jpg")) ext = "jpg";
   return { bytes, ext };
 }
 
@@ -48,45 +38,52 @@ function bytesToDataUrl(bytes: Uint8Array, ext: string): string {
   return `data:${mime};base64,${btoa(bin)}`;
 }
 
-function pad(n: number, w = 3): string {
-  return n.toString().padStart(w, "0");
-}
-
+function pad(n: number, w = 3): string { return n.toString().padStart(w, "0"); }
 function fileTimestamp(d = new Date()): string {
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1, 2);
-  const dd = pad(d.getDate(), 2);
-  const hh = pad(d.getHours(), 2);
-  const mi = pad(d.getMinutes(), 2);
-  return `${yyyy}${mm}${dd}-${hh}${mi}`;
+  return `${d.getFullYear()}${pad(d.getMonth() + 1, 2)}${pad(d.getDate(), 2)}-${pad(d.getHours(), 2)}${pad(d.getMinutes(), 2)}`;
 }
 
-export async function exportBackupZip(opts: {
-  userId: string | null;
-  email: string | null;
-}): Promise<void> {
+function b64encode(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function b64decode(s: string): Uint8Array {
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function deriveKey(pin: string, salt: Uint8Array): Promise<CryptoKey> {
+  const enc = new TextEncoder().encode(pin);
+  const baseKey = await crypto.subtle.importKey("raw", enc, "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: PBKDF2_ITER, hash: "SHA-256" },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
+
+// ---------- export ----------
+
+export async function exportBackupZip(pin: string): Promise<void> {
+  if (!/^\d{4}$/.test(pin)) throw new Error("invalid_pin");
+
   const albums = await getAlbums();
-  const zip = new JSZip();
 
-  const owner: BackupOwner = opts.userId
-    ? { kind: "user", userId: opts.userId, email: opts.email ?? null }
-    : { kind: "guest", userId: null, email: null };
-
-  const manifest: Manifest = {
+  // Inner zip: original payload structure (manifest + per-album json + photos).
+  const inner = new JSZip();
+  const manifest = {
     schemaVersion: SCHEMA_VERSION,
     app: APP_NAME,
     createdAt: new Date().toISOString(),
-    owner,
     albumCount: albums.length,
-    albums: albums.map((a) => ({
-      id: a.id,
-      title: a.title,
-      photoCount: a.photos.length,
-    })),
+    albums: albums.map((a) => ({ id: a.id, title: a.title, photoCount: a.photos.length })),
   };
-
-  zip.file("manifest.json", JSON.stringify(manifest, null, 2));
-
+  inner.file("manifest.json", JSON.stringify(manifest, null, 2));
   for (const album of albums) {
     const dir = `albums/${album.id}`;
     const albumJson = {
@@ -98,25 +95,42 @@ export async function exportBackupZip(opts: {
       period: album.period ?? null,
       location: album.location ?? null,
       createdAt: album.createdAt,
-      photos: album.photos.map((p, i) => ({
-        index: i + 1,
-        caption: p.caption,
-      })),
+      photos: album.photos.map((p, i) => ({ index: i + 1, caption: p.caption })),
     };
-    zip.file(`${dir}/album.json`, JSON.stringify(albumJson, null, 2));
+    inner.file(`${dir}/album.json`, JSON.stringify(albumJson, null, 2));
     album.photos.forEach((p, i) => {
       const { bytes, ext } = dataUrlToBytes(p.dataUrl);
-      zip.file(`${dir}/photos/${pad(i + 1)}.${ext}`, bytes);
+      inner.file(`${dir}/photos/${pad(i + 1)}.${ext}`, bytes);
     });
   }
-
-  const blob = await zip.generateAsync({
-    type: "blob",
+  const innerBytes = await inner.generateAsync({
+    type: "uint8array",
     compression: "DEFLATE",
     compressionOptions: { level: 6 },
   });
 
-  const filename = `moara-backup-${fileTimestamp()}.zip`;
+  // Encrypt inner payload.
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(pin, salt);
+  const cipher = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, innerBytes),
+  );
+
+  // Outer zip: meta.json + payload.enc.
+  const outer = new JSZip();
+  outer.file("meta.json", JSON.stringify({
+    app: APP_NAME,
+    v: SCHEMA_VERSION,
+    kdf: "PBKDF2-SHA256",
+    iter: PBKDF2_ITER,
+    salt: b64encode(salt),
+    iv: b64encode(iv),
+  }, null, 2));
+  outer.file("payload.enc", cipher);
+
+  const blob = await outer.generateAsync({ type: "blob" });
+  const filename = `moara-backup-${fileTimestamp()}.moarabak`;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -127,114 +141,87 @@ export async function exportBackupZip(opts: {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
+// ---------- import ----------
+
 export type ImportResult =
-  | { ok: true; imported: number; skippedFreeLimit: number }
-  | { ok: false; reason: "invalid" | "owner_mismatch" | "guest_only_mismatch" };
+  | { ok: true; imported: number }
+  | { ok: false; reason: "invalid" | "wrong_password" };
 
-const GUEST_KEY = "memori_albums_v1";
-const accountKey = (uid: string) => `memori_albums_v1__${uid}`;
+export async function importBackupZip(file: File, pin: string): Promise<ImportResult> {
+  if (!/^\d{4}$/.test(pin)) return { ok: false, reason: "wrong_password" };
 
-function activeKey(currentUserId: string | null): string {
-  return currentUserId ? accountKey(currentUserId) : GUEST_KEY;
-}
+  let outer: JSZip;
+  try { outer = await JSZip.loadAsync(file); }
+  catch { return { ok: false, reason: "invalid" }; }
 
-export async function importBackupZip(
-  file: File,
-  currentUserId: string | null,
-): Promise<ImportResult> {
-  let zip: JSZip;
-  try {
-    zip = await JSZip.loadAsync(file);
-  } catch {
+  const metaFile = outer.file("meta.json");
+  const payloadFile = outer.file("payload.enc");
+  if (!metaFile || !payloadFile) return { ok: false, reason: "invalid" };
+
+  let meta: any;
+  try { meta = JSON.parse(await metaFile.async("string")); }
+  catch { return { ok: false, reason: "invalid" }; }
+  if (!meta || meta.app !== APP_NAME || typeof meta.salt !== "string" || typeof meta.iv !== "string") {
     return { ok: false, reason: "invalid" };
   }
 
-  const manifestFile = zip.file("manifest.json");
+  const salt = b64decode(meta.salt);
+  const iv = b64decode(meta.iv);
+  const cipher = await payloadFile.async("uint8array");
+
+  let plain: Uint8Array;
+  try {
+    const key = await deriveKey(pin, salt);
+    plain = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, cipher));
+  } catch {
+    return { ok: false, reason: "wrong_password" };
+  }
+
+  let inner: JSZip;
+  try { inner = await JSZip.loadAsync(plain); }
+  catch { return { ok: false, reason: "invalid" }; }
+
+  const manifestFile = inner.file("manifest.json");
   if (!manifestFile) return { ok: false, reason: "invalid" };
-
-  let manifest: Manifest;
-  try {
-    manifest = JSON.parse(await manifestFile.async("string")) as Manifest;
-  } catch {
+  let manifest: any;
+  try { manifest = JSON.parse(await manifestFile.async("string")); }
+  catch { return { ok: false, reason: "invalid" }; }
+  if (!manifest || manifest.app !== APP_NAME || !Array.isArray(manifest.albums)) {
     return { ok: false, reason: "invalid" };
   }
 
-  if (
-    !manifest ||
-    manifest.app !== APP_NAME ||
-    typeof manifest.schemaVersion !== "number" ||
-    manifest.schemaVersion > SCHEMA_VERSION ||
-    !manifest.owner
-  ) {
-    return { ok: false, reason: "invalid" };
-  }
-
-  // Strict owner matching
-  if (manifest.owner.kind === "user") {
-    if (!currentUserId || currentUserId !== manifest.owner.userId) {
-      return { ok: false, reason: "owner_mismatch" };
-    }
-  } else if (manifest.owner.kind === "guest") {
-    if (currentUserId) {
-      return { ok: false, reason: "guest_only_mismatch" };
-    }
-  } else {
-    return { ok: false, reason: "invalid" };
-  }
-
-  // Reconstruct albums
-  const existing = (await get<Album[]>(activeKey(currentUserId))) ?? [];
+  const existing = (await get<Album[]>(KEY)) ?? [];
   const existingIds = new Set(existing.map((a) => a.id));
-  const isSubscribed = false; // owner-side enforcement is handled by the UI (we don't grant premium via import)
   const restored: Album[] = [];
-  let skippedFreeLimit = 0;
 
-  const remainingSlots = () =>
-    isSubscribed
-      ? Number.POSITIVE_INFINITY
-      : Math.max(0, FREE_LIMIT - (existing.length + restored.length));
-
-  for (const meta of manifest.albums) {
-    if (remainingSlots() <= 0 && !currentUserId) {
-      // Guest: enforce free limit. For logged-in users we don't enforce here
-      // (subscription/credits are server-side concepts; we still import).
-      skippedFreeLimit++;
-      continue;
-    }
-    const dir = `albums/${meta.id}`;
-    const albumJsonFile = zip.file(`${dir}/album.json`);
+  for (const m of manifest.albums) {
+    const dir = `albums/${m.id}`;
+    const albumJsonFile = inner.file(`${dir}/album.json`);
     if (!albumJsonFile) continue;
     let albumJson: any;
-    try {
-      albumJson = JSON.parse(await albumJsonFile.async("string"));
-    } catch {
-      continue;
-    }
+    try { albumJson = JSON.parse(await albumJsonFile.async("string")); }
+    catch { continue; }
 
-    // Load photos in order
-    const photoFiles = Object.keys(zip.files)
-      .filter((p) => p.startsWith(`${dir}/photos/`) && !zip.files[p].dir)
+    const photoFiles = Object.keys(inner.files)
+      .filter((p) => p.startsWith(`${dir}/photos/`) && !inner.files[p].dir)
       .sort();
 
     const photos: Album["photos"] = [];
     for (let i = 0; i < photoFiles.length; i++) {
       const path = photoFiles[i];
       const ext = path.split(".").pop()?.toLowerCase() || "jpg";
-      const bytes = await zip.file(path)!.async("uint8array");
+      const bytes = await inner.file(path)!.async("uint8array");
       const dataUrl = bytesToDataUrl(bytes, ext);
-      const caption =
-        Array.isArray(albumJson.photos) && albumJson.photos[i]?.caption
-          ? String(albumJson.photos[i].caption)
-          : "";
+      const caption = Array.isArray(albumJson.photos) && albumJson.photos[i]?.caption
+        ? String(albumJson.photos[i].caption)
+        : "";
       photos.push({ dataUrl, caption });
     }
 
-    // Avoid id collisions
-    let id = String(albumJson.id ?? meta.id);
+    let id = String(albumJson.id ?? m.id);
     if (existingIds.has(id) || restored.some((r) => r.id === id)) {
       id = `${id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     }
-
     restored.push({
       id,
       title: String(albumJson.title ?? ""),
@@ -248,16 +235,11 @@ export async function importBackupZip(
     });
   }
 
-  if (restored.length === 0) {
-    return { ok: true, imported: 0, skippedFreeLimit };
-  }
+  if (restored.length === 0) return { ok: true, imported: 0 };
 
-  // Merge: newest first preserved by prepending restored items
   const merged = [...restored, ...existing];
-  await set(activeKey(currentUserId), merged);
-
+  await set(KEY, merged);
   const storage = await import("./storage");
   storage.notifyAlbums();
-
-  return { ok: true, imported: restored.length, skippedFreeLimit };
+  return { ok: true, imported: restored.length };
 }
