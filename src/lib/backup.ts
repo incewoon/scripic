@@ -57,9 +57,9 @@ function b64decode(s: string): Uint8Array {
 
 async function deriveKey(pin: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder().encode(pin);
-  const baseKey = await crypto.subtle.importKey("raw", enc, "PBKDF2", false, ["deriveKey"]);
+  const baseKey = await crypto.subtle.importKey("raw", enc.buffer.slice(0) as ArrayBuffer, "PBKDF2", false, ["deriveKey"]);
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: PBKDF2_ITER, hash: "SHA-256" },
+    { name: "PBKDF2", salt: salt.buffer.slice(0) as ArrayBuffer, iterations: PBKDF2_ITER, hash: "SHA-256" },
     baseKey,
     { name: "AES-GCM", length: 256 },
     false,
@@ -114,7 +114,7 @@ export async function exportBackupZip(pin: string): Promise<void> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(pin, salt);
   const cipher = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, innerBytes),
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer.slice(0) as ArrayBuffer }, key, innerBytes.buffer.slice(0) as ArrayBuffer),
   );
 
   // Outer zip: meta.json + payload.enc.
@@ -172,7 +172,7 @@ export async function importBackupZip(file: File, pin: string): Promise<ImportRe
   let plain: Uint8Array;
   try {
     const key = await deriveKey(pin, salt);
-    plain = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, cipher));
+    plain = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv.buffer.slice(0) as ArrayBuffer }, key, (cipher as Uint8Array).buffer.slice(0) as ArrayBuffer));
   } catch {
     return { ok: false, reason: "wrong_password" };
   }
