@@ -167,6 +167,19 @@ const dict = {
     sortBy: "Sort by",
     sortCreatedDate: "Date created",
     sortPhotoDate: "Photo date",
+    // Daily limit
+    dailyLimitTitle: "One album per day",
+    dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
+    dailyLimitNextAt: (d: string) => `Next available · ${d}`,
+    okay: "Okay",
+    // Backup PIN
+    backupPinTitle: "Set a 4-digit backup PIN",
+    backupPinHint: "This PIN encrypts your backup file. Keep it safe — without it the file can't be restored.",
+    backupPinConfirm: "Confirm PIN",
+    backupPinFormat: "Please enter 4 digits.",
+    backupPinMismatch: "PINs don't match.",
+    backupPinWrong: "Wrong PIN. The file couldn't be opened.",
+    photoMax3: "Up to 3 photos at a time.",
   },
   ko: {
 
@@ -328,6 +341,19 @@ const dict = {
     sortBy: "정렬",
     sortCreatedDate: "만든 날짜",
     sortPhotoDate: "사진 날짜",
+    // Daily limit
+    dailyLimitTitle: "하루에 한 개만 만들 수 있어요",
+    dailyLimitBody: "오늘은 이미 추억을 하나 엮었어요. 내일 다시 새로운 앨범을 만들 수 있어요.",
+    dailyLimitNextAt: (d: string) => `다음 가능 · ${d}`,
+    okay: "확인",
+    // Backup PIN
+    backupPinTitle: "4자리 백업 PIN을 설정해주세요",
+    backupPinHint: "이 PIN으로 백업 파일이 암호화돼요. 잃어버리면 복원할 수 없으니 잘 기억해주세요.",
+    backupPinConfirm: "PIN 다시 입력",
+    backupPinFormat: "숫자 4자리를 입력해주세요.",
+    backupPinMismatch: "PIN이 일치하지 않아요.",
+    backupPinWrong: "PIN이 올라요.",
+    photoMax3: "한 번에 사진 3장까지 올릴 수 있어요.",
   },
 } as const;
 
