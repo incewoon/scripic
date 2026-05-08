@@ -5,7 +5,8 @@ import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
 import { useT, getLang, type ChatMode } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
-import { fetchProfile, hasActiveSubscription } from "@/lib/premium";
+import { aiFetch } from "@/lib/aiClient";
+import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
@@ -14,8 +15,6 @@ export const Route = createFileRoute("/chat")({
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-const ALBUM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-album`;
 const READY_TOKEN = "[READY_TO_FINISH]";
 
 const AFFIRMATIVE_EN = /\b(yes|yeah|yep|sure|ok|okay|sounds good|let'?s|please do|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
@@ -63,8 +62,6 @@ function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
-  const [isPremium, setIsPremium] = useState(false);
-  useEffect(() => { void fetchProfile().then(p => setIsPremium(hasActiveSubscription(p))); }, []);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const stickToBottomRef = useRef(true);
 
@@ -156,22 +153,13 @@ function Chat() {
     const userAgreed = wrapProposed && isAffirmative(text);
 
     try {
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: newMsgs,
-          photos: prior.length === 0 ? ph : undefined,
-          // Always send the count so the server prompt stays accurate
-          // even after the first turn (when `photos` is omitted).
-          photoCount: ph.length,
-          lang: getLang(),
-          mode,
-          maxTurnsPerPhoto: isPremium ? 6 : 3,
-        }),
+      const resp = await aiFetch("chat", {
+        messages: newMsgs,
+        photos: prior.length === 0 ? ph : undefined,
+        photoCount: ph.length,
+        lang: getLang(),
+        mode,
+        maxTurnsPerPhoto: 3,
       });
 
       if (resp.status === 429) { toast.error(t.rateLimit); setBusy(false); return; }
@@ -233,28 +221,18 @@ function Chat() {
     if (messages.length < 2) { toast.error(t.talkMore); finishingRef.current = false; return; }
     setGenerating(true);
     try {
-      const resp = await fetch(ALBUM_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages,
-          photoCount: photos.length,
-          lang: getLang(),
-          period: meta.period,
-          location: meta.location,
-          mode,
-        }),
+      const resp = await aiFetch("generate-album", {
+        messages,
+        photoCount: photos.length,
+        lang: getLang(),
+        period: meta.period,
+        location: meta.location,
+        mode,
       });
       if (!resp.ok) throw new Error();
       const album = await resp.json();
       const id = crypto.randomUUID();
-      try {
-        const { supabase } = await import("@/integrations/supabase/client");
-        await supabase.rpc("consume_album_credit");
-      } catch (e) { console.error("[credit]", e); }
+      markAlbumCreatedToday();
       await saveAlbum({
         id,
         title: album.title,

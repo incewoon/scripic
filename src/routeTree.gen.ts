@@ -13,7 +13,6 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as EasterRouteImport } from './routes/easter'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as ChatRouteImport } from './routes/chat'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlbumIdRouteImport } from './routes/album.$id'
 
@@ -37,11 +36,6 @@ const ChatRoute = ChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -55,7 +49,6 @@ const AlbumIdRoute = AlbumIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/chat': typeof ChatRoute
   '/create': typeof CreateRoute
   '/easter': typeof EasterRoute
@@ -64,7 +57,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/chat': typeof ChatRoute
   '/create': typeof CreateRoute
   '/easter': typeof EasterRoute
@@ -74,7 +66,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/chat': typeof ChatRoute
   '/create': typeof CreateRoute
   '/easter': typeof EasterRoute
@@ -83,27 +74,12 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/auth'
-    | '/chat'
-    | '/create'
-    | '/easter'
-    | '/settings'
-    | '/album/$id'
+  fullPaths: '/' | '/chat' | '/create' | '/easter' | '/settings' | '/album/$id'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/auth'
-    | '/chat'
-    | '/create'
-    | '/easter'
-    | '/settings'
-    | '/album/$id'
+  to: '/' | '/chat' | '/create' | '/easter' | '/settings' | '/album/$id'
   id:
     | '__root__'
     | '/'
-    | '/auth'
     | '/chat'
     | '/create'
     | '/easter'
@@ -113,7 +89,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
   ChatRoute: typeof ChatRoute
   CreateRoute: typeof CreateRoute
   EasterRoute: typeof EasterRoute
@@ -151,13 +126,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -177,7 +145,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
   ChatRoute: ChatRoute,
   CreateRoute: CreateRoute,
   EasterRoute: EasterRoute,

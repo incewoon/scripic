@@ -1,8 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
-import { AuthProvider } from "@/lib/auth";
-import { installBillingBridge, restore } from "@/lib/billing";
 import { applyThemeOnBoot } from "@/lib/theme";
 
 import appCss from "../styles.css?url";
@@ -76,13 +74,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   useEffect(() => {
     applyThemeOnBoot();
-    installBillingBridge();
-    restore().catch(() => {});
   }, []);
   return (
-    <AuthProvider>
+    <>
       <Outlet />
       <Toaster position="top-center" richColors />
-    </AuthProvider>
+    </>
   );
 }
