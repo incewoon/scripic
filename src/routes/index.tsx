@@ -1,22 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { getAlbums, subscribeAlbums, type Album } from "@/lib/storage";
-import { Plus, BookHeart, MapPin, Sparkles, LogOut, LogIn, X, Settings, ArrowUpDown } from "lucide-react";
-import { toast } from "sonner";
+import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
-import { fetchProfile, hasActiveSubscription, canCreateAlbum, type Profile } from "@/lib/premium";
-import { Paywall } from "@/components/Paywall";
+import { canCreateAlbumToday, nextAvailableDateLabel } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
 
-const PAYWALL_AFTER_LOGIN_KEY = "memori_paywall_after_login";
-const FREE_MAX = 5;
 const SORT_KEY = "moara_album_sort_v1";
 type SortMode = "created" | "photo";
 
 function parsePeriodDate(period?: string): number {
   if (!period) return 0;
-  // Try to extract a parseable date; fall back to first 4-digit year.
   const direct = Date.parse(period);
   if (!Number.isNaN(direct)) return direct;
   const m = period.match(/(\d{4})[.\-/년\s]*(\d{1,2})?[.\-/월\s]*(\d{1,2})?/);
@@ -48,23 +42,15 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const { t, lang } = useT();
-  const { user, loading: authLoading, signOut } = useAuth();
   const [albums, setAlbums] = useState<Album[] | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [paywall, setPaywall] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
-  const [limitDismissed, setLimitDismissed] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortOpen, setSortOpen] = useState(false);
   const navigate = useNavigate();
 
-  // First-run: show the storage notice automatically.
-  useEffect(() => {
-    if (!hasSeenStorageNotice()) setNoticeOpen(true);
-  }, []);
+  useEffect(() => { if (!hasSeenStorageNotice()) setNoticeOpen(true); }, []);
 
-  // Hydrate sort preference.
   useEffect(() => {
     try {
       const saved = localStorage.getItem(SORT_KEY);
@@ -86,14 +72,6 @@ function Home() {
     return () => { cancelled = true; unsub(); };
   }, []);
 
-  const reloadProfile = useCallback(async () => {
-    if (!user) { setProfile(null); return; }
-    const p = await fetchProfile();
-    setProfile(p);
-  }, [user]);
-
-  useEffect(() => { reloadProfile(); }, [reloadProfile]);
-
   const count = albums?.length ?? 0;
 
   const sortedAlbums = albums
@@ -107,107 +85,10 @@ function Home() {
       })
     : null;
 
-  // Badge / status
-  const subscribed = hasActiveSubscription(profile);
-
-  // Total capacity for the current viewer.
-  // - Subscribers: unlimited ("—")
-  // - Signed-in non-subscribers: FREE_MAX baseline + any extra one-time credits
-  //   they purchased on top. We approximate "extras" as max(album_credits - FREE_MAX, 0)
-  //   so that the default 5 free credits granted on signup don't double-count
-  //   on top of the local FREE_MAX (otherwise a guest who hits the limit and
-  //   signs in would suddenly get 5 more slots for free).
-  // - Guests: FREE_MAX flat.
-  const extraPaidCredits = user && profile && !subscribed
-    ? Math.max(0, profile.album_credits - FREE_MAX)
-    : 0;
-  const totalCapacity: number | "—" = subscribed
-    ? "—"
-    : FREE_MAX + extraPaidCredits;
-
-  // Limit detection — based on actual local album count vs total capacity.
-  // This is the source of truth: cloud `album_credits` alone is not enough,
-  // because albums live in local storage and guest albums get migrated into
-  // the account on first sign-in.
-  const limitReached = (() => {
-    if (subscribed) return false;
-    if (albums === null) return false; // still loading
-    if (typeof totalCapacity !== "number") return false;
-    return count >= totalCapacity;
-  })();
-
-  // After login, if a paywall was queued (from limit popup), open it.
-  useEffect(() => {
-    if (!user || !profile) return;
-    if (typeof window === "undefined") return;
-    const queued = sessionStorage.getItem(PAYWALL_AFTER_LOGIN_KEY);
-    if (!queued) return;
-    sessionStorage.removeItem(PAYWALL_AFTER_LOGIN_KEY);
-    // Re-evaluate against the merged (local + cloud) state. If they still
-    // can't create an album after login, surface the paywall.
-    if (limitReached) setPaywall(true);
-  }, [user, profile, limitReached]);
-
-  // Auto-show the limit popup once when reached (per session).
-  useEffect(() => {
-    if (limitReached && !limitDismissed && !paywall && !noticeOpen) {
-      setLimitOpen(true);
-    } else if (!limitReached) {
-      setLimitOpen(false);
-    }
-  }, [limitReached, limitDismissed, paywall, noticeOpen]);
-
-  const onCreate = async () => {
-    // Always re-check against the freshest state at click time.
-    // Guests: pure local count vs FREE_MAX.
-    if (!user) {
-      if (count >= FREE_MAX) { setLimitOpen(true); return; }
-      navigate({ to: "/create" });
-      return;
-    }
-    // Signed-in: refresh profile, then check local count vs total capacity.
-    const fresh = await fetchProfile();
-    setProfile(fresh);
-    const subActive = hasActiveSubscription(fresh);
-    if (subActive) { navigate({ to: "/create" }); return; }
-    const extras = fresh ? Math.max(0, fresh.album_credits - FREE_MAX) : 0;
-    const cap = FREE_MAX + extras;
-    if (count >= cap) {
-      setPaywall(true);
-      return;
-    }
+  const onCreate = () => {
+    if (!canCreateAlbumToday()) { setLimitOpen(true); return; }
     navigate({ to: "/create" });
   };
-
-  // album deletion is handled inside the album detail page
-
-  const onLimitSignIn = () => {
-    setLimitOpen(false);
-    if (user) {
-      setPaywall(true);
-    } else {
-      try { sessionStorage.setItem(PAYWALL_AFTER_LOGIN_KEY, "1"); } catch {}
-      navigate({ to: "/auth" });
-    }
-  };
-
-  // Badge — visible for both guests and signed-in users so the tier is always clear.
-  let badge: { label: string; cls: string } | null = null;
-  if (user && profile) {
-    if (subscribed) {
-      badge = { label: t.badgeSubscribed, cls: "bg-amber-100 text-amber-800 border-amber-300" };
-    } else if (profile.album_credits > FREE_MAX) {
-      badge = { label: t.badgePaid, cls: "bg-violet-100 text-violet-800 border-violet-300" };
-    } else {
-      badge = { label: t.badgeFree, cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
-    }
-  } else if (!user && albums !== null) {
-    badge = { label: t.badgeFree, cls: "bg-emerald-100 text-emerald-800 border-emerald-300" };
-  }
-
-  // Used count clamped against total capacity for the "used/total" indicator.
-  const usedCount = typeof totalCapacity === "number" ? Math.min(count, totalCapacity) : count;
-  const showCounter = albums !== null;
 
   return (
     <div className="mx-auto max-w-md min-h-screen px-5 pt-8 pb-44">
@@ -224,20 +105,11 @@ function Home() {
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
       </header>
 
-      {/* Top row: My Albums + count + badge (left) | sort filter (right) */}
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
-          {showCounter && (
-            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
-              {usedCount}<span className="warm-muted">/{totalCapacity}</span>
-            </span>
-          )}
-          {badge && (
-            <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>
-              {subscribed && <Sparkles size={10} />}
-              {badge.label}
-            </span>
+          {albums !== null && (
+            <span className="font-display text-[14px] warm-text leading-none tabular-nums">{count}</span>
           )}
         </div>
         <div className="relative">
@@ -270,8 +142,6 @@ function Home() {
           )}
         </div>
       </div>
-
-
 
       {albums === null ? (
         <div className="text-center text-sm warm-muted py-20">{t.loading}</div>
@@ -328,23 +198,6 @@ function Home() {
           <Plus size={18}/> {t.newAlbum}
         </button>
         <div className="mt-3 flex items-center justify-center gap-2">
-          {!user && !authLoading ? (
-            <Link
-              to="/auth"
-              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-3 py-1.5 text-[12px] font-medium warm-text shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
-              aria-label={t.signIn}
-            >
-              <LogIn size={12} className="text-primary" /> {t.signIn}
-            </Link>
-          ) : user ? (
-            <button
-              onClick={() => signOut()}
-              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-3 py-1.5 text-[12px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.98] shadow-[var(--shadow-soft)]"
-              aria-label={t.signOut}
-            >
-              <LogOut size={12} /> {t.signOut}
-            </button>
-          ) : null}
           <Link
             to="/settings"
             className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 w-8 h-8 warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
@@ -356,14 +209,12 @@ function Home() {
         </div>
       </div>
 
-      <Paywall open={paywall} onClose={() => setPaywall(false)} onSuccess={reloadProfile} />
       <StorageNoticeDialog open={noticeOpen} onClose={() => setNoticeOpen(false)} />
 
-      {/* Limit-reached bottom popup */}
       {limitOpen && (
         <div
           className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => { setLimitOpen(false); setLimitDismissed(true); }}
+          onClick={() => setLimitOpen(false)}
         >
           <div
             className="w-full sm:max-w-md bg-background rounded-t-[28px] border border-border/60 shadow-2xl p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)]"
@@ -374,31 +225,18 @@ function Home() {
                 <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "var(--gradient-warm)" }}>
                   <Sparkles size={16} className="text-primary-foreground" />
                 </div>
-                <h2 className="font-display text-[20px] warm-text leading-tight">{t.limitReachedTitle}</h2>
+                <h2 className="font-display text-[20px] warm-text leading-tight">{t.dailyLimitTitle}</h2>
               </div>
-              <button
-                onClick={() => { setLimitOpen(false); setLimitDismissed(true); }}
-                className="p-1.5 -mr-1 -mt-1 text-muted-foreground hover:text-foreground"
-                aria-label={t.close}
-              >
-                <X size={18} />
-              </button>
+              <button onClick={() => setLimitOpen(false)} className="p-1.5 -mr-1 -mt-1 text-muted-foreground hover:text-foreground"><X size={18} /></button>
             </div>
-            <p className="text-[13.5px] warm-muted leading-relaxed mb-5">
-              {t.limitReachedBodyGuest}
-            </p>
+            <p className="text-[13.5px] warm-muted leading-relaxed mb-2">{t.dailyLimitBody}</p>
+            <p className="text-[12px] warm-muted mb-5">{t.dailyLimitNextAt(nextAvailableDateLabel(lang))}</p>
             <button
-              onClick={onLimitSignIn}
+              onClick={() => setLimitOpen(false)}
               className="w-full text-primary-foreground rounded-full py-3 text-[14px] font-medium active:scale-[0.98] transition-transform"
               style={{ background: "var(--gradient-warm)" }}
             >
-              {user ? t.paywallTitle : t.limitReachedSignIn}
-            </button>
-            <button
-              onClick={() => { setLimitOpen(false); setLimitDismissed(true); }}
-              className="w-full text-center text-[12.5px] warm-muted mt-3 py-2"
-            >
-              {t.limitReachedDismiss}
+              {t.okay}
             </button>
           </div>
         </div>

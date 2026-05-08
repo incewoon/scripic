@@ -20,12 +20,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type PhotoMeta } from "@/lib/photoMeta";
 import { useT, getLang, type ChatMode } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
-import { fetchProfile, hasActiveSubscription, type Profile } from "@/lib/premium";
-import { Paywall } from "@/components/Paywall";
+import { canCreateAlbumToday } from "@/lib/dailyLimit";
 
-const FREE_PHOTO_MAX = 3;
-const PAID_PHOTO_MAX = 10;
+const PHOTO_MAX = 3;
 
 export const Route = createFileRoute("/create")({
   component: Create,
@@ -85,9 +82,6 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
 
 function Create() {
   const { t } = useT();
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [paywallOpen, setPaywallOpen] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<ChatMode>("creative");
@@ -96,22 +90,13 @@ function Create() {
   const prevCountRef = useRef(0);
   const navigate = useNavigate();
 
-  // Premium = active subscription OR purchased extra credits beyond the free baseline.
-  // Guests are always free-tier.
-  const isPremium = (() => {
-    if (!user || !profile) return false;
-    if (hasActiveSubscription(profile)) return true;
-    return profile.album_credits > 5; // > FREE_MAX from index → indicates extra paid credits
-  })();
-  const photoMax = isPremium ? PAID_PHOTO_MAX : FREE_PHOTO_MAX;
-
-  const reloadProfile = async () => {
-    if (!user) { setProfile(null); return; }
-    const p = await fetchProfile();
-    setProfile(p);
-  };
-
-  useEffect(() => { void reloadProfile(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user]);
+  // Daily limit guard — kick back to home if user navigated here directly.
+  useEffect(() => {
+    if (!canCreateAlbumToday()) {
+      toast(t.dailyLimitBody);
+      navigate({ to: "/" });
+    }
+  }, [navigate, t.dailyLimitBody]);
 
   useEffect(() => {
     if (items.length > prevCountRef.current && scrollRef.current) {
@@ -129,12 +114,7 @@ function Create() {
   );
 
   const tryOpenPicker = () => {
-    // Free user already at the free cap → show paywall instead of opening picker.
-    if (!isPremium && items.length >= FREE_PHOTO_MAX) {
-      toast(t.photoLimitFreeReached);
-      setPaywallOpen(true);
-      return;
-    }
+    if (items.length >= PHOTO_MAX) { toast(t.photoMax3); return; }
     inputRef.current?.click();
   };
 
@@ -143,14 +123,8 @@ function Create() {
     if (!files.length) return;
     setBusy(true);
     try {
-      const remaining = photoMax - items.length;
-      // Free user trying to add a 4th+ photo in a single batch → upsell.
-      if (!isPremium && items.length + files.length > FREE_PHOTO_MAX) {
-        toast(t.photoLimitFreeReached);
-        setPaywallOpen(true);
-      } else if (files.length > remaining) {
-        toast(isPremium ? t.max10 : t.max3Free);
-      }
+      const remaining = PHOTO_MAX - items.length;
+      if (files.length > remaining) toast(t.photoMax3);
       const slice = files.slice(0, Math.max(0, remaining));
       const processed = await Promise.all(slice.map(async f => {
         const [url, meta] = await Promise.all([fileToDataUrl(f), extractMeta(f)]);
@@ -178,7 +152,6 @@ function Create() {
     setBusy(true);
     try {
       const lang = getLang();
-      // Reverse geocode (best-effort, in parallel with cache)
       const metas = await Promise.all(items.map(async i => {
         if (i.meta.lat != null && i.meta.lng != null && !i.meta.city) {
           const city = await reverseGeocode(i.meta.lat, i.meta.lng, lang);
@@ -200,14 +173,14 @@ function Create() {
   };
 
   const count = items.length;
-  const pct = Math.min(100, (count / photoMax) * 100);
+  const pct = Math.min(100, (count / PHOTO_MAX) * 100);
 
   return (
     <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-6 pb-4">
         <header className="flex items-center justify-between mb-6">
           <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
-          <span className="text-xs warm-muted">{count} / {photoMax}</span>
+          <span className="text-xs warm-muted">{count} / {PHOTO_MAX}</span>
         </header>
 
         <h1 className="font-display text-[28px] leading-tight warm-text mb-2">{t.pickPhotos}</h1>
@@ -219,7 +192,7 @@ function Create() {
         >
           <Info size={18} className="text-primary mt-0.5 flex-shrink-0" />
           <div className="text-[13.5px] leading-relaxed warm-text">
-            <b>{t.minMax}</b><br/>
+            <b>{t.photoMax3}</b><br/>
             <span className="warm-muted">{t.dragHint}</span>
           </div>
         </div>
@@ -287,7 +260,7 @@ function Create() {
       </div>
 
       <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
-        {items.length > 0 && items.length < photoMax && (
+        {items.length > 0 && items.length < PHOTO_MAX && (
           <button
             onClick={tryOpenPicker}
             disabled={busy}
@@ -295,14 +268,6 @@ function Create() {
           >
             <ImagePlus size={18} strokeWidth={1.8}/>
             {busy ? t.processing : t.addPhoto}
-          </button>
-        )}
-        {items.length > 0 && items.length >= photoMax && !isPremium && (
-          <button
-            onClick={() => setPaywallOpen(true)}
-            className="w-full rounded-full py-3 text-[13px] font-medium border border-primary/40 text-primary bg-card/50 active:scale-[0.98] transition-transform"
-          >
-            {t.photoLimitFreeReached}
           </button>
         )}
         <button
@@ -316,7 +281,6 @@ function Create() {
             : <>{t.chatWithAi} <ArrowRight size={18}/></>}
         </button>
       </div>
-      <Paywall open={paywallOpen} onClose={() => setPaywallOpen(false)} onSuccess={reloadProfile} />
     </div>
   );
 }
