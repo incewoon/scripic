@@ -53,6 +53,11 @@ function Chat() {
     const m = sessionStorage.getItem("memori_mode");
     return m === "fact" || m === "brief" ? m : "creative";
   });
+  const [tone] = useState<ChatTone>(() => {
+    if (typeof sessionStorage === "undefined") return "politely";
+    const t = sessionStorage.getItem("memori_tone");
+    return t === "friendly" || t === "short" ? t : "politely";
+  });
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
