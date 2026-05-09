@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar } from "lucide-react";
 import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
-import { useT, getLang, type ChatMode } from "@/lib/i18n";
+import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
 import { aiFetch } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
@@ -52,6 +52,11 @@ function Chat() {
     if (typeof sessionStorage === "undefined") return "creative";
     const m = sessionStorage.getItem("memori_mode");
     return m === "fact" || m === "brief" ? m : "creative";
+  });
+  const [tone] = useState<ChatTone>(() => {
+    if (typeof sessionStorage === "undefined") return "politely";
+    const t = sessionStorage.getItem("memori_tone");
+    return t === "friendly" || t === "short" ? t : "politely";
   });
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -228,6 +233,7 @@ function Chat() {
         period: meta.period,
         location: meta.location,
         mode,
+        tone,
       });
       if (!resp.ok) throw new Error();
       const album = await resp.json();
@@ -248,6 +254,7 @@ function Chat() {
       sessionStorage.removeItem("memori_meta");
       sessionStorage.removeItem("memori_photo_metas");
       sessionStorage.removeItem("memori_mode");
+      sessionStorage.removeItem("memori_tone");
       setMessages([]);
       toast.success(t.completed);
       // Mark as leaving so back-guard cleanup doesn't pop history.
@@ -306,6 +313,7 @@ function Chat() {
     sessionStorage.removeItem("memori_meta");
     sessionStorage.removeItem("memori_photo_metas");
     sessionStorage.removeItem("memori_mode");
+    sessionStorage.removeItem("memori_tone");
     setConfirmLeave(false);
     leavingRef.current = true;
     navigate({ to: "/" });

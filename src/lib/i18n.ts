@@ -71,13 +71,20 @@ const dict = {
     keepGoing: "Keep chatting",
     weaving: "Weaving your album…",
     weavingDesc: "Reading the conversation and arranging your photos.",
-    chatMode: "Chat mode",
+    chatMode: "Summary type",
     modeCreative: "Creative",
     modeFact: "Fact",
     modeBrief: "Brief",
     modeCreativeDesc: "Warm, story-rich conversation that weaves feelings into prose.",
     modeFactDesc: "Asks only what's visible in the photo; keeps the conversation as-is.",
     modeBriefDesc: "Short, simple questions and a brief album summary.",
+    toneSection: "Summary tone",
+    tonePolitely: "Politely",
+    toneFriendly: "Friendly",
+    toneShort: "Short",
+    tonePolitelyDesc: "Polite and formal tone, complete sentences.",
+    toneFriendlyDesc: "Casual, like chatting with a close friend.",
+    toneShortDesc: "Fragmented, subject-dropped, text-speak. Very brief.",
     laterCta: "Maybe later",
     // Permissions & notifications
     photoPermTitle: "Let Moara see your photos",
@@ -192,13 +199,20 @@ const dict = {
     keepGoing: "계속 이야기하기",
     weaving: "앨범을 엮는 중…",
     weavingDesc: "대화를 읽고 사진을 정리하고 있어요.",
-    chatMode: "대화 모드",
+    chatMode: "정리 타입",
     modeCreative: "Creative",
     modeFact: "Fact",
     modeBrief: "Brief",
     modeCreativeDesc: "감정을 담아 풍부한 산문으로 엮는 따뜻한 대화 모드예요.",
     modeFactDesc: "사진에서 객관적으로 보이는 것만 묻고, 대화 그대로 정리해요.",
     modeBriefDesc: "간단히 묻고 앨범도 짧게 요약해요.",
+    toneSection: "정리 어조",
+    tonePolitely: "Politely",
+    toneFriendly: "Friendly",
+    toneShort: "Short",
+    tonePolitelyDesc: "정중한 존댓말로 단정하게 정리해요.",
+    toneFriendlyDesc: "친한 친구에게 말하듯 편한 반말로 정리해요.",
+    toneShortDesc: "주어 생략, 짧고 무심한 음슴체로 정리해요.",
     laterCta: "다음에 할게요",
     // Permissions & notifications
     photoPermTitle: "사진 라이브러리 접근 권한이 필요해요",
@@ -252,6 +266,7 @@ const dict = {
 } as const;
 
 export type ChatMode = "creative" | "fact" | "brief";
+export type ChatTone = "politely" | "friendly" | "short";
 
 export function useT() {
   const lang = getLang();

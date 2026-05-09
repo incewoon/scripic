@@ -19,7 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type PhotoMeta } from "@/lib/photoMeta";
-import { useT, getLang, type ChatMode } from "@/lib/i18n";
+import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import { canCreateAlbumToday } from "@/lib/dailyLimit";
 
 const PHOTO_MAX = 3;
@@ -85,6 +85,7 @@ function Create() {
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<ChatMode>("creative");
+  const [tone, setTone] = useState<ChatTone>("politely");
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
@@ -166,6 +167,7 @@ function Create() {
         location: summarizeLocations(metas),
       }));
       sessionStorage.setItem("memori_mode", mode);
+      sessionStorage.setItem("memori_tone", tone);
       navigate({ to: "/chat" });
     } finally {
       setBusy(false);
@@ -221,6 +223,33 @@ function Create() {
           </div>
           <div className="text-[12px] warm-muted leading-relaxed">
             {mode === "creative" ? t.modeCreativeDesc : mode === "fact" ? t.modeFactDesc : t.modeBriefDesc}
+          </div>
+        </div>
+
+        <div className="mb-5">
+          <div className="text-[12px] font-medium warm-muted mb-2">{t.toneSection}</div>
+          <div className="flex gap-1.5 mb-2">
+            {(["politely", "friendly", "short"] as ChatTone[]).map(tn => {
+              const label = tn === "politely" ? t.tonePolitely : tn === "friendly" ? t.toneFriendly : t.toneShort;
+              const active = tone === tn;
+              return (
+                <button
+                  key={tn}
+                  onClick={() => setTone(tn)}
+                  className={`flex-1 px-3 py-2 rounded-full text-[13px] font-medium transition-all active:scale-[0.97] ${
+                    active
+                      ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                      : "border border-border/60 warm-text bg-card/50"
+                  }`}
+                  style={active ? { background: "var(--gradient-warm)" } : undefined}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-[12px] warm-muted leading-relaxed">
+            {tone === "politely" ? t.tonePolitelyDesc : tone === "friendly" ? t.toneFriendlyDesc : t.toneShortDesc}
           </div>
         </div>
 
