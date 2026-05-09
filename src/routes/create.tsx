@@ -85,6 +85,7 @@ function Create() {
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<ChatMode>("creative");
+  const [tone, setTone] = useState<ChatTone>("politely");
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
