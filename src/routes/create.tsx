@@ -226,6 +226,33 @@ function Create() {
           </div>
         </div>
 
+        <div className="mb-5">
+          <div className="text-[12px] font-medium warm-muted mb-2">{t.toneSection}</div>
+          <div className="flex gap-1.5 mb-2">
+            {(["politely", "friendly", "short"] as ChatTone[]).map(tn => {
+              const label = tn === "politely" ? t.tonePolitely : tn === "friendly" ? t.toneFriendly : t.toneShort;
+              const active = tone === tn;
+              return (
+                <button
+                  key={tn}
+                  onClick={() => setTone(tn)}
+                  className={`flex-1 px-3 py-2 rounded-full text-[13px] font-medium transition-all active:scale-[0.97] ${
+                    active
+                      ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                      : "border border-border/60 warm-text bg-card/50"
+                  }`}
+                  style={active ? { background: "var(--gradient-warm)" } : undefined}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-[12px] warm-muted leading-relaxed">
+            {tone === "politely" ? t.tonePolitelyDesc : tone === "friendly" ? t.toneFriendlyDesc : t.toneShortDesc}
+          </div>
+        </div>
+
         <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-5">
           <div
             className="h-full transition-all duration-500 rounded-full"
