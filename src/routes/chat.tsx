@@ -313,6 +313,7 @@ function Chat() {
     sessionStorage.removeItem("memori_meta");
     sessionStorage.removeItem("memori_photo_metas");
     sessionStorage.removeItem("memori_mode");
+    sessionStorage.removeItem("memori_tone");
     setConfirmLeave(false);
     leavingRef.current = true;
     navigate({ to: "/" });
