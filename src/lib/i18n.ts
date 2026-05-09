@@ -266,6 +266,7 @@ const dict = {
 } as const;
 
 export type ChatMode = "creative" | "fact" | "brief";
+export type ChatTone = "politely" | "friendly" | "short";
 
 export function useT() {
   const lang = getLang();
