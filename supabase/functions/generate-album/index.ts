@@ -8,6 +8,28 @@ const corsHeaders = {
 };
 
 type Mode = "creative" | "fact" | "brief";
+type Tone = "politely" | "friendly" | "short";
+
+function toneInstruction(lang: string, tone: Tone) {
+  const ko = lang === "ko";
+  if (tone === "friendly") {
+    if (ko) {
+      return `\n\n[어조 — 매우 중요]\n친한 친구가 말하듯 아주 캐주얼한 반말로 작성하세요. 격식체/존댓말 절대 금지. 줄임말과 가벼운 구어체를 자연스럽게 사용하되 욕설은 쓰지 마세요. 예: "~했어", "~였지", "~더라". 너무 정중하거나 딱딱하지 않게.`;
+    }
+    return `\n\n[Tone — VERY IMPORTANT]\nAct as my close friend. Keep your tone very casual, informal, and friendly. Use slang or contractions (like 'gonna', 'wanna') where appropriate. Don't be too formal or polite.`;
+  }
+  if (tone === "short") {
+    if (ko) {
+      return `\n\n[어조 — 매우 중요]\n한국어 음슴체로 작성하세요. 주어("나는", "그것은" 등)를 생략하고, 문장을 아주 짧게 파편화해서 무심하고 빠르게 정리하세요. 종결은 "~함", "~음", "~였음" 같은 음슴체. 격식체/존댓말 금지. 마치 바쁜 친구에게 문자 보내듯 극도로 간결하게.`;
+    }
+    return `\n\n[Tone — VERY IMPORTANT]\nTalk to me in short, fragmented sentences. Drop the subjects (like 'I' or 'It') and use text-speak. Keep it extremely brief, like you're texting a close friend in a hurry.`;
+  }
+  // politely (default)
+  if (ko) {
+    return `\n\n[어조 — 매우 중요]\n정중한 존댓말("~습니다", "~했습니다")로 단정하게 작성하세요. 반말 금지.`;
+  }
+  return `\n\n[Tone — VERY IMPORTANT]\nWrite in a polite, formal tone with complete sentences.`;
+}
 
 function systemFor(lang: string, mode: Mode) {
   const ko = lang === "ko";
