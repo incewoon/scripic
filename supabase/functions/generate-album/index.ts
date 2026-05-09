@@ -164,8 +164,9 @@ Produce:`;
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { messages, photoCount, lang = "en", period, location, mode = "creative" } = await req.json();
+    const { messages, photoCount, lang = "en", period, location, mode = "creative", tone = "politely" } = await req.json();
     const m: Mode = mode === "fact" || mode === "brief" ? mode : "creative";
+    const tn: Tone = tone === "friendly" || tone === "short" ? tone : "politely";
     const KEY = Deno.env.get("LOVABLE_API_KEY");
 
     const transcript = messages
@@ -178,7 +179,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemFor(lang, m) },
+          { role: "system", content: systemFor(lang, m) + toneInstruction(lang, tn) },
           { role: "user", content: userPrompt(lang, photoCount, transcript, m, period, location) },
         ],
         tools: [{
