@@ -157,8 +157,6 @@ const dict = {
     close: "닫기",
     addPhoto: "사진 추가",
     processing: "처리중…",
-    max10: "최대 10장까지",
-    max3Free: "무료 플랜: 최대 3장",
     photoOf: (i: number) => `사진 ${i}`,
     chatPhotos: (n: number) => `사진 ${n}장`,
     finish: "완성하기",
