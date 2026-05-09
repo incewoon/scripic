@@ -167,6 +167,7 @@ function Create() {
         location: summarizeLocations(metas),
       }));
       sessionStorage.setItem("memori_mode", mode);
+      sessionStorage.setItem("memori_tone", tone);
       navigate({ to: "/chat" });
     } finally {
       setBusy(false);
