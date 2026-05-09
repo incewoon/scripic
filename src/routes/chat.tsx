@@ -233,6 +233,7 @@ function Chat() {
         period: meta.period,
         location: meta.location,
         mode,
+        tone,
       });
       if (!resp.ok) throw new Error();
       const album = await resp.json();
