@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar } from "lucide-react";
 import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
-import { useT, getLang, type ChatMode } from "@/lib/i18n";
+import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
 import { aiFetch } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
