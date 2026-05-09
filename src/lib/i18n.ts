@@ -36,8 +36,6 @@ const dict = {
     close: "Close",
     addPhoto: "Add",
     processing: "Processing…",
-    max10: "Up to 10 photos",
-    max3Free: "Free plan: up to 3 photos",
     photoOf: (i: number) => `Photo ${i}`,
     chatPhotos: (n: number) => `${n} photo${n === 1 ? "" : "s"}`,
     finish: "Finish",
