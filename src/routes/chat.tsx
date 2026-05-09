@@ -254,6 +254,7 @@ function Chat() {
       sessionStorage.removeItem("memori_meta");
       sessionStorage.removeItem("memori_photo_metas");
       sessionStorage.removeItem("memori_mode");
+      sessionStorage.removeItem("memori_tone");
       setMessages([]);
       toast.success(t.completed);
       // Mark as leaving so back-guard cleanup doesn't pop history.
