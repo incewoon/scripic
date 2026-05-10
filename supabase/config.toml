@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-album]
 verify_jwt = false
+
+[functions.firebase-firestore]
+verify_jwt = false
