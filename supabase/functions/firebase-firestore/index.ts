@@ -24,7 +24,8 @@ function getSA() {
 }
 
 function getProjectId(): string {
-  return Deno.env.get("FIREBASE_PROJECT_ID") || getSA().project_id;
+  const env = Deno.env.get("FIREBASE_PROJECT_ID");
+  return (env && env.trim()) || getSA().project_id;
 }
 
 let cachedToken: { token: string; exp: number } | null = null;
