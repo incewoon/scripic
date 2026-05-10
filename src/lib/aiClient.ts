@@ -1,38 +1,65 @@
-// Single entry-point for all AI-related network calls.
-// Today: Supabase Edge Functions (chat / generate-album).
-// Tomorrow: Firebase Functions proxy fronting Gemini directly.
+// Single entry point for AI calls. Routes everything through Firebase
+// Cloud Functions (callable). The Gemini API key never reaches the client.
 //
-// To switch later, set VITE_AI_PROXY_URL in the env. When set, every call
-// goes to `${VITE_AI_PROXY_URL}/<path>` instead of the Supabase function.
-// The Bearer token also switches to the per-device id so the proxy can do
-// rate-limiting / quota counting without user accounts.
+// `chat` returns an async iterable of text deltas (streaming).
+// `generateAlbum` returns the parsed album JSON.
+// `dailyStatus` returns the per-device daily-album counter.
 
+import { httpsCallable } from "firebase/functions";
+import { getFns, isFirebaseReady } from "@/integrations/firebase/client";
 import { getDeviceId } from "./dailyLimit";
 
-type AiPath = "chat" | "generate-album";
-
-const PROXY_URL: string | undefined = (import.meta.env as any).VITE_AI_PROXY_URL;
-const SUPABASE_URL: string = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY: string = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-function endpoint(path: AiPath): string {
-  if (PROXY_URL) return `${PROXY_URL.replace(/\/$/, "")}/${path}`;
-  return `${SUPABASE_URL}/functions/v1/${path}`;
+function withDevice<T extends object>(payload: T): T & { deviceId: string } {
+  return { ...payload, deviceId: getDeviceId() };
 }
 
-function authHeader(): string {
-  if (PROXY_URL) return `Bearer ${getDeviceId()}`;
-  return `Bearer ${SUPABASE_KEY}`;
+export async function* aiChatStream(payload: {
+  messages: any[];
+  photos?: string[];
+  photoCount: number;
+  lang: string;
+  mode: string;
+  maxTurnsPerPhoto?: number;
+}): AsyncGenerator<string> {
+  if (!isFirebaseReady()) throw new Error("firebase_not_configured");
+  const fn = httpsCallable(getFns(), "chat");
+  // streamCallable: iterate stream of {delta} chunks, then resolve with full text.
+  const res = (fn as any).stream
+    ? await (fn as any).stream(withDevice(payload))
+    : null;
+
+  if (res?.stream) {
+    for await (const chunk of res.stream as AsyncIterable<any>) {
+      if (chunk?.delta) yield String(chunk.delta);
+    }
+    await res.data; // surface server-side errors
+    return;
+  }
+
+  // Fallback: non-streaming call returns full text in one shot.
+  const r = await fn(withDevice(payload));
+  const text = (r.data as any)?.text ?? "";
+  if (text) yield text;
 }
 
-export function aiFetch(path: AiPath, body: unknown): Promise<Response> {
-  return fetch(endpoint(path), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: authHeader(),
-      "X-Device-Id": getDeviceId(),
-    },
-    body: JSON.stringify(body),
-  });
+export async function aiGenerateAlbum(payload: {
+  messages: any[];
+  photoCount: number;
+  lang: string;
+  period?: string;
+  location?: string;
+  mode: string;
+  tone: string;
+}): Promise<any> {
+  if (!isFirebaseReady()) throw new Error("firebase_not_configured");
+  const fn = httpsCallable(getFns(), "generateAlbum");
+  const r = await fn(withDevice(payload));
+  return r.data;
+}
+
+export async function aiDailyStatus(): Promise<{ used: number; limit: number; today: string }> {
+  if (!isFirebaseReady()) throw new Error("firebase_not_configured");
+  const fn = httpsCallable(getFns(), "dailyStatus");
+  const r = await fn(withDevice({}));
+  return r.data as any;
 }
