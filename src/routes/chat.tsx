@@ -5,7 +5,7 @@ import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
-import { aiFetch } from "@/lib/aiClient";
+import { aiChatStream, aiGenerateAlbum } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 
 export const Route = createFileRoute("/chat")({
@@ -158,59 +158,30 @@ function Chat() {
     const userAgreed = wrapProposed && isAffirmative(text);
 
     try {
-      const resp = await aiFetch("chat", {
+      let assistant = "";
+      setMessages(m => [...m, { role: "assistant", content: "" }]);
+
+      for await (const delta of aiChatStream({
         messages: newMsgs,
         photos: prior.length === 0 ? ph : undefined,
         photoCount: ph.length,
         lang: getLang(),
         mode,
         maxTurnsPerPhoto: 3,
-      });
-
-      if (resp.status === 429) { toast.error(t.rateLimit); setBusy(false); return; }
-      if (resp.status === 402) { toast.error(t.aiQuota); setBusy(false); return; }
-      if (!resp.ok || !resp.body) throw new Error("stream failed");
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      let assistant = "";
-      setMessages(m => [...m, { role: "assistant", content: "" }]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        let nl;
-        while ((nl = buf.indexOf("\n")) !== -1) {
-          let line = buf.slice(0, nl);
-          buf = buf.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const j = line.slice(6).trim();
-          if (j === "[DONE]") break;
-          try {
-            const p = JSON.parse(j);
-            const c = p.choices?.[0]?.delta?.content;
-            if (c) {
-              assistant += c;
-              setMessages(m => m.map((x, i) => i === m.length - 1 ? { ...x, content: assistant } : x));
-            }
-          } catch {
-            buf = line + "\n" + buf;
-            break;
-          }
-        }
+      })) {
+        assistant += delta;
+        setMessages(m => m.map((x, i) => i === m.length - 1 ? { ...x, content: assistant } : x));
       }
 
-      // After response: if user agreed to wrap, auto-finish
       if (userAgreed && !finishingRef.current) {
         finishingRef.current = true;
-        // small delay so user sees the closing message
         setTimeout(() => { void finish(); }, 600);
       }
-    } catch {
-      toast.error(t.connectionError);
+    } catch (err: any) {
+      const code = err?.code ?? "";
+      if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
+      else if (code === "functions/unauthenticated" || code === "functions/permission-denied") toast.error(t.connectionError);
+      else toast.error(t.connectionError);
     } finally { setBusy(false); }
   }
 
