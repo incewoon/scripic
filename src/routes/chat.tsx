@@ -197,7 +197,7 @@ function Chat() {
     if (messages.length < 2) { toast.error(t.talkMore); finishingRef.current = false; return; }
     setGenerating(true);
     try {
-      const resp = await aiFetch("generate-album", {
+      const album = await aiGenerateAlbum({
         messages,
         photoCount: photos.length,
         lang: getLang(),
@@ -206,8 +206,6 @@ function Chat() {
         mode,
         tone,
       });
-      if (!resp.ok) throw new Error();
-      const album = await resp.json();
       const id = crypto.randomUUID();
       markAlbumCreatedToday();
       await saveAlbum({
@@ -228,13 +226,13 @@ function Chat() {
       sessionStorage.removeItem("memori_tone");
       setMessages([]);
       toast.success(t.completed);
-      // Mark as leaving so back-guard cleanup doesn't pop history.
       leavingRef.current = true;
-      // Replace history so device back from album goes to Home, not to chat/create.
       window.history.replaceState({}, "", "/");
       navigate({ to: "/album/$id", params: { id } });
-    } catch {
-      toast.error(t.failed);
+    } catch (err: any) {
+      const code = err?.code ?? "";
+      if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
+      else toast.error(t.failed);
       setGenerating(false);
       finishingRef.current = false;
     }
