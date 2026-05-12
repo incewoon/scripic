@@ -155,7 +155,9 @@ function Home() {
       ) : (
         <div className="space-y-5">
           {(sortedAlbums ?? albums).map((a) => {
-            const date = a.period || new Date(a.createdAt).toLocaleDateString(lang === "ko" ? "ko-KR" : "en-US", { year: "numeric", month: "short", day: "numeric" });
+            const locale = lang === "ko" ? "ko-KR" : "en-US";
+            const date = a.period || new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
+            const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
             return (
               <div key={a.id} className="album-card group relative">
                 <Link to="/album/$id" params={{ id: a.id }} className="block">
@@ -180,7 +182,7 @@ function Home() {
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[12px] warm-muted">{t.photosCount(a.photos.length)}</span>
-                    <span className="text-[12px] warm-muted tabular-nums">{date}</span>
+                    <span className="text-[12px] warm-muted tabular-nums">{createdDate}</span>
                   </div>
                 </Link>
               </div>
