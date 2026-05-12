@@ -182,7 +182,7 @@ function Home() {
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[12px] warm-muted">{t.photosCount(a.photos.length)}</span>
-                    <span className="text-[12px] warm-muted tabular-nums">{date}</span>
+                    <span className="text-[12px] warm-muted tabular-nums">{createdDate}</span>
                   </div>
                 </Link>
               </div>
