@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { ChevronLeft, Archive, Download, Upload, Palette, Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, Archive, Download, Upload, Palette, Check, Database } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useTheme, type Theme } from "@/lib/theme";
 import { exportBackupZip, importBackupZip } from "@/lib/backup";
+import { getStorageDiagnostics, requestPersistentStorage } from "@/lib/storage";
 import { BackupPinDialog } from "@/components/BackupPinDialog";
 
 export const Route = createFileRoute("/settings")({
