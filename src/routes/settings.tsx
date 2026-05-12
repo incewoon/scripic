@@ -44,6 +44,24 @@ function SettingsPage() {
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+  const [diag, setDiag] = useState<{ origin: string; persisted: boolean; usage: number; quota: number } | null>(null);
+
+  const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
+  useEffect(() => { refreshDiag(); }, []);
+
+  const onPersistRequest = async () => {
+    const ok = await requestPersistentStorage();
+    refreshDiag();
+    if (ok) toast.success(t.storageDiagPersistGranted);
+    else toast.error(t.storageDiagPersistDenied);
+  };
+  const fmtBytes = (n: number) => {
+    if (!n) return "0 B";
+    const u = ["B", "KB", "MB", "GB"];
+    let i = 0; let v = n;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${u[i]}`;
+  };
 
   const handleCopyrightTap = () => {
     tapCountRef.current += 1;
