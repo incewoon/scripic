@@ -1,74 +1,53 @@
-# 임시 테스트 환경 구축 플랜 (Lovable AI Gateway 우회)
+## 원인 분석
 
-## 목표
+앨범은 `src/lib/storage.ts`에서 `idb-keyval`(IndexedDB, 키 `memori_albums_v1`)에 저장됩니다. 데이터를 사라지게 하는 원인은 코드 버그가 아니라 **브라우저 저장소 휘발성** 쪽입니다. 실제로 가능한 시나리오:
 
-Firebase 배포 전에 **웹 미리보기에서 채팅/앨범 생성 흐름 전체**를 테스트할 수 있도록, Supabase Edge Function을 한 번 더 만들어 Lovable AI Gateway(Gemini)를 호출합니다. Firebase가 설정되면 자동으로 Firebase 경로로 전환됩니다. Android Studio 빌드 단계에서는 코드 수정 없이 Firebase 환경변수만 채우면 정식 경로로 동작합니다.
+1. **서로 다른 오리진(origin)에서 접속**
+   - 어제: Lovable preview(`id-preview--…lovable.app`)
+   - 오늘: published(`ince.lovable.app`) 또는 그 반대
+   - IndexedDB는 오리진별로 분리되므로 다른 도메인에서 보면 어제 앨범이 안 보입니다. **가장 흔한 원인**입니다.
 
----
+2. **모바일 브라우저의 저장소 자동 삭제**
+   - iOS Safari: 7일 미사용 시 IndexedDB 삭제 (ITP)
+   - Android Chrome / 인앱 브라우저: 저장 공간 부족 시 "best-effort" 데이터 자동 축출
+   - 시크릿 탭/인앱 브라우저는 세션 종료 시 삭제
+   - 우리는 `navigator.storage.persist()`를 호출하지 않아 "best-effort" 등급이라 축출 대상
 
-## 작업 항목
+3. **PWA 홈 추가 vs 일반 탭의 컨텍스트 차이**
+   - 일부 안드로이드 브라우저(특히 삼성 인터넷)는 홈 추가 PWA와 일반 탭의 저장소를 사실상 분리 취급
 
-### 1. Supabase Edge Function 2개 추가
-- `supabase/functions/chat-fallback/index.ts`
-  - Lovable AI Gateway `chat/completions` 호출 (스트리밍 SSE)
-  - 기존 `functions/src/prompts-chat.ts`의 시스템 프롬프트 로직을 Deno로 포팅
-  - 입력: `{ messages, photos, photoCount, lang, mode, maxTurnsPerPhoto }`
-  - 출력: SSE 스트림 (delta 텍스트)
-- `supabase/functions/album-fallback/index.ts`
-  - Lovable AI Gateway 호출 + tool calling으로 구조화된 앨범 JSON 추출
-  - `prompts-album.ts`의 시스템/유저 프롬프트 + tone instruction 포팅
-  - 입력: `{ messages, photoCount, lang, period, location, mode, tone }`
-  - 출력: `{ title, subtitle, intro, captions, closing, ... }` JSON
-- 두 함수 모두 `verify_jwt = false` (`supabase/config.toml` 업데이트)
-- 일일 1앨범 제한은 클라이언트 `dailyLimit.ts`로만 임시 체크 (정식 모드에선 Firestore가 담당)
+코드 자체는 정상이지만, 위 환경 요인 때문에 "어제 만든 게 오늘 안 보인다"가 실제로 발생합니다. Capacitor로 진짜 안드로이드 앱이 되면 이 문제는 사라지지만, 그 전까지는 **명시적 영속성 요청 + 자가진단 도구**로 보강해야 합니다.
 
-### 2. `src/lib/aiClient.ts` 분기 추가
-```text
-isFirebaseReady() ? Firebase httpsCallable : Supabase functions.invoke (스트리밍은 fetch+SSE)
-```
-- `aiChatStream`: Firebase 미설정 시 `${VITE_SUPABASE_URL}/functions/v1/chat-fallback` 으로 fetch 스트리밍
-- `aiGenerateAlbum`: Firebase 미설정 시 `supabase.functions.invoke('album-fallback')`
-- `aiDailyStatus`: Firebase 미설정 시 로컬 `dailyLimit.ts` 값 반환
+## 적용할 보강
 
-### 3. 에러 처리
-- 429 / 402 응답 시 i18n 키로 사용자에게 토스트 (요금 초과 / rate limit)
-- 채팅 화면의 "연결에 문제가 생겼어요" 토스트가 더 이상 뜨지 않는지 확인
+### 1. `navigator.storage.persist()` 요청 (`src/lib/storage.ts`)
+앱 부팅 시 단 한 번 호출하여 IndexedDB를 "persistent"로 승격. 브라우저가 사용자 동의나 휴리스틱(설치형/즐겨찾기 등) 통과 시 자동 승인하며, 승인된 이후 브라우저는 저장소를 임의 삭제하지 않음.
 
-### 4. 검증
-- `supabase--deploy_edge_functions` 로 두 함수 배포
-- `supabase--curl_edge_functions` 로 양쪽 동작 확인
-- 미리보기에서 사진 1장 업로드 → 대화 → 앨범 생성까지 한 사이클 수동 확인
+### 2. 저장소 상태 진단 패널 (설정 화면 하단)
+`src/routes/settings.tsx`에 "저장소 상태" 섹션 추가:
+- 현재 오리진(`location.origin`) 표시 — 도메인이 바뀌었는지 사용자가 직접 확인 가능
+- `navigator.storage.estimate()`의 `usage` / `quota` 표시
+- `navigator.storage.persisted()` 결과(영속/임시) 표시
+- "지금 영속화 요청" 버튼 — 다시 한 번 시도
 
----
+### 3. 도메인 분리 안내
+첫 진입 시 prod와 preview 두 URL이 다르면 데이터가 분리됨을 알리는 1회용 안내. 이미 있는 `StorageNoticeDialog`에 한 줄 추가.
 
-## 작업하지 않는 것 (의도적)
+### 4. (선택) ZIP 자동 백업 리마인더
+`src/lib/backup.ts`에 이미 ZIP 백업이 있으므로, 앨범이 5개 이상 쌓이면 "ZIP으로 백업해 두세요" 토스트를 1회 보여주는 정도만 추가.
 
-- Firebase Functions 코드(`functions/src/*`) 변경 없음 — 그대로 둠
-- `src/integrations/firebase/client.ts` 변경 없음 — Firebase 환경변수가 채워지면 자동으로 Firebase 경로 사용
-- 기존 Capacitor 설정, `FIREBASE_SETUP.md` 변경 없음
-- 일일 제한의 서버측 강제 (이건 Firebase 경로에서만 유효, 임시 테스트용 fallback은 클라이언트 카운터만)
+### 변경 파일
+- `src/lib/storage.ts` — `requestPersistentStorage()` 추가, 모듈 로드 시 호출
+- `src/routes/__root.tsx` — 부팅 시 한 번 영속성 요청
+- `src/routes/settings.tsx` — 저장소 진단 패널
+- `src/components/StorageNoticeDialog.tsx` — 도메인 분리 한 줄 추가
+- `src/lib/i18n.ts` — 새 문구
 
----
+### 손대지 않는 것
+- 앨범 저장 키/스키마 (`memori_albums_v1`) — 기존 데이터 호환 유지
+- Firebase / Supabase fallback 경로
+- `dailyLimit.ts` 로직 (별도 키 `moara_last_album_date`)
 
-## 결과 흐름
+## 사용자가 지금 직접 확인해 볼 것
 
-```text
-[웹 미리보기]
-  ├─ Firebase env 비어있음 → Supabase Edge (Lovable AI Gateway → Gemini)
-  └─ 즉시 채팅/앨범 테스트 가능
-
-[Android Studio 빌드 후]
-  ├─ VITE_FIREBASE_* 채워짐 → Firebase httpsCallable → Cloud Function → Gemini
-  └─ App Check + Firestore 일일 제한 강제
-```
-
-코드 한 줄도 안 건드리고 환경변수 세팅만으로 두 모드를 오갈 수 있습니다.
-
----
-
-## 기술 세부 (참고)
-
-- Lovable AI Gateway: `https://ai.gateway.lovable.dev/v1/chat/completions`, 모델 `google/gemini-2.5-flash-lite` (Firebase 측과 동일하게 맞춤)
-- 인증: Edge Function 내부에서 `Deno.env.get("LOVABLE_API_KEY")` (이미 secret으로 존재)
-- 프롬프트 파일은 Deno에서 직접 import 불가 → 두 함수 안에 인라인 복제 (단일 출처를 원하면 추후 `supabase/functions/_shared/prompts/`로 정리 가능)
-- 클라이언트 SSE 파싱은 `aiClient.ts`에서 line-by-line으로 처리 (AI Gateway 가이드 패턴)
+이 계획을 적용하기 전에라도, 어제 휴대폰에서 접속했던 **정확한 URL**과 오늘 접속한 URL이 같은지 먼저 확인해 주세요(주소창의 도메인 부분). 다르다면 어제 도메인으로 다시 들어가면 앨범이 그대로 있을 가능성이 높습니다.

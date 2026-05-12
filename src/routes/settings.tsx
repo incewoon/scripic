@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { ChevronLeft, Archive, Download, Upload, Palette, Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, Archive, Download, Upload, Palette, Check, Database } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useTheme, type Theme } from "@/lib/theme";
 import { exportBackupZip, importBackupZip } from "@/lib/backup";
+import { getStorageDiagnostics, requestPersistentStorage } from "@/lib/storage";
 import { BackupPinDialog } from "@/components/BackupPinDialog";
 
 export const Route = createFileRoute("/settings")({
@@ -43,6 +44,24 @@ function SettingsPage() {
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+  const [diag, setDiag] = useState<{ origin: string; persisted: boolean; usage: number; quota: number } | null>(null);
+
+  const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
+  useEffect(() => { refreshDiag(); }, []);
+
+  const onPersistRequest = async () => {
+    const ok = await requestPersistentStorage();
+    refreshDiag();
+    if (ok) toast.success(t.storageDiagPersistGranted);
+    else toast.error(t.storageDiagPersistDenied);
+  };
+  const fmtBytes = (n: number) => {
+    if (!n) return "0 B";
+    const u = ["B", "KB", "MB", "GB"];
+    let i = 0; let v = n;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${u[i]}`;
+  };
 
   const handleCopyrightTap = () => {
     tapCountRef.current += 1;
@@ -188,6 +207,46 @@ function SettingsPage() {
         </div>
       </section>
 
+      {/* Storage diagnostics */}
+      <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--gradient-warm)" }}>
+            <Database size={18} className="text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-display text-[17px] warm-text leading-tight">{t.storageDiagSection}</h2>
+            <p className="text-[12px] warm-muted mt-1 leading-relaxed">{t.storageDiagDesc}</p>
+          </div>
+        </div>
+
+        <dl className="space-y-2 text-[12.5px] mb-3">
+          <div className="flex items-start justify-between gap-3 rounded-xl bg-background/60 border border-border/60 px-3 py-2">
+            <dt className="warm-muted shrink-0">{t.storageDiagOrigin}</dt>
+            <dd className="warm-text text-right break-all font-mono text-[11px]">{diag?.origin ?? "—"}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-background/60 border border-border/60 px-3 py-2">
+            <dt className="warm-muted shrink-0">{t.storageDiagPersisted}</dt>
+            <dd className={`text-right text-[11.5px] ${diag?.persisted ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+              {diag === null ? "—" : diag.persisted ? t.storageDiagPersistedYes : t.storageDiagPersistedNo}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-background/60 border border-border/60 px-3 py-2">
+            <dt className="warm-muted shrink-0">{t.storageDiagUsage}</dt>
+            <dd className="warm-text text-right tabular-nums">
+              {diag ? `${fmtBytes(diag.usage)} / ${fmtBytes(diag.quota)}` : "—"}
+            </dd>
+          </div>
+        </dl>
+
+        {!diag?.persisted && (
+          <button
+            onClick={onPersistRequest}
+            className="w-full rounded-2xl bg-background/60 border border-border/60 px-4 py-3 active:scale-[0.99] transition-transform inline-flex items-center justify-center gap-2 text-[13px] warm-text"
+          >
+            {t.storageDiagPersistBtn}
+          </button>
+        )}
+      </section>
       <BackupPinDialog
         open={pinMode !== null}
         mode={pinMode ?? "export"}

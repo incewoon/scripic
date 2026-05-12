@@ -14,6 +14,43 @@ export type Album = {
 
 const KEY = "memori_albums_v1";
 
+/** Ask the browser to mark our IndexedDB as persistent so it isn't auto-evicted.
+ *  Safe to call repeatedly. Resolves with the resulting persistence state. */
+export async function requestPersistentStorage(): Promise<boolean> {
+  try {
+    if (typeof navigator === "undefined" || !navigator.storage) return false;
+    if (await navigator.storage.persisted?.()) return true;
+    if (typeof navigator.storage.persist === "function") {
+      return await navigator.storage.persist();
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Snapshot of the browser's storage state — used by the Settings diagnostics panel. */
+export async function getStorageDiagnostics(): Promise<{
+  origin: string;
+  persisted: boolean;
+  usage: number;
+  quota: number;
+}> {
+  const origin = typeof location !== "undefined" ? location.origin : "";
+  let persisted = false;
+  let usage = 0;
+  let quota = 0;
+  try {
+    if (typeof navigator !== "undefined" && navigator.storage) {
+      persisted = (await navigator.storage.persisted?.()) ?? false;
+      const est = await navigator.storage.estimate?.();
+      usage = est?.usage ?? 0;
+      quota = est?.quota ?? 0;
+    }
+  } catch { /* ignore */ }
+  return { origin, persisted, usage, quota };
+}
+
 const listeners = new Set<() => void>();
 export function subscribeAlbums(fn: () => void): () => void {
   listeners.add(fn);

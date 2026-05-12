@@ -37,8 +37,11 @@ export function StorageNoticeDialog({ open, onClose }: Props) {
           <h2 className="font-display text-[22px] warm-text leading-tight mb-2">
             {t.storageNoticeTitle}
           </h2>
-          <p className="text-[14px] warm-muted leading-relaxed mb-5">
+          <p className="text-[14px] warm-muted leading-relaxed mb-3">
             {t.storageNoticeBody}
+          </p>
+          <p className="text-[12px] warm-muted leading-relaxed mb-5 px-3 py-2 rounded-xl bg-background/60 border border-border/60">
+            {t.storageNoticeDomainHint}
           </p>
           <button
             onClick={close}
