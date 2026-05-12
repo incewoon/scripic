@@ -247,8 +247,7 @@ function SettingsPage() {
           </button>
         )}
       </section>
-
-
+      <BackupPinDialog
         open={pinMode !== null}
         mode={pinMode ?? "export"}
         busy={exporting || restoring}
