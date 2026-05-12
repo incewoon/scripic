@@ -207,7 +207,48 @@ function SettingsPage() {
         </div>
       </section>
 
-      <BackupPinDialog
+      {/* Storage diagnostics */}
+      <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--gradient-warm)" }}>
+            <Database size={18} className="text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-display text-[17px] warm-text leading-tight">{t.storageDiagSection}</h2>
+            <p className="text-[12px] warm-muted mt-1 leading-relaxed">{t.storageDiagDesc}</p>
+          </div>
+        </div>
+
+        <dl className="space-y-2 text-[12.5px] mb-3">
+          <div className="flex items-start justify-between gap-3 rounded-xl bg-background/60 border border-border/60 px-3 py-2">
+            <dt className="warm-muted shrink-0">{t.storageDiagOrigin}</dt>
+            <dd className="warm-text text-right break-all font-mono text-[11px]">{diag?.origin ?? "—"}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-background/60 border border-border/60 px-3 py-2">
+            <dt className="warm-muted shrink-0">{t.storageDiagPersisted}</dt>
+            <dd className={`text-right text-[11.5px] ${diag?.persisted ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+              {diag === null ? "—" : diag.persisted ? t.storageDiagPersistedYes : t.storageDiagPersistedNo}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-background/60 border border-border/60 px-3 py-2">
+            <dt className="warm-muted shrink-0">{t.storageDiagUsage}</dt>
+            <dd className="warm-text text-right tabular-nums">
+              {diag ? `${fmtBytes(diag.usage)} / ${fmtBytes(diag.quota)}` : "—"}
+            </dd>
+          </div>
+        </dl>
+
+        {!diag?.persisted && (
+          <button
+            onClick={onPersistRequest}
+            className="w-full rounded-2xl bg-background/60 border border-border/60 px-4 py-3 active:scale-[0.99] transition-transform inline-flex items-center justify-center gap-2 text-[13px] warm-text"
+          >
+            {t.storageDiagPersistBtn}
+          </button>
+        )}
+      </section>
+
+
         open={pinMode !== null}
         mode={pinMode ?? "export"}
         busy={exporting || restoring}
