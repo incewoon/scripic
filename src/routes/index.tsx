@@ -129,6 +129,14 @@ function Home() {
           )}
         </div>
         <div className="flex items-center gap-1.5">
+          <Link
+            to="/settings"
+            className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 h-7 w-7 warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
+            aria-label={t.settings}
+            title={t.settings}
+          >
+            <Settings size={12} />
+          </Link>
           <div className="relative">
             <button
               type="button"
