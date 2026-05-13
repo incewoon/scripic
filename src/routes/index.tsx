@@ -7,7 +7,9 @@ import { canCreateAlbumToday, nextAvailableDateLabel } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
 
 const SORT_KEY = "moara_album_sort_v1";
+const SORT_DIR_KEY = "moara_album_sort_dir_v1";
 type SortMode = "created" | "photo";
+type SortDir = "desc" | "asc";
 
 function parsePeriodDate(period?: string): number {
   if (!period) return 0;
