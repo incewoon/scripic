@@ -264,7 +264,7 @@ const dict = {
     backupExporting: "백업 파일을 준비하는 중…",
     backupRestoring: "복원하는 중…",
     themeSection: "테마",
-    themeSectionDesc: "Moara의 분위기를 골라보세요. 바로 적용돼요.",
+    themeSectionDesc: "분위기를 골라보세요. 바로 적용돼요.",
     themeWarm: "웜 크림",
     themeWarmDesc: "포근한 베이지와 코랄 — 기본 Moara 분위기예요.",
     themeMidnight: "미드나잇 잉크",
