@@ -234,17 +234,8 @@ function Home() {
         >
           <Plus size={18}/> {t.newAlbum}
         </button>
-        <div className="mt-3 flex items-center justify-center gap-2">
-          <Link
-            to="/settings"
-            className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 w-8 h-8 warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
-            aria-label={t.settings}
-            title={t.settings}
-          >
-            <Settings size={14} />
-          </Link>
-        </div>
       </div>
+
 
       <StorageNoticeDialog open={noticeOpen} onClose={() => setNoticeOpen(false)} />
 
