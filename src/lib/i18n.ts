@@ -133,6 +133,8 @@ const dict = {
     sortBy: "Sort by",
     sortCreatedDate: "Date created",
     sortPhotoDate: "Photo date",
+    sortDesc: "Newest first",
+    sortAsc: "Oldest first",
     // Daily limit
     dailyLimitTitle: "One album per day",
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
@@ -273,6 +275,8 @@ const dict = {
     sortBy: "정렬",
     sortCreatedDate: "만든 날짜",
     sortPhotoDate: "사진 날짜",
+    sortDesc: "최신순",
+    sortAsc: "오래된순",
     // Daily limit
     dailyLimitTitle: "하루에 한 개만 만들 수 있어요",
     dailyLimitBody: "오늘은 이미 추억을 하나 엮었어요. 내일 다시 새로운 앨범을 만들 수 있어요.",
