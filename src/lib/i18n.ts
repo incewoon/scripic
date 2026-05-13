@@ -133,6 +133,8 @@ const dict = {
     sortBy: "Sort by",
     sortCreatedDate: "Date created",
     sortPhotoDate: "Photo date",
+    sortDesc: "Newest first",
+    sortAsc: "Oldest first",
     // Daily limit
     dailyLimitTitle: "One album per day",
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
