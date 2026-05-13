@@ -89,12 +89,15 @@ function Home() {
 
   const sortedAlbums = albums
     ? [...albums].sort((a, b) => {
+        let diff: number;
         if (sortMode === "photo") {
           const ad = parsePeriodDate(a.period) || a.createdAt;
           const bd = parsePeriodDate(b.period) || b.createdAt;
-          return bd - ad;
+          diff = bd - ad;
+        } else {
+          diff = b.createdAt - a.createdAt;
         }
-        return b.createdAt - a.createdAt;
+        return sortDir === "desc" ? diff : -diff;
       })
     : null;
 
