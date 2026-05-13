@@ -117,7 +117,7 @@ function Home() {
         >
           <BookHeart size={12} className="text-primary" /> {t.storedLocally}
         </button>
-        <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Moara</h1>
+        <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Memory Weaver</h1>
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
       </header>
 
