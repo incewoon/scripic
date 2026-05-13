@@ -48,6 +48,7 @@ function Home() {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("created");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -57,6 +58,8 @@ function Home() {
     try {
       const saved = localStorage.getItem(SORT_KEY);
       if (saved === "created" || saved === "photo") setSortMode(saved);
+      const dir = localStorage.getItem(SORT_DIR_KEY);
+      if (dir === "desc" || dir === "asc") setSortDir(dir);
     } catch {}
   }, []);
 
@@ -64,6 +67,14 @@ function Home() {
     setSortMode(m);
     setSortOpen(false);
     try { localStorage.setItem(SORT_KEY, m); } catch {}
+  };
+
+  const toggleDir = () => {
+    setSortDir((prev) => {
+      const next = prev === "desc" ? "asc" : "desc";
+      try { localStorage.setItem(SORT_DIR_KEY, next); } catch {}
+      return next;
+    });
   };
 
   useEffect(() => {
