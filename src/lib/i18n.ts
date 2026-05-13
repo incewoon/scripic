@@ -122,7 +122,7 @@ const dict = {
     backupExporting: "Preparing backup…",
     backupRestoring: "Restoring…",
     themeSection: "Theme",
-    themeSectionDesc: "Choose how Moara looks. Changes apply right away.",
+    themeSectionDesc: "Choose how the app looks. Changes apply right away.",
     themeWarm: "Warm Cream",
     themeWarmDesc: "Soft beige & coral — the original Moara look.",
     themeMidnight: "Midnight Ink",
