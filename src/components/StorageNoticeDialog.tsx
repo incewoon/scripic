@@ -3,7 +3,7 @@ import { useT } from "@/lib/i18n";
 
 type Props = { open: boolean; onClose: () => void };
 
-const SEEN_KEY = "memori_storage_notice_seen_v1";
+const SEEN_KEY = "memori_storage_notice_seen_v2";
 
 export function hasSeenStorageNotice(): boolean {
   if (typeof localStorage === "undefined") return true;
