@@ -40,9 +40,14 @@ export function StorageNoticeDialog({ open, onClose }: Props) {
           <p className="text-[14px] warm-muted leading-relaxed mb-3">
             {t.storageNoticeBody}
           </p>
-          <p className="text-[12px] warm-muted leading-relaxed mb-5 px-3 py-2 rounded-xl bg-background/60 border border-border/60">
+          <p className="text-[12px] warm-muted leading-relaxed mb-3 px-3 py-2 rounded-xl bg-background/60 border border-border/60">
             {t.storageNoticeDomainHint}
           </p>
+          <div className="mb-5 px-3 py-3 rounded-xl bg-background/60 border border-border/60">
+            <h3 className="text-[13px] font-semibold warm-text mb-1">{t.freeNoticeTitle}</h3>
+            <p className="text-[12px] warm-muted leading-relaxed mb-1.5">{t.freeNoticeBody}</p>
+            <p className="text-[12px] warm-muted leading-relaxed">{t.freeNoticeSoon}</p>
+          </div>
           <button
             onClick={close}
             className="w-full text-primary-foreground rounded-full py-3 text-[14.5px] font-medium shadow-[var(--shadow-soft)] active:scale-[0.98] transition-transform"
