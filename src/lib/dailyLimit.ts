@@ -1,8 +1,10 @@
-// Daily album-creation limit (1 album per local day).
-// Client-side enforcement only; will be backed by the Firebase proxy later.
+// Daily album-creation limit (1 album per local day, +1 extra by review reward).
+// Client-side enforcement only.
 
 const KEY = "moara_last_album_date";
 const DEVICE_KEY = "moara_device_id";
+const EXTRA_GRANTED_KEY = "moara_extra_album_granted_date";
+const EXTRA_USED_KEY = "moara_extra_album_used_date";
 
 function todayKey(d = new Date()): string {
   const y = d.getFullYear();
@@ -16,17 +18,44 @@ export function getLastAlbumDate(): string | null {
   return localStorage.getItem(KEY);
 }
 
+export function hasExtraGrantedToday(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(EXTRA_GRANTED_KEY) === todayKey();
+}
+
+export function hasExtraUsedToday(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(EXTRA_USED_KEY) === todayKey();
+}
+
+export function grantExtraAlbumToday(): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(EXTRA_GRANTED_KEY, todayKey());
+}
+
 export function canCreateAlbumToday(): boolean {
   const last = getLastAlbumDate();
-  return last !== todayKey();
+  const today = todayKey();
+  if (last !== today) return true;
+  // Already used the base 1/day. Allow if extra granted and not yet used today.
+  return hasExtraGrantedToday() && !hasExtraUsedToday();
 }
 
 export function markAlbumCreatedToday(): void {
   if (typeof localStorage === "undefined") return;
-  localStorage.setItem(KEY, todayKey());
+  const today = todayKey();
+  const last = localStorage.getItem(KEY);
+  if (last === today) {
+    // Base slot already used → this counts as the extra album.
+    if (hasExtraGrantedToday()) {
+      localStorage.setItem(EXTRA_USED_KEY, today);
+    }
+  } else {
+    localStorage.setItem(KEY, today);
+  }
 }
 
-/** Stable per-install device id, used later by the Firebase proxy for limits. */
+/** Stable per-install device id. */
 export function getDeviceId(): string {
   if (typeof localStorage === "undefined") return "ssr";
   let id = localStorage.getItem(DEVICE_KEY);

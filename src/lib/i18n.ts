@@ -143,6 +143,16 @@ const dict = {
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
     dailyLimitNextAt: (d: string) => `Next available · ${d}`,
     okay: "Okay",
+    // Review reward
+    reviewRewardCta: "Share a review · get +1 album today",
+    reviewRewardTitle: "Upload your review screenshot",
+    reviewRewardDesc: "Post about Memory Weaver on Instagram, Facebook, Threads, X, or any social media, then upload the screenshot. AI will verify it and grant you 1 extra album today.",
+    reviewRewardPickImage: "Pick screenshot",
+    reviewRewardSubmit: "Verify & claim",
+    reviewRewardChecking: "Verifying…",
+    reviewRewardAlreadyUsed: "You've already claimed today's extra album. Come back tomorrow.",
+    reviewRewardError: "Couldn't verify. Please try another screenshot.",
+    reviewRewardSuccess: "+1 extra album granted!",
     // Backup PIN
     backupPinTitle: "Set a 4-digit backup PIN",
     backupPinHint: "This PIN encrypts your backup file. Keep it safe — without it the file can't be restored.",
@@ -288,6 +298,16 @@ const dict = {
     dailyLimitBody: "오늘은 이미 추억을 하나 엮었어요. 내일 다시 새로운 앨범을 만들 수 있어요.",
     dailyLimitNextAt: (d: string) => `다음 가능 · ${d}`,
     okay: "확인",
+    // Review reward
+    reviewRewardCta: "후기 올리고 +1개 더 만들기",
+    reviewRewardTitle: "후기 스크린샷을 올려주세요",
+    reviewRewardDesc: "Instagram, Facebook, Threads, X 등 SNS에 올린 Memory Weaver 후기 화면을 캡처해서 올려주세요. AI가 확인 후 오늘 추가 앨범 1개를 드려요.",
+    reviewRewardPickImage: "스크린샷 선택",
+    reviewRewardSubmit: "확인하고 받기",
+    reviewRewardChecking: "확인 중…",
+    reviewRewardAlreadyUsed: "오늘은 이미 추가 앨범을 사용하셨어요. 자정에 초기화돼요.",
+    reviewRewardError: "확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
+    reviewRewardSuccess: "추가 앨범 1개가 지급되었어요!",
     // Backup PIN
     backupPinTitle: "4자리 백업 PIN을 설정해주세요",
     backupPinHint: "이 PIN으로 백업 파일이 암호화돼요. 잃어버리면 복원할 수 없으니 잘 기억해주세요.",

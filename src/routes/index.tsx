@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { getAlbums, subscribeAlbums, type Album } from "@/lib/storage";
 import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { canCreateAlbumToday, nextAvailableDateLabel } from "@/lib/dailyLimit";
+import { canCreateAlbumToday, nextAvailableDateLabel, hasExtraUsedToday } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
+import { ReviewRewardDialog } from "@/components/ReviewRewardDialog";
 
 const SORT_KEY = "moara_album_sort_v1";
 const SORT_DIR_KEY = "moara_album_sort_dir_v1";
@@ -47,6 +48,7 @@ function Home() {
   const [albums, setAlbums] = useState<Album[] | null>(null);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
+  const [rewardOpen, setRewardOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
@@ -259,6 +261,14 @@ function Home() {
             </div>
             <p className="text-[13.5px] warm-muted leading-relaxed mb-2">{t.dailyLimitBody}</p>
             <p className="text-[12px] warm-muted mb-5">{t.dailyLimitNextAt(nextAvailableDateLabel(lang))}</p>
+            {!hasExtraUsedToday() && (
+              <button
+                onClick={() => { setLimitOpen(false); setRewardOpen(true); }}
+                className="w-full mb-2 rounded-full py-3 text-[14px] font-medium active:scale-[0.98] transition-transform border border-primary/40 bg-primary/10 warm-text inline-flex items-center justify-center gap-2"
+              >
+                <Sparkles size={14} /> {t.reviewRewardCta}
+              </button>
+            )}
             <button
               onClick={() => setLimitOpen(false)}
               className="w-full text-primary-foreground rounded-full py-3 text-[14px] font-medium active:scale-[0.98] transition-transform"
@@ -269,6 +279,13 @@ function Home() {
           </div>
         </div>
       )}
+
+      <ReviewRewardDialog
+        open={rewardOpen}
+        onClose={() => setRewardOpen(false)}
+        onGranted={() => { /* user can press Okay to close, then create */ }}
+      />
+
     </div>
   );
 }
