@@ -48,6 +48,7 @@ function Home() {
   const [albums, setAlbums] = useState<Album[] | null>(null);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
+  const [rewardOpen, setRewardOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
