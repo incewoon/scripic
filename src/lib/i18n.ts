@@ -101,6 +101,9 @@ const dict = {
     storageNoticeTitle: "Stored only on this device",
     storageNoticeBody: "Your photos and the captions woven from your conversation are kept only on this device. Even with the same account, they don't sync to other devices.",
     storageNoticeDomainHint: "Tip: each website address has its own storage. If you bookmark a different URL tomorrow (preview vs. published), past albums won't appear there.",
+    freeNoticeTitle: "Free during beta",
+    freeNoticeBody: "Memory Weaver is free right now. While in beta, each album holds up to 3 photos and you can create 1 album per day.",
+    freeNoticeSoon: "More photos per album, unlimited daily creation, and other features are coming soon.",
     gotIt: "Got it",
     // Storage diagnostics
     storageDiagSection: "Storage status",
