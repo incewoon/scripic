@@ -143,6 +143,16 @@ const dict = {
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
     dailyLimitNextAt: (d: string) => `Next available · ${d}`,
     okay: "Okay",
+    // Review reward
+    reviewRewardCta: "Share a review · get +1 album today",
+    reviewRewardTitle: "Upload your review screenshot",
+    reviewRewardDesc: "Post about Memory Weaver on Instagram, Facebook, Threads, X, or any social media, then upload the screenshot. AI will verify it and grant you 1 extra album today.",
+    reviewRewardPickImage: "Pick screenshot",
+    reviewRewardSubmit: "Verify & claim",
+    reviewRewardChecking: "Verifying…",
+    reviewRewardAlreadyUsed: "You've already claimed today's extra album. Come back tomorrow.",
+    reviewRewardError: "Couldn't verify. Please try another screenshot.",
+    reviewRewardSuccess: "+1 extra album granted!",
     // Backup PIN
     backupPinTitle: "Set a 4-digit backup PIN",
     backupPinHint: "This PIN encrypts your backup file. Keep it safe — without it the file can't be restored.",
