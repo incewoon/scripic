@@ -261,6 +261,14 @@ function Home() {
             </div>
             <p className="text-[13.5px] warm-muted leading-relaxed mb-2">{t.dailyLimitBody}</p>
             <p className="text-[12px] warm-muted mb-5">{t.dailyLimitNextAt(nextAvailableDateLabel(lang))}</p>
+            {!hasExtraUsedToday() && (
+              <button
+                onClick={() => { setLimitOpen(false); setRewardOpen(true); }}
+                className="w-full mb-2 rounded-full py-3 text-[14px] font-medium active:scale-[0.98] transition-transform border border-primary/40 bg-primary/10 warm-text inline-flex items-center justify-center gap-2"
+              >
+                <Sparkles size={14} /> {t.reviewRewardCta}
+              </button>
+            )}
             <button
               onClick={() => setLimitOpen(false)}
               className="w-full text-primary-foreground rounded-full py-3 text-[14px] font-medium active:scale-[0.98] transition-transform"
@@ -271,6 +279,13 @@ function Home() {
           </div>
         </div>
       )}
+
+      <ReviewRewardDialog
+        open={rewardOpen}
+        onClose={() => setRewardOpen(false)}
+        onGranted={() => { /* user can press Okay to close, then create */ }}
+      />
+
     </div>
   );
 }
