@@ -162,7 +162,7 @@ export async function importBackupZip(file: File, pin: string): Promise<ImportRe
   let meta: any;
   try { meta = JSON.parse(await metaFile.async("string")); }
   catch { return { ok: false, reason: "invalid" }; }
-  if (!meta || meta.app !== APP_NAME || typeof meta.salt !== "string" || typeof meta.iv !== "string") {
+  if (!meta || (meta.app !== APP_NAME && !LEGACY_APP_NAMES.includes(meta.app)) || typeof meta.salt !== "string" || typeof meta.iv !== "string") {
     return { ok: false, reason: "invalid" };
   }
 
