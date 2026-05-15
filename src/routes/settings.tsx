@@ -179,6 +179,41 @@ function SettingsPage() {
           </div>
         </div>
 
+        <div className="rounded-2xl border border-border/40 bg-background/40 p-3 mb-3 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <Smartphone size={14} className="mt-0.5 shrink-0 warm-text" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium warm-text leading-tight">{t.backupInfoDeviceTitle}</p>
+              <p className="text-[11px] warm-muted mt-1 leading-relaxed">{t.backupInfoDeviceBody}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <Lock size={14} className="mt-0.5 shrink-0 warm-text" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium warm-text leading-tight">{t.backupInfoPinTitle}</p>
+              <p className="text-[11px] warm-muted mt-1 leading-relaxed">{t.backupInfoPinBody}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <ListOrdered size={14} className="mt-0.5 shrink-0 warm-text" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium warm-text leading-tight">{t.backupInfoStepsTitle}</p>
+              <ol className="text-[11px] warm-muted mt-1 leading-relaxed list-decimal list-inside space-y-0.5">
+                <li>{t.backupInfoStep1}</li>
+                <li>{t.backupInfoStep2}</li>
+                <li>{t.backupInfoStep3}</li>
+              </ol>
+            </div>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle size={14} className="mt-0.5 shrink-0 warm-text" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium warm-text leading-tight">{t.backupInfoWarnTitle}</p>
+              <p className="text-[11px] warm-muted mt-1 leading-relaxed">{t.backupInfoWarnBody}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-2">
           <button
             onClick={onExport}
