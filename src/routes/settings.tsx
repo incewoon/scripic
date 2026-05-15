@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Archive, Download, Upload, Palette, Check, Database } from "lucide-react";
+import { ChevronLeft, Archive, Download, Upload, Palette, Check, Database, Smartphone, Lock, ListOrdered, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useTheme, type Theme } from "@/lib/theme";
