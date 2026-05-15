@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
-      { title: "Moara — Capture the moments you never want to forget" },
+      { title: "Memory Weaver — Capture the moments you never want to forget" },
       { name: "description", content: "Turn photos into a tender story album." },
       { name: "theme-color", content: "#f5b9b0" },
     ],

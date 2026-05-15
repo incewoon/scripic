@@ -12,7 +12,7 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
   head: () => ({
     meta: [
-      { title: "Settings — Moara" },
+      { title: "Settings — Memory Weaver" },
       { name: "description", content: "Theme and album backup settings." },
     ],
   }),
@@ -235,7 +235,7 @@ function SettingsPage() {
           <input
             ref={fileRef}
             type="file"
-            accept=".moarabak,.zip,application/zip,application/x-zip-compressed"
+            accept=".mwbak,.moarabak,.zip,application/zip,application/x-zip-compressed"
             className="hidden"
             onChange={onFileChosen}
           />

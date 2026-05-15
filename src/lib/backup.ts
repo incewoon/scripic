@@ -7,7 +7,8 @@ import { getAlbums, type Album } from "./storage";
 import { set, get } from "idb-keyval";
 
 const SCHEMA_VERSION = 2;
-const APP_NAME = "moara";
+const APP_NAME = "memoryweaver";
+const LEGACY_APP_NAMES = ["moara"];
 const PBKDF2_ITER = 200_000;
 
 const KEY = "memori_albums_v1";
@@ -130,7 +131,7 @@ export async function exportBackupZip(pin: string): Promise<void> {
   outer.file("payload.enc", cipher);
 
   const blob = await outer.generateAsync({ type: "blob" });
-  const filename = `moara-backup-${fileTimestamp()}.moarabak`;
+  const filename = `memoryweaver-backup-${fileTimestamp()}.mwbak`;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -161,7 +162,7 @@ export async function importBackupZip(file: File, pin: string): Promise<ImportRe
   let meta: any;
   try { meta = JSON.parse(await metaFile.async("string")); }
   catch { return { ok: false, reason: "invalid" }; }
-  if (!meta || meta.app !== APP_NAME || typeof meta.salt !== "string" || typeof meta.iv !== "string") {
+  if (!meta || (meta.app !== APP_NAME && !LEGACY_APP_NAMES.includes(meta.app)) || typeof meta.salt !== "string" || typeof meta.iv !== "string") {
     return { ok: false, reason: "invalid" };
   }
 
@@ -186,7 +187,7 @@ export async function importBackupZip(file: File, pin: string): Promise<ImportRe
   let manifest: any;
   try { manifest = JSON.parse(await manifestFile.async("string")); }
   catch { return { ok: false, reason: "invalid" }; }
-  if (!manifest || manifest.app !== APP_NAME || !Array.isArray(manifest.albums)) {
+  if (!manifest || (manifest.app !== APP_NAME && !LEGACY_APP_NAMES.includes(manifest.app)) || !Array.isArray(manifest.albums)) {
     return { ok: false, reason: "invalid" };
   }
 

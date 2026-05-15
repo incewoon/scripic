@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "app.lovable.aialbum",
-  appName: "Moara",
+  appName: "Memory Weaver",
   webDir: "dist",
   android: {
     allowMixedContent: false,
