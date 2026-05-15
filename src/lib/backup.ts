@@ -187,7 +187,7 @@ export async function importBackupZip(file: File, pin: string): Promise<ImportRe
   let manifest: any;
   try { manifest = JSON.parse(await manifestFile.async("string")); }
   catch { return { ok: false, reason: "invalid" }; }
-  if (!manifest || manifest.app !== APP_NAME || !Array.isArray(manifest.albums)) {
+  if (!manifest || (manifest.app !== APP_NAME && !LEGACY_APP_NAMES.includes(manifest.app)) || !Array.isArray(manifest.albums)) {
     return { ok: false, reason: "invalid" };
   }
 
