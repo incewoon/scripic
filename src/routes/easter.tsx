@@ -6,7 +6,7 @@ export const Route = createFileRoute("/easter")({
   component: EasterPage,
   head: () => ({
     meta: [
-      { title: "♡ — Moara" },
+      { title: "♡ — Memory Weaver" },
       { name: "description", content: "A little secret note." },
     ],
   }),
@@ -81,7 +81,7 @@ function EasterPage() {
           <span className="italic text-rose-500">all forever</span>
           <span className="inline-block ml-2 animate-pulse text-rose-500">♡</span>
         </h1>
-        <p className="mt-5 text-[13px] warm-muted">— a little secret from Moara</p>
+        <p className="mt-5 text-[13px] warm-muted">— a little secret from Memory Weaver</p>
       </div>
 
       <style>{`

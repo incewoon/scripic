@@ -12,7 +12,7 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
   head: () => ({
     meta: [
-      { title: "Settings — Moara" },
+      { title: "Settings — Memory Weaver" },
       { name: "description", content: "Theme and album backup settings." },
     ],
   }),

@@ -26,7 +26,7 @@ const PHOTO_MAX = 3;
 
 export const Route = createFileRoute("/create")({
   component: Create,
-  head: () => ({ meta: [{ title: "New album — Moara" }] }),
+  head: () => ({ meta: [{ title: "New album — Memory Weaver" }] }),
 });
 
 async function fileToDataUrl(file: File, maxDim = 1280): Promise<string> {
