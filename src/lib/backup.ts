@@ -7,7 +7,8 @@ import { getAlbums, type Album } from "./storage";
 import { set, get } from "idb-keyval";
 
 const SCHEMA_VERSION = 2;
-const APP_NAME = "moara";
+const APP_NAME = "memoryweaver";
+const LEGACY_APP_NAMES = ["moara"];
 const PBKDF2_ITER = 200_000;
 
 const KEY = "memori_albums_v1";
