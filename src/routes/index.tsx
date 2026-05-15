@@ -14,15 +14,19 @@ type SortDir = "desc" | "asc";
 
 function parsePeriodDate(period?: string): number {
   if (!period) return 0;
-  const direct = Date.parse(period);
-  if (!Number.isNaN(direct)) return direct;
-  const m = period.match(/(\d{4})[.\-/년\s]*(\d{1,2})?[.\-/월\s]*(\d{1,2})?/);
+  // "26.05.09", "26.05.09~10", "2026.05.09", "26-05-09", "2026년 5월 9일" 등
+  const m = period.match(/(\d{2,4})[.\-/년\s]+(\d{1,2})[.\-/월\s]+(\d{1,2})/);
   if (m) {
-    const y = Number(m[1]);
-    const mo = m[2] ? Number(m[2]) - 1 : 0;
-    const d = m[3] ? Number(m[3]) : 1;
-    return new Date(y, mo, d).getTime();
+    let y = Number(m[1]);
+    if (y < 100) y += 2000;
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]);
+    if (mo >= 0 && mo <= 11 && d >= 1 && d <= 31) {
+      return Date.UTC(y, mo, d);
+    }
   }
+  const iso = period.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return Date.UTC(+iso[1], +iso[2] - 1, +iso[3]);
   return 0;
 }
 
