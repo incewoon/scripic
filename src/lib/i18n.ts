@@ -174,7 +174,7 @@ const dict = {
   },
   ko: {
 
-    appTagline: "사진 한 장에 담긴 그날의 이야기",
+    appTagline: "Remember, every Moment has a Story",
     appSubtitle: "잊고 싶지 않은 순간들을 담아두세요",
     storedLocally: "모든 데이터는 이 기기에만 저장돼요",
     myAlbums: "내 앨범",
