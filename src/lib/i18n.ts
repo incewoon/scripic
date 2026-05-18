@@ -100,7 +100,7 @@ const dict = {
     backHome: "Back",
     storageNoticeTitle: "Stored only on this device",
     storageNoticeBody: "Your photos and the captions woven from your conversation are kept only on this device. Even with the same account, they don't sync to other devices.",
-    storageNoticeDomainHint: "Tip: each website address has its own storage. If you bookmark a different URL tomorrow (preview vs. published), past albums won't appear there.",
+    
     freeNoticeTitle: "Free during beta",
     freeNoticeBody: "Rementory is free right now. While in beta, each album holds up to 3 photos and you can create 1 album per day.",
     freeNoticeSoon: "More photos per album, unlimited daily creation, and other features are coming soon.",
@@ -265,7 +265,7 @@ const dict = {
     backHome: "뒤로",
     storageNoticeTitle: "이 기기에만 저장돼요",
     storageNoticeBody: "사진과 정리된 대화 내용은 이 기기에만 저장되며, 다른 기기와는 연동되지 않아요.",
-    storageNoticeDomainHint: "참고: 웹 주소(URL)마다 저장 공간이 따로예요. 어제와 오늘 다른 주소로 들어오면(미리보기 vs. 배포 주소) 이전 앨범이 안 보일 수 있어요.",
+    
     freeNoticeTitle: "무료 베타 안내",
     freeNoticeBody: "Rementory는 현재 무료로 제공돼요. 베타 기간 동안은 한 앨범에 사진 3장까지, 하루 1개 앨범 만들기로 제한돼요.",
     freeNoticeSoon: "더 많은 사진과 무제한 앨범 제작 등 추가 기능을 빠른 시일 내에 열어드릴게요.",
