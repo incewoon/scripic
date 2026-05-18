@@ -1,42 +1,35 @@
-## 목표
-사용자가 제공한 신규 프롬프트 문구로 3개 영역의 AI 프롬프트를 일괄 교체합니다.
+# 앱명 변경: Memory Weaver → Rementory
 
-## 변경 파일 (총 5개, Firebase ↔ Supabase 미러 동시 적용)
+저작권 이슈로 모든 사용자 노출 텍스트의 "Memory Weaver"를 **Rementory**로 교체합니다.
 
-### 1. 채팅 인터뷰 프롬프트
-- `functions/src/prompts-chat.ts`
-- `supabase/functions/_shared/prompts-chat.ts`
+## 변경 대상 (사용자 노출 문자열)
 
-변경 내용:
-- `turnLimitClause` — 변경 없음
-- `chatSystemPrompt` 의 Creative / Fact / Brief 세 모드 KO+EN 본문을 사용자가 제시한 새 문구로 전면 교체
-- 종료 조건은 모두 "위의 [응대 횟수 제한] 지침을 따르세요" 로 단일화 (각 모드의 중복된 `[READY_TO_FINISH]` 안내 제거)
-- Brief 모드에서 "사진 한 장당 1~2번만 짚고 빠르게 다음 사진으로" 같은 중복 한도 문구도 제거
+1. **메타/매니페스트/네이티브 설정**
+   - `src/routes/__root.tsx` — `<title>`, `og:title`, `twitter:title`
+   - `public/manifest.json` — `name`, `short_name`, description
+   - `capacitor.config.ts` — `appName`
+   - `index.html` (있다면 title/메타도 확인)
 
-### 2. 앨범 생성 프롬프트
-- `functions/src/prompts-album.ts`
-- `supabase/functions/_shared/prompts-album.ts`
+2. **i18n 문자열 (한/영 양쪽)**
+   - `src/lib/i18n.ts` — "Memory Weaver" 포함 모든 문구
 
-변경 내용:
-- `albumSystem` Creative/Fact/Brief KO+EN — "내용 정의 / 어조는 별도 지침" 분리를 명확히 한 새 문구로 교체. 캡션 개수 규칙은 유지.
-- `toneInstruction` Politely/Friendly/Short KO+EN — "[어조 지침 — 말투만 정의]" 헤더를 포함한 새 문구로 교체
-- `albumUserPrompt` — 헤더 뒤에 모드별 출력 스펙(`modeSpec`)을 `[출력 스펙] / [Output Spec]` 블록으로 두고, 그 뒤에 명시적인 JSON 출력 포맷(`{ "title": "...", ..., "captions": [...], "closing": "..." }`)을 항상 붙이도록 구조 변경. "마크다운 코드블록·설명 없이 JSON만" 지시 포함.
-- 모드별 출력 스펙(intro 문장 수, captions 글자 수 등)은 현행 그대로 유지
+3. **라우트 페이지**
+   - `src/routes/index.tsx`, `chat.tsx`, `create.tsx`, `album.$id.tsx`, `settings.tsx`, `easter.tsx` 의 모든 "Memory Weaver" 텍스트 (헤더/푸터/카피)
 
-### 3. 후기 인증 (review reward)
-- `src/lib/reviewReward.functions.ts`
+4. **AI 프롬프트 (리뷰 보상 + 앨범 생성)**
+   - `src/lib/reviewReward.functions.ts` — 시스템 프롬프트 안의 "Memory Weaver" 브랜드명, 인식 키워드, success_message 4종
+   - `functions/src/prompts-album.ts` 및 미러 `supabase/functions/_shared/prompts-album.ts` — "weaving memories" 등 브랜드 연관 문구 (단, "weaver/weaving"이 일반 동사로 쓰인 묘사 표현은 자연스럽게 Rementory 톤으로 수정)
 
-변경 내용 (`SYSTEM_PROMPT` 상수 본문):
-- 인정 플랫폼에 TikTok, YouTube Community, KakaoStory, Naver Blog, Naver Cafe, Band 추가 + 한국 SNS UI 단서(공감/좋아요, 댓글 등) 안내 추가
-- "텍스트가 없는 스크린샷도 반려" 조건을 spam rejection 항목에 추가
-- `confidence` 필드 설명을 "approved=true면 70 이상, false면 50 이하" 규칙으로 교체
-- success_messages 중 첫 번째 항목에서 "이제 2개의 앨범" 하드코딩 숫자를 "이제 추가로 앨범을 만들 수 있어요"로 교체 (나머지 3개는 그대로)
-- 그 외 FLOW 1·3, JSON 출력 규칙은 사용자가 제시한 문구로 정렬
+## 변경하지 **않을** 항목 (의도적 보존)
 
-## 영향 범위
-- 프롬프트 텍스트만 교체. 함수 시그니처/인자/반환 타입/호출부는 변경하지 않음.
-- `albumUserPrompt`는 본문 끝에 JSON 포맷 블록을 항상 추가하므로, 기존 호출부(`functions/src/index.ts`, `supabase/functions/album-fallback/index.ts`)는 그대로 동작. JSON 파싱 로직도 영향 없음.
-- UI/로직/타입/DB/i18n 변경 없음.
+- **localStorage 키** (`memori_albums_v1`, `memori_photo_picks_v1`, `memori_photo_perm_asked_v1`, `memori_storage_notice_seen_v2`) — 변경 시 기존 사용자의 저장된 앨범/설정이 전부 사라집니다. 내부 키이므로 사용자에게 보이지 않아 그대로 유지.
+- **`window.__MEMORI_NATIVE__` 플래그** (`src/lib/native.ts`) — Capacitor 네이티브 빌드에서 주입되는 내부 식별자. 변경하려면 안드로이드 네이티브 코드도 함께 바꿔야 하므로 보존.
+- **Capacitor `appId: "app.lovable.aialbum"`** — 변경 시 기존 설치 앱과 단절(다른 앱 취급). `appName`만 "Rementory"로.
 
-## 비고
-사용자 메시지의 `{photoCount}` 표기는 코드상 기존대로 `${photoCount}` 템플릿 리터럴로 치환해 적용합니다(이미 런타임 치환되는 패턴 유지).
+## 진행 방식
+
+`grep -rl "Memory Weaver"` 결과 11개 파일을 일괄 교체 + 프롬프트 4개 파일에서 브랜드명 참조 부분 정밀 교체. AI 프롬프트의 review reward 시스템 프롬프트는 한국어 success_message 4종도 모두 "Memory Weaver" → "Rementory"로 치환.
+
+## 확인 사항
+
+- 위 "보존" 항목(localStorage 키, native 플래그, Capacitor appId) 그대로 두는 것으로 진행해도 될까요? 만약 **완전 클린 리브랜딩**을 원하시면 키도 `rementory_*`로 마이그레이션(기존 데이터 1회성 이전 코드 포함)할 수 있습니다.

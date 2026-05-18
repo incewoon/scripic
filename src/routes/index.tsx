@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
-      { title: "Memory Weaver — Capture the moments you never want to forget" },
+      { title: "Rementory — Capture the moments you never want to forget" },
       { name: "description", content: "Turn photos into a tender story album." },
       { name: "theme-color", content: "#f5b9b0" },
     ],
@@ -123,7 +123,7 @@ function Home() {
         >
           <BookHeart size={12} className="text-primary" /> {t.storedLocally}
         </button>
-        <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Memory Weaver</h1>
+        <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Rementory</h1>
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
       </header>
 

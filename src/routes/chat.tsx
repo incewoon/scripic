@@ -10,7 +10,7 @@ import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
-  head: () => ({ meta: [{ title: "Chat — Memory Weaver" }] }),
+  head: () => ({ meta: [{ title: "Chat — Rementory" }] }),
 });
 
 type Msg = { role: "user" | "assistant"; content: string };
