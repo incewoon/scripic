@@ -242,8 +242,8 @@ function SettingsPage() {
         </div>
       </section>
 
-      {/* Storage diagnostics */}
-      <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">
+      {/* Storage diagnostics — hidden for now */}
+      {false && <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">}
         <div className="flex items-start gap-3 mb-3">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--gradient-warm)" }}>
             <Database size={18} className="text-primary-foreground" />
