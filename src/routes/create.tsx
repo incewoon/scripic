@@ -300,6 +300,8 @@ function Create() {
         <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
       </div>
 
+      <UploadLimitDialog open={limitReason !== null} reason={limitReason} onClose={() => setLimitReason(null)} />
+
       <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
         {items.length > 0 && items.length < PHOTO_MAX && (
           <button
