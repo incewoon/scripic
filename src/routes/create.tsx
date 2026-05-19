@@ -91,6 +91,7 @@ function Create() {
   const [mode, setMode] = useState<ChatMode>("creative");
   const [tone, setTone] = useState<ChatTone>("politely");
   const [limitReason, setLimitReason] = useState<"type" | "size" | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
