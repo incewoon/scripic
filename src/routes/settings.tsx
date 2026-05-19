@@ -290,6 +290,26 @@ function SettingsPage() {
         onSubmit={submitPin}
       />
 
+      <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--gradient-warm)" }}>
+            <Lock size={18} className="text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-display text-[17px] warm-text leading-tight">{t.privacyPolicySection}</h2>
+          </div>
+        </div>
+        <a
+          href={PRIVACY_POLICY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full rounded-2xl bg-background/60 border border-border/60 px-4 py-3 active:scale-[0.99] transition-transform inline-flex items-center justify-center gap-2 text-[13px] warm-text"
+        >
+          <ExternalLink size={14} />
+          {t.privacyPolicyLink}
+        </a>
+      </section>
+
       <p className="mt-10 mb-2 text-center text-[11px] warm-muted select-none">
         Copyright 2026.{" "}
         <span onClick={handleCopyrightTap} className="text-inherit no-underline cursor-default">ince</span>
