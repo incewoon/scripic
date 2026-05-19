@@ -175,6 +175,13 @@ const dict = {
     uploadLimitType: "Only image files can be uploaded. Videos and audio files aren't allowed.",
     uploadLimitSize: "Each image must be 10 MB or smaller.",
     uploadLimitOk: "Got it",
+    privacyConsentTitle: "Before you upload a photo",
+    privacyConsentBody: "This app sends your photo to Google Gemini API for AI analysis. Analysis results (conversation summary and comments) are stored only on your device. No data is stored on our servers.\n\nSee our Privacy Policy for details.",
+    privacyPolicyView: "View Privacy Policy",
+    privacyDontShowAgain: "Don't show again",
+    privacyAgreeContinue: "Agree & continue",
+    privacyPolicySection: "Privacy",
+    privacyPolicyLink: "Privacy Policy",
   },
   ko: {
 
