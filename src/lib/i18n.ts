@@ -171,6 +171,10 @@ const dict = {
     backupPinMismatch: "PINs don't match.",
     backupPinWrong: "Wrong PIN. The file couldn't be opened.",
     photoMax3: "Up to 3 photos at a time.",
+    uploadLimitTitle: "Can't add this file",
+    uploadLimitType: "Only image files can be uploaded. Videos and audio files aren't allowed.",
+    uploadLimitSize: "Each image must be 10 MB or smaller.",
+    uploadLimitOk: "Got it",
   },
   ko: {
 
@@ -336,6 +340,10 @@ const dict = {
     backupPinMismatch: "PIN이 일치하지 않아요.",
     backupPinWrong: "PIN이 올라요.",
     photoMax3: "한 번에 사진 3장까지 올릴 수 있어요.",
+    uploadLimitTitle: "추가할 수 없는 파일이에요",
+    uploadLimitType: "사진(이미지) 파일만 올릴 수 있어요. 영상이나 음성 파일은 사용할 수 없어요.",
+    uploadLimitSize: "사진 한 장은 10MB 이하만 올릴 수 있어요.",
+    uploadLimitOk: "확인",
   },
 } as const;
 
