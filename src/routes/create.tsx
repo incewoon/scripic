@@ -21,8 +21,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type PhotoMeta } from "@/lib/photoMeta";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import { canCreateAlbumToday } from "@/lib/dailyLimit";
+import { UploadLimitDialog } from "@/components/UploadLimitDialog";
 
 const PHOTO_MAX = 3;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_EXT = /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i;
 
 export const Route = createFileRoute("/create")({
   component: Create,
@@ -86,6 +89,7 @@ function Create() {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<ChatMode>("creative");
   const [tone, setTone] = useState<ChatTone>("politely");
+  const [limitReason, setLimitReason] = useState<"type" | "size" | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
@@ -121,7 +125,16 @@ function Create() {
 
   const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
+    if (inputRef.current) inputRef.current.value = "";
     if (!files.length) return;
+
+    // Validate file types and sizes BEFORE processing.
+    for (const f of files) {
+      const isImage = f.type.startsWith("image/") || ALLOWED_EXT.test(f.name);
+      if (!isImage) { setLimitReason("type"); return; }
+      if (f.size > MAX_FILE_BYTES) { setLimitReason("size"); return; }
+    }
+
     setBusy(true);
     try {
       const remaining = PHOTO_MAX - items.length;
@@ -134,7 +147,6 @@ function Create() {
       if (processed.length) setItems(p => [...p, ...processed]);
     } finally {
       setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
     }
   };
 
