@@ -351,6 +351,13 @@ const dict = {
     uploadLimitType: "사진(이미지) 파일만 올릴 수 있어요. 영상이나 음성 파일은 사용할 수 없어요.",
     uploadLimitSize: "사진 한 장은 10MB 이하만 올릴 수 있어요.",
     uploadLimitOk: "확인",
+    privacyConsentTitle: "사진을 올리기 전에 알려드려요",
+    privacyConsentBody: "이 앱은 사진을 Google Gemini API로 전송하여 AI 분석을 진행합니다. 분석 결과(대화 요약 및 코멘트)는 사용자 기기에만 저장되며, 개발자 서버에는 저장되지 않습니다.\n\n자세한 내용은 개인정보처리방침을 확인해주세요.",
+    privacyPolicyView: "개인정보처리방침 보기",
+    privacyDontShowAgain: "다시 보지 않기",
+    privacyAgreeContinue: "동의하고 계속하기",
+    privacyPolicySection: "개인정보",
+    privacyPolicyLink: "개인정보처리방침",
   },
 } as const;
 
