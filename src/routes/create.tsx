@@ -22,6 +22,7 @@ import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type 
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import { canCreateAlbumToday } from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
+import { PrivacyConsentDialog, shouldShowPrivacyConsent } from "@/components/PrivacyConsentDialog";
 
 const PHOTO_MAX = 3;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -90,6 +91,7 @@ function Create() {
   const [mode, setMode] = useState<ChatMode>("creative");
   const [tone, setTone] = useState<ChatTone>("politely");
   const [limitReason, setLimitReason] = useState<"type" | "size" | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
@@ -102,6 +104,11 @@ function Create() {
       navigate({ to: "/" });
     }
   }, [navigate, t.dailyLimitBody]);
+
+  // Show privacy / Gemini consent once per session (or until "don't show again").
+  useEffect(() => {
+    if (shouldShowPrivacyConsent()) setPrivacyOpen(true);
+  }, []);
 
   useEffect(() => {
     if (items.length > prevCountRef.current && scrollRef.current) {
@@ -301,6 +308,7 @@ function Create() {
       </div>
 
       <UploadLimitDialog open={limitReason !== null} reason={limitReason} onClose={() => setLimitReason(null)} />
+      <PrivacyConsentDialog open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
 
       <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
         {items.length > 0 && items.length < PHOTO_MAX && (
