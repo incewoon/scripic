@@ -105,6 +105,11 @@ function Create() {
     }
   }, [navigate, t.dailyLimitBody]);
 
+  // Show privacy / Gemini consent once per session (or until "don't show again").
+  useEffect(() => {
+    if (shouldShowPrivacyConsent()) setPrivacyOpen(true);
+  }, []);
+
   useEffect(() => {
     if (items.length > prevCountRef.current && scrollRef.current) {
       const el = scrollRef.current;
