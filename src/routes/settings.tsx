@@ -131,11 +131,11 @@ function SettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-2">
-          {(["warm", "midnight", "linen"] as const).map((id) => {
+          {(["timeless", "minimal", "storyteller"] as const).map((id) => {
             const selected = theme === id;
             const meta = THEME_PREVIEWS[id];
-            const label = id === "warm" ? t.themeWarm : id === "midnight" ? t.themeMidnight : t.themeLinen;
-            const desc = id === "warm" ? t.themeWarmDesc : id === "midnight" ? t.themeMidnightDesc : t.themeLinenDesc;
+            const label = id === "timeless" ? t.themeTimeless : id === "minimal" ? t.themeMinimal : t.themeStoryteller;
+            const desc = id === "timeless" ? t.themeTimelessDesc : id === "minimal" ? t.themeMinimalDesc : t.themeStorytellerDesc;
             return (
               <button
                 key={id}
