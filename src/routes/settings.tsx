@@ -13,7 +13,7 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
   head: () => ({
     meta: [
-      { title: "Settings — Rementory" },
+      { title: "Settings — Scripic" },
       { name: "description", content: "Theme and album backup settings." },
     ],
   }),
