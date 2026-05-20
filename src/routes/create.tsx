@@ -30,7 +30,7 @@ const ALLOWED_EXT = /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i;
 
 export const Route = createFileRoute("/create")({
   component: Create,
-  head: () => ({ meta: [{ title: "New album — Rementory" }] }),
+  head: () => ({ meta: [{ title: "New album — Scripic" }] }),
 });
 
 async function fileToDataUrl(file: File, maxDim = 1280): Promise<string> {
