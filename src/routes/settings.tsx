@@ -20,17 +20,17 @@ export const Route = createFileRoute("/settings")({
 });
 
 const THEME_PREVIEWS: Record<Theme, { bg: string; swatch1: string; swatch2: string; swatch3: string }> = {
-  warm: {
-    bg: "linear-gradient(135deg, oklch(0.97 0.045 55), oklch(0.94 0.04 340))",
-    swatch1: "oklch(0.74 0.11 25)", swatch2: "oklch(0.87 0.09 50)", swatch3: "oklch(0.99 0.014 75)",
+  timeless: {
+    bg: "linear-gradient(135deg, oklch(0.96 0.012 85), oklch(0.93 0.018 80))",
+    swatch1: "oklch(0.18 0.015 60)", swatch2: "oklch(0.74 0.11 80)", swatch3: "oklch(0.96 0.012 85)",
   },
-  midnight: {
-    bg: "linear-gradient(135deg, oklch(0.22 0.03 260), oklch(0.18 0.025 250))",
-    swatch1: "oklch(0.80 0.13 78)", swatch2: "oklch(0.26 0.03 260)", swatch3: "oklch(0.94 0.015 80)",
+  minimal: {
+    bg: "linear-gradient(135deg, oklch(1 0 0), oklch(0.97 0 0))",
+    swatch1: "oklch(0.10 0 0)", swatch2: "oklch(0.55 0 0)", swatch3: "oklch(1 0 0)",
   },
-  linen: {
-    bg: "linear-gradient(135deg, oklch(0.98 0.008 95), oklch(0.96 0.012 100))",
-    swatch1: "oklch(0.42 0.10 250)", swatch2: "oklch(0.86 0.04 240)", swatch3: "oklch(0.995 0.004 95)",
+  storyteller: {
+    bg: "linear-gradient(135deg, oklch(0.94 0.025 60), oklch(0.90 0.045 50))",
+    swatch1: "oklch(0.28 0.045 45)", swatch2: "oklch(0.58 0.14 40)", swatch3: "oklch(0.78 0.10 60)",
   },
 };
 
