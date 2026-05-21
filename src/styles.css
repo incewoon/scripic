@@ -351,3 +351,62 @@
 
 .warm-text { color: var(--warm-text); }
 .warm-muted { color: var(--warm-muted); }
+
+/* ============================================
+   High-contrast CTA + Info tokens (WCAG AAA)
+   Uniform across all three themes per spec
+   ============================================ */
+:root,
+[data-theme="timeless"],
+[data-theme="minimal"],
+[data-theme="storyteller"] {
+  --cta-bg: #1A1A1A;
+  --cta-bg-hover: #0F0F0F;
+  --cta-fg: #FFFFFF;
+  --cta-accent: #D4A017;
+  --info-bg: #F8F7F4;
+  --info-fg: #1A1A1A;
+  --info-border: #E5E2DA;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root,
+  [data-theme="timeless"],
+  [data-theme="minimal"],
+  [data-theme="storyteller"] {
+    --cta-bg: #0F0F0F;
+    --cta-bg-hover: #1C1C1C;
+    --cta-fg: #FFFFFF;
+    --cta-accent: #D4A017;
+    --info-bg: #1E1E1E;
+    --info-fg: #F0F0F0;
+    --info-border: #2A2A2A;
+  }
+}
+
+.btn-cta {
+  background: var(--cta-bg);
+  color: var(--cta-fg);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 2px 10px -4px rgba(0, 0, 0, 0.3);
+}
+.btn-cta:hover:not(:disabled),
+.btn-cta:focus-visible {
+  background: var(--cta-bg-hover);
+  box-shadow:
+    0 0 0 2px var(--cta-accent),
+    0 6px 22px -8px color-mix(in oklab, var(--cta-accent) 55%, transparent);
+  outline: none;
+}
+.btn-cta:disabled { opacity: 0.5; }
+
+.card-info {
+  background: var(--info-bg);
+  color: var(--info-fg);
+  border: 1px solid var(--info-border);
+}
+.card-info .info-muted {
+  color: color-mix(in oklab, var(--info-fg) 70%, transparent);
+}
