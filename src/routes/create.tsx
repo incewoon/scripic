@@ -207,16 +207,14 @@ function Create() {
         <h1 className="font-display text-[28px] leading-tight warm-text mb-2">{t.pickPhotos}</h1>
         <p className="text-[15px] warm-muted mb-4 leading-relaxed">{t.pickHint}</p>
 
-        <div
-          className="mb-5 rounded-2xl px-4 py-3.5 flex items-start gap-3 border border-primary/25"
-          style={{ background: "var(--gradient-warm)" }}
-        >
-          <Info size={18} className="text-primary mt-0.5 flex-shrink-0" />
-          <div className="text-[13.5px] leading-relaxed warm-text">
-            <b>{t.photoMax3}</b><br/>
-            <span className="warm-muted">{t.dragHint}</span>
+        <div className="card-info mb-5 rounded-2xl px-4 py-3.5 flex items-start gap-3">
+          <Info size={18} className="mt-0.5 flex-shrink-0" style={{ color: "var(--cta-accent)" }} />
+          <div className="text-[13.5px] leading-relaxed">
+            <b className="font-semibold">{t.photoMax3}</b><br/>
+            <span className="info-muted">{t.dragHint}</span>
           </div>
         </div>
+
 
         <div className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">{t.chatMode}</div>
