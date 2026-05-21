@@ -207,16 +207,14 @@ function Create() {
         <h1 className="font-display text-[28px] leading-tight warm-text mb-2">{t.pickPhotos}</h1>
         <p className="text-[15px] warm-muted mb-4 leading-relaxed">{t.pickHint}</p>
 
-        <div
-          className="mb-5 rounded-2xl px-4 py-3.5 flex items-start gap-3 border border-primary/25"
-          style={{ background: "var(--gradient-warm)" }}
-        >
-          <Info size={18} className="text-primary mt-0.5 flex-shrink-0" />
-          <div className="text-[13.5px] leading-relaxed warm-text">
-            <b>{t.photoMax3}</b><br/>
-            <span className="warm-muted">{t.dragHint}</span>
+        <div className="card-info mb-5 rounded-2xl px-4 py-3.5 flex items-start gap-3">
+          <Info size={18} className="mt-0.5 flex-shrink-0" style={{ color: "var(--cta-accent)" }} />
+          <div className="text-[13.5px] leading-relaxed">
+            <b className="font-semibold">{t.photoMax3}</b><br/>
+            <span className="info-muted">{t.dragHint}</span>
           </div>
         </div>
+
 
         <div className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">{t.chatMode}</div>
@@ -324,13 +322,13 @@ function Create() {
         <button
           onClick={next}
           disabled={items.length < 1 || busy}
-          className="w-full rounded-full py-4 text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-50 shadow-[var(--shadow-warm)] active:scale-[0.98] transition-transform"
-          style={{ background: "var(--gradient-warm)", color: "oklch(0.2 0.02 30)" }}
+          className="btn-cta w-full rounded-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
         >
           {items.length < 1
             ? t.pickAtLeastOne
             : <>{t.chatWithAi} <ArrowRight size={18}/></>}
         </button>
+
       </div>
     </div>
   );
