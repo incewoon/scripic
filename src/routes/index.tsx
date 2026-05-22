@@ -235,11 +235,10 @@ function Home() {
       <div className="fixed bottom-6 left-0 right-0 px-5 mx-auto max-w-md">
         <button
           onClick={onCreate}
-          className="btn-cta w-full rounded-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
+          className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
         >
           <Plus size={18} strokeWidth={2.5}/> {t.newAlbum}
         </button>
-
       </div>
 
 
