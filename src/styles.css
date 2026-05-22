@@ -360,10 +360,11 @@
 [data-theme="timeless"],
 [data-theme="minimal"],
 [data-theme="storyteller"] {
-  --cta-bg: #1A1A1A;
-  --cta-bg-hover: #0F0F0F;
-  --cta-fg: #FFFFFF;
-  --cta-accent: #D4A017;
+  --cta-bg: #D4A017;
+  --cta-bg-hover: #E0AE2A;
+  --cta-fg: #0A2540;
+  --cta-accent: #0A2540;
+  --cta-shadow: 0 8px 24px -10px color-mix(in oklab, #D4A017 55%, transparent);
   --info-bg: #F8F7F4;
   --info-fg: #1A1A1A;
   --info-border: #E5E2DA;
@@ -374,10 +375,11 @@
   [data-theme="timeless"],
   [data-theme="minimal"],
   [data-theme="storyteller"] {
-    --cta-bg: #0F0F0F;
-    --cta-bg-hover: #1C1C1C;
-    --cta-fg: #FFFFFF;
-    --cta-accent: #D4A017;
+    --cta-bg: #C9A66B;
+    --cta-bg-hover: #D6B47B;
+    --cta-fg: #111111;
+    --cta-accent: #F0D78C;
+    --cta-shadow: 0 8px 24px -10px color-mix(in oklab, #C9A66B 60%, transparent);
     --info-bg: #1E1E1E;
     --info-fg: #F0F0F0;
     --info-border: #2A2A2A;
@@ -389,15 +391,17 @@
   color: var(--cta-fg);
   font-weight: 700;
   letter-spacing: 0.01em;
+  border-radius: 14px;
+  padding-block: 0.95rem;
   transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 2px 10px -4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--cta-shadow);
 }
 .btn-cta:hover:not(:disabled),
 .btn-cta:focus-visible {
   background: var(--cta-bg-hover);
   box-shadow:
-    0 0 0 2px var(--cta-accent),
-    0 6px 22px -8px color-mix(in oklab, var(--cta-accent) 55%, transparent);
+    0 0 0 2px color-mix(in oklab, var(--cta-accent) 70%, transparent),
+    0 10px 28px -10px color-mix(in oklab, var(--cta-bg) 70%, transparent);
   outline: none;
 }
 .btn-cta:disabled { opacity: 0.5; }
