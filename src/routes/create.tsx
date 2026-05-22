@@ -84,12 +84,36 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
   );
 }
 
+const MODE_KEY = "scripic_default_mode";
+const TONE_KEY = "scripic_default_tone";
+const VALID_MODES: ChatMode[] = ["creative", "fact", "brief"];
+const VALID_TONES: ChatTone[] = ["politely", "friendly", "short"];
+
+function loadDefault<T extends string>(key: string, allowed: T[], fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const v = window.localStorage.getItem(key) as T | null;
+    return v && allowed.includes(v) ? v : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function Create() {
   const { t } = useT();
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<ChatMode>("creative");
-  const [tone, setTone] = useState<ChatTone>("politely");
+  const [mode, setModeState] = useState<ChatMode>(() => loadDefault(MODE_KEY, VALID_MODES, "creative"));
+  const [tone, setToneState] = useState<ChatTone>(() => loadDefault(TONE_KEY, VALID_TONES, "politely"));
+
+  const setMode = (m: ChatMode) => {
+    setModeState(m);
+    try { window.localStorage.setItem(MODE_KEY, m); } catch { /* ignore */ }
+  };
+  const setTone = (tn: ChatTone) => {
+    setToneState(tn);
+    try { window.localStorage.setItem(TONE_KEY, tn); } catch { /* ignore */ }
+  };
   const [limitReason, setLimitReason] = useState<"type" | "size" | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
