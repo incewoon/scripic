@@ -346,7 +346,7 @@ function Create() {
         <button
           onClick={next}
           disabled={items.length < 1 || busy}
-          className="btn-cta w-full rounded-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
+          className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
         >
           {items.length < 1
             ? t.pickAtLeastOne
