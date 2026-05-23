@@ -1,18 +1,35 @@
-## 목표
-앨범 생성 화면(`/create`)의 "정리 타입(mode)"과 "정리 어조(tone)" 선택값을 localStorage에 저장하여, 다음 앨범 생성 시 기본값으로 자동 선택되도록 한다.
+## 원인 분석
 
-## 변경 사항
+원본 사진 EXIF 날짜는 **2026-05-22**이지만 앨범 카드에는 **22.05.26** 으로 표시됩니다. 그리고 `parsePeriodDate()` 가 이 문자열의 첫 그룹("22")을 연도로 해석 → **2022년 5월 26일**로 정렬되어 "오래된 앨범"처럼 보입니다.
 
-**`src/routes/create.tsx`**
-- localStorage 키 추가: `scripic_default_mode`, `scripic_default_tone`
-- `useState` 초기값을 localStorage에서 읽어오도록 lazy initializer 적용 (없거나 잘못된 값이면 현재 기본값 `creative` / `politely` 사용, SSR 안전 처리 `typeof window`)
-- `setMode` / `setTone` 호출을 감싸는 핸들러 추가 → 상태 업데이트 + localStorage 저장
-- 기존 버튼 onClick 핸들러를 새 핸들러로 교체
+흐름을 따라가 보면:
 
-## 건드리지 않는 부분
-- 백엔드/서버 함수, i18n, 테마, 다른 라우트 모두 변경 없음
-- 세션 단위 키(`memori_mode`, `memori_tone`)는 유지 — 현재 앨범 생성 흐름과 무관하게 작동
-- 값 검증은 단순 화이트리스트(`["creative","fact","brief"]`, `["politely","friendly","short"]`)로 처리
+1. `src/lib/photoMeta.ts` → `summarizePeriod()` 가 EXIF 날짜를 **`yy.mm.dd`** 형식으로 만듭니다. 2026-05-22 → `"26.05.22"` ✅ (여기까지는 정상)
+2. `src/routes/chat.tsx` (line 200-217) — 앨범 생성 시 EXIF 의 `meta.period`("26.05.22") 를 AI 에 넘기지만, 저장할 때는 **`album.period || meta.period`** 로 AI가 돌려준 값을 우선 사용합니다.
+3. `supabase/functions/album-fallback` 의 Gemini 2.5 Flash-Lite 가 `"26.05.22"` 를 받아서 **포맷을 자기 마음대로 재구성**합니다. 프롬프트가 `"그대로"` 라고 명시해도 `yy.mm.dd` 가 모호하기 때문에 (앞 2자리를 일(day)로 오해) `"22.05.26"` 으로 바꿔서 반환합니다.
+4. 결과적으로 저장된 `period = "22.05.26"` → 홈 정렬 함수가 "2022년"으로 인식 → 카드에도 `22.05.26` 그대로 표시.
 
-## 검증
-- 옵션 변경 → 페이지 이동 → `/create` 재방문 시 마지막 선택값이 기본으로 표시되는지 확인
+즉 **AI 가 날짜 문자열을 재포맷하는 것이 근본 원인**, 모호한 `yy.mm.dd` 포맷이 이를 유발합니다.
+
+## 수정 계획 (프론트엔드만 변경, 백엔드 프롬프트는 그대로)
+
+### 1. `src/lib/photoMeta.ts` — 4자리 연도로 변경
+- `summarizePeriod()` 의 `fmt()` 를 `yy.mm.dd` → **`yyyy.mm.dd`** 로 변경 (`"2026.05.22"` 처럼).
+- 같은 달 범위 축약도 `"2026.05.22~25"` 형태로 유지.
+- 4자리 연도는 어떤 LLM도 day 로 오해할 수 없어 재포맷 자체를 막습니다.
+
+### 2. `src/routes/chat.tsx` — EXIF 우선
+- 저장 시 `period: album.period || meta.period` 를 **`period: meta.period || album.period`** 로 뒤집습니다.
+- EXIF 에서 기간이 추출됐으면 AI 가 어떤 값을 돌려주든 무시 → 이중 안전장치.
+
+### 3. `src/routes/index.tsx` — 정렬 견고화 (보조)
+- `parsePeriodDate()` 의 regex 가 4자리 연도를 먼저 매칭하도록 그대로 두되, 2자리 연도일 때만 `+2000` 보정 로직 유지 (이미 그렇게 되어 있어 변경 불필요, 검증만).
+
+### 4. 이미 저장된 앨범 (잘못된 "22.05.26" 데이터)
+- 마이그레이션은 하지 않습니다. 사용자가 해당 앨범 상세에서 기간을 직접 편집(EditableText 이미 존재) 가능. 별도 자동 보정을 원하시면 추가 작업으로 진행.
+
+## 변경 파일
+- `src/lib/photoMeta.ts`
+- `src/routes/chat.tsx`
+
+이 두 군데만 고치면 신규 앨범부터는 `2026.05.22` 처럼 명확히 표시되고 정렬도 올바르게 됩니다.
