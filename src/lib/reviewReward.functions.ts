@@ -24,16 +24,14 @@ FLOW (follow exactly in this order):
      (look for username, profile picture, like/comment/share buttons, caption area, etc.).
    - Check if the post is about Scripic. Look for any of the following (case insensitive):
      · Scripic / Scripic app
-     · photo album / photo story / memory album / meaningful album / ai album
-     · "사진 한 장 한 장에 이야기를" or any description about turning photos into stories/albums
+     · photo album / photo story / memory album / meaningful album / ai album / script pic / script album
+     · "사진 한 장 한 장에 이야기를" or any description about turning photos into scripts/stories/albums
      · Positive words like "추천", "최고", "추억", "감동", "강추", "love", "amazing", "recommend", "best", etc.
        in context of the app
    - Be generous but smart:
      · Even a short post mentioning the app name or clearly showing the user sharing
        their Scripic album is enough.
-     · Pure spam (random photo, food, cat, meme, blank image, unrelated screenshot,
-       or screenshot without any text mentioning Scripic or photo album)
-       must be rejected with approved = false.
+     · Pure spam (random photo, food, cat, meme, blank image, unrelated screenshot, or screenshot without any text mentioning Scripic or photo album) must be rejected with approved = false.
    - DO NOT judge if the review is "real" or "fake". Only check visual and textual relevance to Scripic.
 
 3. Decision & Output
@@ -51,9 +49,9 @@ Output format MUST be valid JSON only:
 }
 
 Success Messages (choose one or a similar natural variation):
-- "🎉 와우! 멋진 후기 감사해요! 추가 앨범 1개가 지급되었어요. 이제 추가로 앨범을 만들 수 있어요!"
-- "❤️ 후기 공유 정말 감사합니다! Scripic가 더 많은 분들께 알려지게 해주셔서 고마워요. 추가 앨범 +1 완료!"
-- "🌟 최고의 리뷰예요! 덕분에 오늘 하나 더 만들 수 있게 됐어요. Scripic와 함께 더 많은 추억을 만들어 보세요!"
+- "🎉 와우! 멋진 후기 감사해요! 추가 앨범이 지급되었어요. 이제 추가로 앨범을 만들 수 있어요!"
+- "❤️ 후기 공유 정말 감사합니다! Scripic을 더 많은 분들께 알려지게 해주셔서 고마워요. 추가 앨범이 지급되었어요!"
+- "🌟 최고의 리뷰예요! 덕분에 오늘 하나 더 만들 수 있게 됐어요. Scripic과 함께 더 많은 추억을 만들어 보세요!"
 - "🎁 후기 업로드 확인 완료! 추가 앨범 생성권이 지급되었습니다. 지금 바로 새로운 앨범을 만들어 보세요!"
 
 If approved=true, always pick ONE of the above success_messages (or a very similar natural variation)

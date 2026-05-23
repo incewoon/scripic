@@ -56,47 +56,51 @@ export function albumSystem(lang: string, mode: Mode) {
 function modeSpec(ko: boolean, mode: Mode, photoCount: number, period?: string, location?: string) {
   if (mode === "fact") {
     return ko
-      ? `- title: 8자 이내, 사실적
+      ? `- title: 10자 이내, 사실적
 - subtitle: 20자 이내
-- period: ${period ? `"${period}" 그대로` : "없으면 빈 문자열"}
-- location: ${location ? `"${location}" 그대로` : "없으면 빈 문자열"}
-- intro: 4~7문장, 사실 정리
+- period: "${period || ""}" (없으면 빈 문자열)
+- location: "${location || ""}" (없으면 빈 문자열)
+- intro: 5~10문장, 사실 정리
 - captions: 정확히 ${photoCount}개, 40~60자, 추측 금지
-- closing: 1~2문장 중립`
+- closing: 2~3문장 중립`
       : `- title: short factual title
 - subtitle: one factual line
-- period/location: as provided (if missing, empty string)
-- intro: 4–7 sentences, fact-based
+- period: "${period || ""}" (if missing empty string)
+- location: "${location || ""}" (if missing empty string)
+- intro: 5–10 sentences, fact-based
 - captions: exactly ${photoCount}, 12–20 words each, no guessing
-- closing: 1–2 neutral sentences`;
+- closing: 2–3 neutral sentences`;
   }
   if (mode === "brief") {
     return ko
-      ? `- title: 8자 이내
+      ? `- title: 8자 이내, 사실적
 - subtitle: 15자 이내
-- period/location: 짧게
-- intro: 2~3문장
-- captions: ${photoCount}개, 15자 내외
-- closing: 1문장`
-      : `- title: short
-- subtitle: one short line
-- period/location: short
-- intro: 2–3 sentences
-- captions: exactly ${photoCount}, 6–10 words each
-- closing: single sentence`;
+- period: "${period || ""}" (없으면 빈 문자열)
+- location: "${location || ""}" (없으면 빈 문자열)
+- intro: 4~8문장, 사실 정리
+- captions: 정확히 ${photoCount}개, 30~50자, 추측 금지
+- closing: 1문장 중립`
+      : `- title: short factual title
+- subtitle: one factual line
+- period: "${period || ""}" (if missing empty string)
+- location: "${location || ""}" (if missing empty string)
+- intro: 4–8 sentences, fact-based
+- captions: exactly ${photoCount}, 8–15 words each, no guessing
+- closing: 1 neutral sentences`;
   }
   return ko
-    ? `- title: 8자 이내 감성 제목
+    ? `- title: 10자 이내 감성 제목
 - subtitle: 20자 이내
-- period: ${period ? `"${period}" 그대로` : "추정 가능한 짧은 기간 또는 빈 문자열"}
-- location: ${location ? `"${location}" 그대로` : "도시 정도 또는 빈 문자열"}
-- intro: 5~8문장, 디테일 풍부
+- period: "${period || ""}" (없으면 빈 문자열)
+- location: "${location || ""}" (없으면 빈 문자열)
+- intro: 5~10문장, 디테일 풍부
 - captions: 정확히 ${photoCount}개, 40~60자
 - closing: 따뜻한 2~3문장`
     : `- title: short evocative title
 - subtitle: one line
-- period/location: as provided (if missing, brief estimate or empty string)
-- intro: 5–8 sentences, detail-rich
+- period: "${period || ""}" (if missing empty string)
+- location: "${location || ""}" (if missing empty string)
+- intro: 5–10 sentences, detail-rich
 - captions: exactly ${photoCount}, 12–20 words each
 - closing: warm 2–3 sentences`;
 }
@@ -119,7 +123,9 @@ export function albumUserPrompt(
 
   if (ko) {
     return `사진 ${photoCount}장 (사진 1 ~ 사진 ${photoCount}).
-${period ? `촬영 기간(EXIF): ${period}\n` : ""}${location ? `장소(EXIF): ${location}\n` : ""}대화 기록:
+촬영 기간(EXIF): ${period || ""}
+장소(EXIF): ${location || ""}
+대화 기록:
 ${transcript}
 
 요청: 아래 스펙에 맞춰 앨범 텍스트를 작성하세요. 반드시 아래 JSON 형식으로만 출력하세요. 마크다운 코드블록·설명·전처리 없이 JSON 객체만 출력하세요.
@@ -132,7 +138,9 @@ ${jsonFormat}`;
   }
 
   return `${photoCount} photos (Photo 1 ~ Photo ${photoCount}).
-${period ? `Date range (EXIF): ${period}\n` : ""}${location ? `Location (EXIF): ${location}\n` : ""}Conversation:
+Date range (EXIF): ${period || ""}
+Location (EXIF): ${location || ""}
+Conversation:
 ${transcript}
 
 Produce album text according to the spec below. Output MUST be valid JSON only. No markdown code blocks, no preamble, no explanation — JSON object only.
