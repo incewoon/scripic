@@ -50,13 +50,13 @@ export function summarizePeriod(metas: PhotoMeta[], lang: string): string | unde
   const first = dates[0];
   const last = dates[dates.length - 1];
   const fmt = (d: Date) => {
-    const yy = String(d.getFullYear()).slice(2);
+    const yyyy = String(d.getFullYear());
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
-    return `${yy}.${mm}.${dd}`;
+    return `${yyyy}.${mm}.${dd}`;
   };
   if (first.toDateString() === last.toDateString()) return fmt(first);
-  // same year+month → "26.4.24~25"
+  // same year+month → "2026.05.22~25"
   if (first.getFullYear() === last.getFullYear() && first.getMonth() === last.getMonth()) {
     return `${fmt(first)}~${String(last.getDate()).padStart(2, "0")}`;
   }
