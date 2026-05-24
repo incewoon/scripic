@@ -1,35 +1,72 @@
-## 원인 분석
+# Plan: `gemini-proxy` Supabase Edge Function
 
-원본 사진 EXIF 날짜는 **2026-05-22**이지만 앨범 카드에는 **22.05.26** 으로 표시됩니다. 그리고 `parsePeriodDate()` 가 이 문자열의 첫 그룹("22")을 연도로 해석 → **2022년 5월 26일**로 정렬되어 "오래된 앨범"처럼 보입니다.
+새 Supabase Edge Function `gemini-proxy`를 만들어 Firebase ID Token 검증 → Firestore 일일 사용 제한 확인 → Gemini API 호출 → Firestore 플래그 업데이트의 흐름을 처리합니다.
 
-흐름을 따라가 보면:
+## 생성/수정할 파일
 
-1. `src/lib/photoMeta.ts` → `summarizePeriod()` 가 EXIF 날짜를 **`yy.mm.dd`** 형식으로 만듭니다. 2026-05-22 → `"26.05.22"` ✅ (여기까지는 정상)
-2. `src/routes/chat.tsx` (line 200-217) — 앨범 생성 시 EXIF 의 `meta.period`("26.05.22") 를 AI 에 넘기지만, 저장할 때는 **`album.period || meta.period`** 로 AI가 돌려준 값을 우선 사용합니다.
-3. `supabase/functions/album-fallback` 의 Gemini 2.5 Flash-Lite 가 `"26.05.22"` 를 받아서 **포맷을 자기 마음대로 재구성**합니다. 프롬프트가 `"그대로"` 라고 명시해도 `yy.mm.dd` 가 모호하기 때문에 (앞 2자리를 일(day)로 오해) `"22.05.26"` 으로 바꿔서 반환합니다.
-4. 결과적으로 저장된 `period = "22.05.26"` → 홈 정렬 함수가 "2022년"으로 인식 → 카드에도 `22.05.26` 그대로 표시.
+1. **`supabase/functions/gemini-proxy/index.ts`** (신규)
+   - Deno serve 핸들러
+   - CORS preflight 처리
+   - 로직 흐름 (아래 참조)
 
-즉 **AI 가 날짜 문자열을 재포맷하는 것이 근본 원인**, 모호한 `yy.mm.dd` 포맷이 이를 유발합니다.
+2. **`supabase/config.toml`** (수정)
+   - `[functions.gemini-proxy]` 블록 추가, `verify_jwt = false` (Firebase ID Token으로 자체 인증하므로 Supabase JWT 검증 비활성)
 
-## 수정 계획 (프론트엔드만 변경, 백엔드 프롬프트는 그대로)
+## 기술 세부사항
 
-### 1. `src/lib/photoMeta.ts` — 4자리 연도로 변경
-- `summarizePeriod()` 의 `fmt()` 를 `yy.mm.dd` → **`yyyy.mm.dd`** 로 변경 (`"2026.05.22"` 처럼).
-- 같은 달 범위 축약도 `"2026.05.22~25"` 형태로 유지.
-- 4자리 연도는 어떤 LLM도 day 로 오해할 수 없어 재포맷 자체를 막습니다.
+### Imports
+```ts
+import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
+```
 
-### 2. `src/routes/chat.tsx` — EXIF 우선
-- 저장 시 `period: album.period || meta.period` 를 **`period: meta.period || album.period`** 로 뒤집습니다.
-- EXIF 에서 기간이 추출됐으면 AI 가 어떤 값을 돌려주든 무시 → 이중 안전장치.
+### CORS 헤더
+```
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: POST, OPTIONS
+Access-Control-Allow-Headers: Authorization, Content-Type
+```
 
-### 3. `src/routes/index.tsx` — 정렬 견고화 (보조)
-- `parsePeriodDate()` 의 regex 가 4자리 연도를 먼저 매칭하도록 그대로 두되, 2자리 연도일 때만 `+2000` 보정 로직 유지 (이미 그렇게 되어 있어 변경 불필요, 검증만).
+### `getAccessToken()` — Google OAuth2
+- `FIREBASE_SERVICE_ACCOUNT` JSON 파싱 → `client_email`, `private_key`, `project_id`
+- `private_key`의 PEM → PKCS8 변환 후 `crypto.subtle.importKey`로 RS256 키 생성
+- djwt `create()`로 JWT 생성
+  - header: `{ alg: "RS256", typ: "JWT" }`
+  - payload: `{ iss, scope: "https://www.googleapis.com/auth/datastore", aud: "https://oauth2.googleapis.com/token", exp: getNumericDate(3600), iat: getNumericDate(0) }`
+- `POST https://oauth2.googleapis.com/token`
+  - body (urlencoded): `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion={jwt}`
+- 모듈 레벨 캐시: `{ token, expiresAt }`; `expiresAt - 60s` 이전이면 재사용
 
-### 4. 이미 저장된 앨범 (잘못된 "22.05.26" 데이터)
-- 마이그레이션은 하지 않습니다. 사용자가 해당 앨범 상세에서 기간을 직접 편집(EditableText 이미 존재) 가능. 별도 자동 보정을 원하시면 추가 작업으로 진행.
+### 요청 처리 흐름
+1. `OPTIONS` → 204 + CORS 헤더
+2. `POST` 외 메서드 → 405
+3. `Authorization` 헤더에서 `Bearer ` 추출 → 없으면 401
+4. Firebase ID Token 검증:
+   - `POST https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_WEB_API_KEY}` body `{ idToken }`
+   - 응답 `users[0].localId` → `uid`, 실패 시 401
+5. Access Token 발급 (`getAccessToken()`)
+6. Firestore GET `users/${uid}/flags/daily`:
+   - 200: `fields.lastUsedDate.stringValue === todayUTC()` → 429 `{ error: "daily_limit_exceeded" }`
+   - 404: 신규 사용자, 통과
+   - 기타: 500
+7. Gemini 호출:
+   - 요청 body `{ messages, systemInstruction? }`을 Gemini 포맷으로 변환
+     - `contents`: `messages` (role/parts 그대로 사용 가능)
+     - `systemInstruction` 있으면 `{ parts: [{ text }] }`
+   - `POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
+   - 응답에서 `candidates[0].content.parts[*].text` join
+8. Firestore PATCH `users/${uid}/flags/daily`:
+   - body: `{ fields: { lastUsedDate: { stringValue: todayUTC() }, metadata: { mapValue: { fields: {} } } } }`
+9. 응답: `{ result: "..." }` 200
 
-## 변경 파일
-- `src/lib/photoMeta.ts`
-- `src/routes/chat.tsx`
+### 오늘 날짜 (UTC)
+```ts
+new Date().toISOString().slice(0, 10)
+```
 
-이 두 군데만 고치면 신규 앨범부터는 `2026.05.22` 처럼 명확히 표시되고 정렬도 올바르게 됩니다.
+### 에러 처리
+- 모든 예외는 `try/catch`로 감싸 `console.error("[gemini-proxy]", ...)` 로그 후 적절한 status + `{ error: message }` JSON 반환
+
+## 비고
+- 기존 `chat-fallback`, `album-fallback` 함수는 변경하지 않습니다.
+- Secrets `GEMINI_API_KEY`, `FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_WEB_API_KEY`는 이미 프로젝트에 등록되어 있어 추가 작업 불필요합니다.
+- 클라이언트 코드(`aiClient.ts` 등) 연결은 이번 작업 범위 밖이며 별도 요청 시 진행합니다.
