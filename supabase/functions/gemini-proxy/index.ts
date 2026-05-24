@@ -96,14 +96,11 @@ async function getAccessToken(): Promise<{ token: string; projectId: string }> {
 async function verifyIdToken(idToken: string): Promise<string> {
   const apiKey = Deno.env.get("FIREBASE_WEB_API_KEY");
   if (!apiKey) throw new Error("FIREBASE_WEB_API_KEY not configured");
-  const res = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken }),
-    },
-  );
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  });
   if (!res.ok) throw new Error(`idToken verify failed: ${res.status}`);
   const data = await res.json();
   const uid = data?.users?.[0]?.localId;
@@ -112,11 +109,7 @@ async function verifyIdToken(idToken: string): Promise<string> {
 }
 
 // --- Firestore: 일일 제한 확인 ---
-async function checkDailyLimit(
-  projectId: string,
-  accessToken: string,
-  uid: string,
-): Promise<{ allowed: boolean }> {
+async function checkDailyLimit(projectId: string, accessToken: string, uid: string): Promise<{ allowed: boolean }> {
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}/flags/daily`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -133,11 +126,7 @@ async function checkDailyLimit(
 }
 
 // --- Firestore: 플래그 업데이트 ---
-async function updateDailyFlag(
-  projectId: string,
-  accessToken: string,
-  uid: string,
-): Promise<void> {
+async function updateDailyFlag(projectId: string, accessToken: string, uid: string): Promise<void> {
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}/flags/daily?updateMask.fieldPaths=lastUsedDate&updateMask.fieldPaths=metadata`;
   const body = {
     fields: {
@@ -160,10 +149,7 @@ async function updateDailyFlag(
 }
 
 // --- Gemini 호출 ---
-async function callGemini(
-  messages: any[],
-  systemInstruction?: string,
-): Promise<string> {
+async function callGemini(messages: any[], systemInstruction?: string): Promise<string> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
   const body: any = { contents: messages };
