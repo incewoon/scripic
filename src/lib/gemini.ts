@@ -1,24 +1,38 @@
 // src/lib/gemini.ts
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirebase } from "@/integrations/firebase/client";
 
 const GEMINI_PROXY_URL = "https://nlkqzjgsfyiuqjwejlss.supabase.co/functions/v1/gemini-proxy";
 
-export async function callGeminiProxy(messages: any[], systemInstruction?: string): Promise<string> {
-  const firebaseApp = getFirebase();
-  const auth = getAuth(firebaseApp);
+/**
+ * Wait until Firebase has resolved the initial auth state (persisted
+ * session restored, or confirmed signed-out). Avoids racing currentUser
+ * before the SDK is ready.
+ */
+function waitForAuthReady() {
+  const auth = getAuth(getFirebase());
+  // `authStateReady` exists on Firebase JS SDK v10+.
+  const anyAuth = auth as any;
+  if (typeof anyAuth.authStateReady === "function") {
+    return anyAuth.authStateReady() as Promise<void>;
+  }
+  return new Promise<void>((resolve) => {
+    const unsub = onAuthStateChanged(auth, () => {
+      unsub();
+      resolve();
+    });
+  });
+}
 
-  // Auth 상태가 준비될 때까지 기다림 (중요 수정)
-  if (!auth.currentUser) {
-    // Auth가 초기화될 때까지 약간 대기 (또는 onAuthStateChanged 사용 권장)
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    if (!auth.currentUser) {
-      throw new Error("로그인이 필요합니다.");
-    }
+export async function callGeminiProxy(messages: any[], systemInstruction?: string): Promise<string> {
+  await waitForAuthReady();
+  const auth = getAuth(getFirebase());
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("로그인이 필요합니다.");
   }
 
-  const user = auth.currentUser!;
-  const idToken = await user.getIdToken(true); // forceRefresh: true
+  const idToken = await user.getIdToken();
 
   const response = await fetch(GEMINI_PROXY_URL, {
     method: "POST",

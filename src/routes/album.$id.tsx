@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
+  ssr: false,
 });
 
 function EditableText({

@@ -30,6 +30,7 @@ const ALLOWED_EXT = /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i;
 
 export const Route = createFileRoute("/create")({
   component: Create,
+  ssr: false,
   head: () => ({ meta: [{ title: "New album — Scripic" }] }),
 });
 
