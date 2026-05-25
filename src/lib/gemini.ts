@@ -1,5 +1,5 @@
 // src/lib/gemini.ts
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
 import { getFirebase } from "@/integrations/firebase/client";
 
 const GEMINI_PROXY_URL = "https://nlkqzjgsfyiuqjwejlss.supabase.co/functions/v1/gemini-proxy";
@@ -24,13 +24,13 @@ function waitForAuthReady() {
   });
 }
 
-async function getAuthenticatedUser() {
+async function getAuthenticatedUser(): Promise<User> {
   const auth = getAuth(getFirebase());
   await waitForAuthReady();
 
   if (auth.currentUser) return auth.currentUser;
 
-  return new Promise<typeof auth.currentUser>((resolve, reject) => {
+  return new Promise<User>((resolve, reject) => {
     const timeout = window.setTimeout(() => {
       unsub();
       reject(new Error("로그인이 필요합니다."));
