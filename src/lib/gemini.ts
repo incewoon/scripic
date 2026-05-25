@@ -7,6 +7,10 @@ const GEMINI_PROXY_URL = "https://nlkqzjgsfyiuqjwejlss.supabase.co/functions/v1/
 async function getAuthenticatedUser(): Promise<User> {
   const auth = getAuth(getFirebase());
 
+  // ▼ 디버그 로그 추가
+  console.log("[auth] getFirebase() result:", getFirebase());
+  console.log("[auth] auth.currentUser:", auth.currentUser);
+
   // 1. 이미 로그인된 상태라면 바로 반환
   if (auth.currentUser) {
     return auth.currentUser;
