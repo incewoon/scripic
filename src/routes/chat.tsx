@@ -88,6 +88,7 @@ function Chat() {
   }
 
   useEffect(() => {
+    if (!authReady) return;
     const raw = sessionStorage.getItem("memori_photos");
     if (!raw) { navigate({ to: "/create" }); return; }
     const ph: string[] = JSON.parse(raw);
@@ -97,7 +98,7 @@ function Chat() {
     const opener = getLang() === "ko" ? "이 사진들 좀 봐줘." : "Take a look at these photos with me.";
     void send(opener, ph, []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authReady]);
 
   // Track scroll position so we don't yank the user away if they're reading.
   useEffect(() => {
