@@ -1,3 +1,7 @@
+// Lightweight i18n. Keep the first render hydration-safe by starting from a
+// stable default, then switching to the device language on the client.
+import { useEffect, useState } from "react";
+
 // Lightweight i18n. Default English; auto-switch to Korean when device asks for it.
 export type Lang = "en" | "ko";
 
@@ -365,6 +369,11 @@ export type ChatMode = "creative" | "fact" | "brief";
 export type ChatTone = "politely" | "friendly" | "short";
 
 export function useT() {
-  const lang = getLang();
+  const [lang, setLang] = useState<Lang>("en");
+
+  useEffect(() => {
+    setLang(getLang());
+  }, []);
+
   return { t: dict[lang], lang };
 }
