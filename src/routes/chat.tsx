@@ -1,3 +1,5 @@
+"use client";
+
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar } from "lucide-react";
@@ -8,6 +10,9 @@ import type { PhotoMeta } from "@/lib/photoMeta";
 import { aiChatStream, aiGenerateAlbum } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 import { useAuthReady } from "@/lib/useAuthReady";
+
+export const ssr = false;
+export const csr = true;
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
@@ -47,7 +52,7 @@ function fmtTakenAt(iso: string | undefined, lang: string) {
 function Chat() {
   const { t, lang } = useT();
   const navigate = useNavigate();
-  const { ready: authReady } = useAuthReady();
+  const { ready: authReady, user } = useAuthReady();
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoMetas, setPhotoMetas] = useState<PhotoMeta[]>([]);
   const [meta, setMeta] = useState<{ period?: string; location?: string }>({});
@@ -70,6 +75,7 @@ function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
+  const autoStartedRef = useRef(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const stickToBottomRef = useRef(true);
 
@@ -88,7 +94,8 @@ function Chat() {
   }
 
   useEffect(() => {
-    if (!authReady) return;
+    if (!authReady || !user || autoStartedRef.current) return;
+    autoStartedRef.current = true;
     const raw = sessionStorage.getItem("memori_photos");
     if (!raw) { navigate({ to: "/create" }); return; }
     const ph: string[] = JSON.parse(raw);
@@ -98,7 +105,7 @@ function Chat() {
     const opener = getLang() === "ko" ? "이 사진들 좀 봐줘." : "Take a look at these photos with me.";
     void send(opener, ph, []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authReady]);
+  }, [authReady, navigate, user]);
 
   // Track scroll position so we don't yank the user away if they're reading.
   useEffect(() => {
@@ -151,6 +158,11 @@ function Chat() {
 
 
   async function send(text: string, ph = photos, prior = messages) {
+    if (!authReady || !user) {
+      toast.error(t.connectionError);
+      return;
+    }
+
     const userMsg: Msg = { role: "user", content: text };
     const newMsgs = [...prior, userMsg];
     setMessages(newMsgs);
