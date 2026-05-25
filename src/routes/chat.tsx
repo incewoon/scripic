@@ -10,6 +10,7 @@ import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
+  ssr: false,
   head: () => ({ meta: [{ title: "Chat — Scripic" }] }),
 });
 
