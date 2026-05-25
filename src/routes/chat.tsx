@@ -47,6 +47,7 @@ function fmtTakenAt(iso: string | undefined, lang: string) {
 function Chat() {
   const { t, lang } = useT();
   const navigate = useNavigate();
+  const { ready: authReady } = useAuthReady();
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoMetas, setPhotoMetas] = useState<PhotoMeta[]>([]);
   const [meta, setMeta] = useState<{ period?: string; location?: string }>({});
