@@ -24,13 +24,29 @@ function waitForAuthReady() {
   });
 }
 
-export async function callGeminiProxy(messages: any[], systemInstruction?: string): Promise<string> {
-  await waitForAuthReady();
+async function getAuthenticatedUser() {
   const auth = getAuth(getFirebase());
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error("로그인이 필요합니다.");
-  }
+  await waitForAuthReady();
+
+  if (auth.currentUser) return auth.currentUser;
+
+  return new Promise<typeof auth.currentUser>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      unsub();
+      reject(new Error("로그인이 필요합니다."));
+    }, 5000);
+
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (!user) return;
+      window.clearTimeout(timeout);
+      unsub();
+      resolve(user);
+    });
+  });
+}
+
+export async function callGeminiProxy(messages: any[], systemInstruction?: string): Promise<string> {
+  const user = await getAuthenticatedUser();
 
   const idToken = await user.getIdToken();
 
