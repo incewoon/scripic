@@ -7,6 +7,7 @@ import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
 import { aiChatStream, aiGenerateAlbum } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
+import { useAuthReady } from "@/lib/useAuthReady";
 
 export const Route = createFileRoute("/chat")({
   component: Chat,
