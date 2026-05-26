@@ -12,13 +12,9 @@ import { albumSystem, albumUserPrompt, toneInstruction, type Tone } from "./prom
 
 // ---------------- helpers ----------------
 
-type OAIPart =
-  | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } };
+type OAIPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
 
-function dataUrlToInlineData(
-  url: string,
-): { mimeType: string; data: string } | null {
+function dataUrlToInlineData(url: string): { mimeType: string; data: string } | null {
   const m = /^data:([^;]+);base64,(.+)$/.exec(url);
   if (!m) return null;
   return { mimeType: m[1], data: m[2] };
@@ -54,9 +50,7 @@ function toGeminiPayload(
 
   for (const m of messages ?? []) {
     if (m.role === "system") {
-      systemTexts.push(
-        typeof m.content === "string" ? m.content : JSON.stringify(m.content),
-      );
+      systemTexts.push(typeof m.content === "string" ? m.content : JSON.stringify(m.content));
       continue;
     }
     contents.push({
@@ -115,15 +109,27 @@ export async function* aiChatStream(payload: {
     chatSystemPrompt(payload.lang, payload.photoCount, mode) +
     turnLimitClause(payload.lang, payload.photoCount, maxTurns);
 
-  const { contents, systemInstruction } = toGeminiPayload(
-    payload.messages,
-    payload.photos,
-    system,
-  );
+  const { contents, systemInstruction } = toGeminiPayload(payload.messages, payload.photos, system);
   try {
     const text = await callGeminiProxy(contents, systemInstruction);
     if (text) yield text;
   } catch (e) {
+    mapProxyError(e);
+  }
+
+  const startTime = performance.now();
+  console.log(`[AI Client] aiChatStream 요청 시작 - ${new Date().toISOString()}`);
+
+  try {
+    const text = await callGeminiProxy(contents, systemInstruction);
+
+    const endTime = performance.now();
+    console.log(`[AI Client] aiChatStream 완료 - 소요시간: ${(endTime - startTime).toFixed(0)}ms`);
+
+    if (text) yield text;
+  } catch (e) {
+    const endTime = performance.now();
+    console.error(`[AI Client] aiChatStream 실패 - ${(endTime - startTime).toFixed(0)}ms`, e);
     mapProxyError(e);
   }
 }
@@ -140,9 +146,7 @@ function buildTranscript(messages: any[]): string {
           ? m.content
           : Array.isArray(m.content)
             ? m.content
-                .map((p: any) =>
-                  p?.type === "text" ? p.text : p?.type === "image_url" ? "[image]" : "",
-                )
+                .map((p: any) => (p?.type === "text" ? p.text : p?.type === "image_url" ? "[image]" : ""))
                 .join(" ")
             : String(m.content ?? "");
       return `${role}: ${content}`;
@@ -162,8 +166,7 @@ export async function aiGenerateAlbum(payload: {
   const mode = (payload.mode as Mode) ?? "creative";
   const tone = (payload.tone as Tone) ?? "politely";
 
-  const system =
-    albumSystem(payload.lang, mode) + toneInstruction(payload.lang, tone);
+  const system = albumSystem(payload.lang, mode) + toneInstruction(payload.lang, tone);
   const transcript = buildTranscript(payload.messages);
   const userPrompt = albumUserPrompt(
     payload.lang,
