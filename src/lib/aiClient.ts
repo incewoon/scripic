@@ -7,6 +7,8 @@
 
 import { callGeminiProxy } from "./gemini";
 import { canCreateAlbumToday } from "./dailyLimit";
+import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
+import { albumSystem, albumUserPrompt, toneInstruction, type Tone } from "./prompts-album";
 
 // ---------------- helpers ----------------
 
@@ -64,7 +66,6 @@ function toGeminiPayload(
   }
 
   if (photos && photos.length) {
-    // Find the last user turn (or create one) and append inlineData parts.
     let lastUserIdx = -1;
     for (let i = contents.length - 1; i >= 0; i--) {
       if (contents[i].role === "user") {
@@ -82,7 +83,7 @@ function toGeminiPayload(
     }
   }
 
-  if (extraSystem) systemTexts.push(extraSystem);
+  if (extraSystem) systemTexts.unshift(extraSystem);
   const systemInstruction = systemTexts.filter(Boolean).join("\n\n") || undefined;
   return { contents, systemInstruction };
 }
@@ -108,9 +109,16 @@ export async function* aiChatStream(payload: {
   mode: string;
   maxTurnsPerPhoto?: number;
 }): AsyncGenerator<string> {
+  const mode = (payload.mode as Mode) ?? "creative";
+  const maxTurns = payload.maxTurnsPerPhoto ?? 3;
+  const system =
+    chatSystemPrompt(payload.lang, payload.photoCount, mode) +
+    turnLimitClause(payload.lang, payload.photoCount, maxTurns);
+
   const { contents, systemInstruction } = toGeminiPayload(
     payload.messages,
     payload.photos,
+    system,
   );
   try {
     const text = await callGeminiProxy(contents, systemInstruction);
@@ -122,6 +130,26 @@ export async function* aiChatStream(payload: {
 
 // ---------------- generateAlbum ----------------
 
+function buildTranscript(messages: any[]): string {
+  return (messages ?? [])
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => {
+      const role = m.role === "user" ? "USER" : "ASSISTANT";
+      const content =
+        typeof m.content === "string"
+          ? m.content
+          : Array.isArray(m.content)
+            ? m.content
+                .map((p: any) =>
+                  p?.type === "text" ? p.text : p?.type === "image_url" ? "[image]" : "",
+                )
+                .join(" ")
+            : String(m.content ?? "");
+      return `${role}: ${content}`;
+    })
+    .join("\n");
+}
+
 export async function aiGenerateAlbum(payload: {
   messages: any[];
   photoCount: number;
@@ -131,10 +159,25 @@ export async function aiGenerateAlbum(payload: {
   mode: string;
   tone: string;
 }): Promise<any> {
-  const { contents, systemInstruction } = toGeminiPayload(payload.messages);
+  const mode = (payload.mode as Mode) ?? "creative";
+  const tone = (payload.tone as Tone) ?? "politely";
+
+  const system =
+    albumSystem(payload.lang, mode) + toneInstruction(payload.lang, tone);
+  const transcript = buildTranscript(payload.messages);
+  const userPrompt = albumUserPrompt(
+    payload.lang,
+    payload.photoCount,
+    transcript,
+    mode,
+    payload.period,
+    payload.location,
+  );
+
+  const contents = [{ role: "user", parts: [{ text: userPrompt }] }];
+
   try {
-    const text = await callGeminiProxy(contents, systemInstruction);
-    // Album prompts ask for JSON; try to parse, fall back to raw text.
+    const text = await callGeminiProxy(contents, system);
     try {
       const cleaned = text
         .trim()
@@ -156,9 +199,6 @@ export async function aiDailyStatus(): Promise<{
   limit: number;
   today: string;
 }> {
-  // gemini-proxy enforces the daily limit server-side and does not expose a
-  // status endpoint. Use the local mirror so the UI can still show
-  // "1 album/day" state.
   const used = canCreateAlbumToday() ? 0 : 1;
   const today = new Date().toISOString().slice(0, 10);
   return { used, limit: 1, today };
