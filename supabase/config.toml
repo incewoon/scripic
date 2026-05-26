@@ -1,10 +1,4 @@
 project_id = "nlkqzjgsfyiuqjwejlss"
 
-[functions.chat-fallback]
-verify_jwt = false
-
-[functions.album-fallback]
-verify_jwt = false
-
 [functions.gemini-proxy]
 verify_jwt = false
