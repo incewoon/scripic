@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signInAnonymously, type User } from "firebase/auth";
 import { getFirebase } from "@/integrations/firebase/client";
 
 export function useAuthReady() {
@@ -10,44 +10,27 @@ export function useAuthReady() {
   useEffect(() => {
     let unsub = () => {};
     try {
-      const firebaseApp = getFirebase();
-      const auth = getAuth(firebaseApp);
-      const anyAuth = auth as any;
-
-      console.log("[useAuthReady] Firebase auth 초기화 시작");
-
-      if (typeof anyAuth.authStateReady === "function") {
-        anyAuth
-          .authStateReady()
-          .then(() => {
-            if (initializedRef.current) return;
-            initializedRef.current = true;
-            console.log("[useAuthReady] authStateReady 완료, currentUser:", auth.currentUser?.uid ?? null);
-            setUser(auth.currentUser);
-            setReady(true);
-          })
-          .catch((err: any) => {
-            console.error("[useAuthReady] authStateReady 실패:", err);
-            if (initializedRef.current) return;
-            initializedRef.current = true;
-            setUser(auth.currentUser);
-            setReady(true);
-          });
-      }
+      const auth = getAuth(getFirebase());
 
       unsub = onAuthStateChanged(auth, (u) => {
-        console.log("[useAuthReady] onAuthStateChanged fired, user:", u?.uid ?? null);
-        initializedRef.current = true;
-        setUser(u);
-        setReady(true);
+        if (u) {
+          // 로그인된 유저 있음 (익명이든 실제든)
+          initializedRef.current = true;
+          setUser(u);
+          setReady(true);
+        } else {
+          // 유저 없음 → 익명으로 자동 로그인
+          signInAnonymously(auth).catch((err) => {
+            console.error("[useAuthReady] 익명 로그인 실패:", err);
+            // 익명 로그인도 실패하면 일단 ready만 true로
+            setReady(true);
+          });
+        }
       });
     } catch (err) {
-      console.error("[useAuthReady] Firebase 초기화 실패 (치명적 에러):", err);
-      // 그래도 UI는 진행되게
+      console.error("[useAuthReady] Firebase 초기화 실패:", err);
       setReady(true);
-      setUser(null);
     }
-
     return () => unsub();
   }, []);
 
