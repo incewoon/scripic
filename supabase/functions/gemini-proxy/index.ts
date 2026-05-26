@@ -193,10 +193,12 @@ Deno.serve(async (req) => {
     const { token: accessToken, projectId } = await getAccessToken();
     console.log(`[Gemini Proxy] Access Token 획득 - ${Date.now() - tokenStart}ms`);
 
-    // 3. 일일 제한 체크
+    // 3. 일일 제한 체크 - ★★★ 테스트용으로 임시 해제 ★★★
     const limitStart = Date.now();
-    const { allowed } = await checkDailyLimit(projectId, accessToken, uid);
-    console.log(`[Gemini Proxy] Daily Limit 체크 - ${Date.now() - limitStart}ms`);
+    // const { allowed } = await checkDailyLimit(projectId, accessToken, uid);
+    const allowed = true; // ← 하루 제한 강제 통과
+    console.log(`[Gemini Proxy] Daily Limit 체크 - 임시 해제됨 (항상 allowed)`);
+    // console.log(`[Gemini Proxy] Daily Limit 체크 - ${Date.now() - limitStart}ms`);
 
     if (!allowed) {
       return json({ error: "daily_limit_exceeded" }, 429);
