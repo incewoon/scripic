@@ -7,22 +7,21 @@ const GEMINI_PROXY_URL = "https://nlkqzjgsfyiuqjwejlss.supabase.co/functions/v1/
 async function getAuthenticatedUser(): Promise<User> {
   const auth = getAuth(getFirebase());
 
-  // ▼ 디버그 로그 추가
-  console.log("[auth] getFirebase() result:", getFirebase());
-  console.log("[auth] auth.currentUser:", auth.currentUser);
+  console.log("[auth] getFirebase() 성공");
 
-  // 1. 이미 로그인된 상태라면 바로 반환
   if (auth.currentUser) {
+    console.log("[auth] 이미 로그인된 사용자:", auth.currentUser.uid);
     return auth.currentUser;
   }
 
-  // 2. Auth 초기화 대기 (최대 6초)
   return new Promise((resolve, reject) => {
     const timeout = window.setTimeout(() => {
+      console.error("[auth] 6초 timeout - 로그인 상태를 확인할 수 없음");
       reject(new Error("로그인이 필요합니다."));
     }, 6000);
 
     const unsub = onAuthStateChanged(auth, (user) => {
+      console.log("[auth] onAuthStateChanged:", user?.uid ?? null);
       if (user) {
         window.clearTimeout(timeout);
         unsub();
