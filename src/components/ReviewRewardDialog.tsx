@@ -3,7 +3,8 @@ import { Gift, X, Upload, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useServerFn } from "@tanstack/react-start";
 import { verifyReviewScreenshot } from "@/lib/reviewReward.functions";
-import { grantExtraAlbumToday, hasExtraUsedToday, hasExtraGrantedToday } from "@/lib/dailyLimit";
+import { grantExtraAlbumToday } from "@/lib/dailyLimit";
+import { ensureFirebaseUser } from "@/integrations/firebase/auth";
 
 type Props = {
   open: boolean;
