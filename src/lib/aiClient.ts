@@ -193,6 +193,22 @@ export async function aiGenerateAlbum(payload: {
   } catch (e) {
     mapProxyError(e);
   }
+
+  const startTime = performance.now();
+  console.log(`[AI Client] aiChatStream 요청 시작 - ${new Date().toISOString()}`);
+
+  try {
+    const text = await callGeminiProxy(contents, systemInstruction);
+
+    const endTime = performance.now();
+    console.log(`[AI Client] aiChatStream 완료 - 소요시간: ${(endTime - startTime).toFixed(0)}ms`);
+
+    if (text) yield text;
+  } catch (e) {
+    const endTime = performance.now();
+    console.error(`[AI Client] aiChatStream 실패 - ${(endTime - startTime).toFixed(0)}ms`, e);
+    mapProxyError(e);
+  }
 }
 
 // ---------------- dailyStatus ----------------
