@@ -59,8 +59,10 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
     setBusy(true);
     setMessage(null);
     try {
+      const user = await ensureFirebaseUser();
+      const idToken = await user.getIdToken();
       const result = await verify({
-        data: { imageDataUrl: preview, dailyExtraUsedToday: hasExtraUsedToday() || hasExtraGrantedToday() },
+        data: { idToken, imageDataUrl: preview },
       });
       if (result.approved) {
         grantExtraAlbumToday();
