@@ -1,34 +1,60 @@
-import { useEffect, useRef, useState } from "react";
-import { getAuth, onAuthStateChanged, signInAnonymously, type User } from "firebase/auth";
-import { getFirebase } from "@/integrations/firebase/client";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { ensureFirebaseUser, getAppAuth } from "@/integrations/firebase/auth";
 
+/**
+ * Thin subscription hook. Does NOT drive sign-in by itself — it just
+ * kicks off (or joins) the global `ensureFirebaseUser()` promise and
+ * mirrors auth state into React.
+ *
+ * Safe under React Strict Mode: ensureFirebaseUser is idempotent, so
+ * effects running twice never trigger duplicate anonymous sign-ins.
+ */
 export function useAuthReady() {
-  const [ready, setReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const initializedRef = useRef(false);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    let unsub = () => {};
+    let cancelled = false;
+    let unsub: (() => void) | null = null;
+
     try {
-      const auth = getAuth(getFirebase());
-  unsub = onAuthStateChanged(auth, (u) => {
-    if (u) {
-      initializedRef.current = true;
-      setUser(u);
-      setReady(true);
-    } else {
-      console.log("[useAuthReady] user null → signInAnonymously 시도");
-      signInAnonymously(auth)
-        .then((result) => {
-          console.log("[useAuthReady] 익명 로그인 성공:", result.user.uid);
-        })
-        .catch((err) => {
-          console.error("[useAuthReady] 익명 로그인 실패 코드:", err.code);
-          console.error("[useAuthReady] 익명 로그인 실패 메시지:", err.message);
-          setReady(true);
-        });
+      const auth = getAppAuth();
+      // Subscribe BEFORE kicking off sign-in so we receive the resulting state.
+      unsub = onAuthStateChanged(auth, (u) => {
+        if (cancelled) return;
+        setUser(u);
+        if (u) setReady(true);
+      });
+    } catch (e: any) {
+      console.error("[useAuthReady] getAppAuth failed:", e);
+      if (!cancelled) {
+        setError(e);
+        setReady(true);
+      }
+      return () => {
+        cancelled = true;
+      };
     }
-  });
 
+    ensureFirebaseUser()
+      .then((u) => {
+        if (cancelled) return;
+        setUser(u);
+        setReady(true);
+      })
+      .catch((e: any) => {
+        if (cancelled) return;
+        setError(e);
+        setReady(true);
+      });
 
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
+  }, []);
 
+  return { ready, user, error };
+}
