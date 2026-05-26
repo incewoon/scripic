@@ -13,7 +13,7 @@ import { getFunctions, type Functions } from "firebase/functions";
 const env = (import.meta as any).env ?? {};
 
 const firebaseConfig: FirebaseOptions = {
-  apiKey: env.VITE_FIREBASE_API_KEY ?? "REPLACE_ME",
+  apiKey: env.VITE_FIREBASE_API_KEY ?? "AIzaSyATURXX76Npx0TO9_sKGuPxm1KW8DtE7l8",
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN ?? "ai-album-app.firebaseapp.com",
   projectId: env.VITE_FIREBASE_PROJECT_ID ?? "ai-album-app",
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET ?? "ai-album-app.appspot.com",
