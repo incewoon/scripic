@@ -17,7 +17,7 @@ const firebaseConfig: FirebaseOptions = {
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN ?? "ai-album-app.firebaseapp.com",
   projectId: env.VITE_FIREBASE_PROJECT_ID ?? "ai-album-app",
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET ?? "ai-album-app.appspot.com",
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "REPLACE_ME",
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "1035810884575",
   appId: env.VITE_FIREBASE_APP_ID ?? "1:1035810884575:web:4eb93efa39f885a68c526a",
 };
 
