@@ -1,4 +1,5 @@
 // Supabase Edge Function: gemini-proxy
+// === REDEPLOY TEST 2026-05-26 ===
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 
 const CORS = {
