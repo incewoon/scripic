@@ -1,9 +1,6 @@
 // Single entry point for AI calls.
 //
-// All AI traffic goes through the Supabase Edge Function `gemini-proxy`,
-// which verifies the Firebase ID Token, enforces the daily limit in
-// Firestore, and proxies to the Gemini API. The Gemini key never reaches
-// the client.
+// All AI traffic goes through the Supabase Edge Function `gemini-proxy`
 
 import { callGeminiProxy } from "./gemini";
 import { canCreateAlbumToday } from "./dailyLimit";
@@ -34,12 +31,6 @@ function partsFromOpenAIContent(content: any): any[] {
   return out;
 }
 
-/**
- * Convert OpenAI-style messages to Gemini `contents[]`, extracting any
- * system messages into a single systemInstruction string. If `photos` is
- * provided, attach the first up-to-3 as inlineData parts on the last user
- * turn.
- */
 function toGeminiPayload(
   messages: any[],
   photos?: string[],
@@ -93,8 +84,7 @@ function mapProxyError(e: any): never {
   throw err;
 }
 
-// ---------------- chat (non-streaming, yielded as single chunk) ----------------
-
+// ---------------- chat ----------------
 export async function* aiChatStream(payload: {
   messages: any[];
   photos?: string[];
@@ -103,6 +93,9 @@ export async function* aiChatStream(payload: {
   mode: string;
   maxTurnsPerPhoto?: number;
 }): AsyncGenerator<string> {
+  const startTime = performance.now();
+  console.log(`[AI Client] aiChatStream 요청 시작 - ${new Date().toISOString()}`);
+
   const mode = (payload.mode as Mode) ?? "creative";
   const maxTurns = payload.maxTurnsPerPhoto ?? 3;
   const system =
@@ -110,15 +103,6 @@ export async function* aiChatStream(payload: {
     turnLimitClause(payload.lang, payload.photoCount, maxTurns);
 
   const { contents, systemInstruction } = toGeminiPayload(payload.messages, payload.photos, system);
-  try {
-    const text = await callGeminiProxy(contents, systemInstruction);
-    if (text) yield text;
-  } catch (e) {
-    mapProxyError(e);
-  }
-
-  const startTime = performance.now();
-  console.log(`[AI Client] aiChatStream 요청 시작 - ${new Date().toISOString()}`);
 
   try {
     const text = await callGeminiProxy(contents, systemInstruction);
@@ -135,6 +119,55 @@ export async function* aiChatStream(payload: {
 }
 
 // ---------------- generateAlbum ----------------
+export async function aiGenerateAlbum(payload: {
+  messages: any[];
+  photoCount: number;
+  lang: string;
+  period?: string;
+  location?: string;
+  mode: string;
+  tone: string;
+}): Promise<any> {
+  const startTime = performance.now();
+  console.log(`[AI Client] aiGenerateAlbum 요청 시작 - ${new Date().toISOString()}`);
+
+  const mode = (payload.mode as Mode) ?? "creative";
+  const tone = (payload.tone as Tone) ?? "politely";
+
+  const system = albumSystem(payload.lang, mode) + toneInstruction(payload.lang, tone);
+  const transcript = buildTranscript(payload.messages);
+  const userPrompt = albumUserPrompt(
+    payload.lang,
+    payload.photoCount,
+    transcript,
+    mode,
+    payload.period,
+    payload.location,
+  );
+
+  const contents = [{ role: "user", parts: [{ text: userPrompt }] }];
+
+  try {
+    const text = await callGeminiProxy(contents, system);
+
+    const endTime = performance.now();
+    console.log(`[AI Client] aiGenerateAlbum 완료 - 소요시간: ${(endTime - startTime).toFixed(0)}ms`);
+
+    try {
+      const cleaned = text
+        .trim()
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "");
+      return JSON.parse(cleaned);
+    } catch {
+      return { text };
+    }
+  } catch (e) {
+    const endTime = performance.now();
+    console.error(`[AI Client] aiGenerateAlbum 실패 - ${(endTime - startTime).toFixed(0)}ms`, e);
+    mapProxyError(e);
+  }
+}
 
 function buildTranscript(messages: any[]): string {
   return (messages ?? [])
@@ -154,65 +187,7 @@ function buildTranscript(messages: any[]): string {
     .join("\n");
 }
 
-export async function aiGenerateAlbum(payload: {
-  messages: any[];
-  photoCount: number;
-  lang: string;
-  period?: string;
-  location?: string;
-  mode: string;
-  tone: string;
-}): Promise<any> {
-  const mode = (payload.mode as Mode) ?? "creative";
-  const tone = (payload.tone as Tone) ?? "politely";
-
-  const system = albumSystem(payload.lang, mode) + toneInstruction(payload.lang, tone);
-  const transcript = buildTranscript(payload.messages);
-  const userPrompt = albumUserPrompt(
-    payload.lang,
-    payload.photoCount,
-    transcript,
-    mode,
-    payload.period,
-    payload.location,
-  );
-
-  const contents = [{ role: "user", parts: [{ text: userPrompt }] }];
-
-  try {
-    const text = await callGeminiProxy(contents, system);
-    try {
-      const cleaned = text
-        .trim()
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/i, "");
-      return JSON.parse(cleaned);
-    } catch {
-      return { text };
-    }
-  } catch (e) {
-    mapProxyError(e);
-  }
-
-  const startTime = performance.now();
-  console.log(`[AI Client] aiChatStream 요청 시작 - ${new Date().toISOString()}`);
-
-  try {
-    const text = await callGeminiProxy(contents, systemInstruction);
-
-    const endTime = performance.now();
-    console.log(`[AI Client] aiChatStream 완료 - 소요시간: ${(endTime - startTime).toFixed(0)}ms`);
-
-    if (text) yield text;
-  } catch (e) {
-    const endTime = performance.now();
-    console.error(`[AI Client] aiChatStream 실패 - ${(endTime - startTime).toFixed(0)}ms`, e);
-    mapProxyError(e);
-  }
-}
-
 // ---------------- dailyStatus ----------------
-
 export async function aiDailyStatus(): Promise<{
   used: number;
   limit: number;
