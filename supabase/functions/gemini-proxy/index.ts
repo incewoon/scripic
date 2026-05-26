@@ -167,6 +167,9 @@ async function callGemini(messages: any[], systemInstruction?: string): Promise<
 
 // --- 메인 핸들러 ---
 Deno.serve(async (req) => {
+  const requestStart = Date.now();
+  console.log(`[Gemini Proxy] === 요청 수신 === ${new Date().toISOString()}`);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS });
   }
@@ -175,16 +178,25 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // 1. Firebase ID Token 검증
+    const authStart = Date.now();
     const auth = req.headers.get("Authorization") ?? req.headers.get("authorization");
     if (!auth?.startsWith("Bearer ")) {
       return json({ error: "missing_bearer_token" }, 401);
     }
-
     const idToken = auth.slice(7).trim();
     const uid = await verifyIdToken(idToken);
+    console.log(`[Gemini Proxy] Firebase Auth 검증 완료 - ${Date.now() - authStart}ms`);
 
+    // 2. Google Access Token
+    const tokenStart = Date.now();
     const { token: accessToken, projectId } = await getAccessToken();
+    console.log(`[Gemini Proxy] Access Token 획득 - ${Date.now() - tokenStart}ms`);
+
+    // 3. 일일 제한 체크
+    const limitStart = Date.now();
     const { allowed } = await checkDailyLimit(projectId, accessToken, uid);
+    console.log(`[Gemini Proxy] Daily Limit 체크 - ${Date.now() - limitStart}ms`);
 
     if (!allowed) {
       return json({ error: "daily_limit_exceeded" }, 429);
@@ -195,12 +207,21 @@ Deno.serve(async (req) => {
       return json({ error: "invalid_body" }, 400);
     }
 
+    // 4. Gemini API 호출
+    const geminiStart = Date.now();
+    console.log(`[Gemini Proxy] Gemini API 호출 시작`);
     const result = await callGemini(payload.messages, payload.systemInstruction);
+    console.log(`[Gemini Proxy] Gemini API 응답 수신 - ${Date.now() - geminiStart}ms`);
+
     await updateDailyFlag(projectId, accessToken, uid);
+
+    const totalTime = Date.now() - requestStart;
+    console.log(`[Gemini Proxy] 전체 처리 완료 - Total: ${totalTime}ms`);
 
     return json({ result }, 200);
   } catch (e) {
-    console.error("[gemini-proxy] error:", e);
+    const totalTime = Date.now() - requestStart;
+    console.error(`[Gemini Proxy] 에러 발생 - ${totalTime}ms`, e);
     const msg = e instanceof Error ? e.message : String(e);
     const status = msg.includes("invalid_id_token") ? 401 : 500;
     return json({ error: msg }, status);
