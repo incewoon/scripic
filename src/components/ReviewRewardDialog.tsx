@@ -3,7 +3,8 @@ import { Gift, X, Upload, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useServerFn } from "@tanstack/react-start";
 import { verifyReviewScreenshot } from "@/lib/reviewReward.functions";
-import { grantExtraAlbumToday, hasExtraUsedToday, hasExtraGrantedToday } from "@/lib/dailyLimit";
+import { grantExtraAlbumToday } from "@/lib/dailyLimit";
+import { ensureFirebaseUser } from "@/integrations/firebase/auth";
 
 type Props = {
   open: boolean;
@@ -58,8 +59,10 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
     setBusy(true);
     setMessage(null);
     try {
+      const user = await ensureFirebaseUser();
+      const idToken = await user.getIdToken();
       const result = await verify({
-        data: { imageDataUrl: preview, dailyExtraUsedToday: hasExtraUsedToday() || hasExtraGrantedToday() },
+        data: { idToken, imageDataUrl: preview },
       });
       if (result.approved) {
         grantExtraAlbumToday();

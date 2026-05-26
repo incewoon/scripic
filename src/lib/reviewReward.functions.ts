@@ -59,30 +59,213 @@ and put it in success_message.
 daily_limit_info should be empty string unless daily_extra_used_today was true.
 Never output anything except the JSON.`;
 
+function fail(reason: string, error: string, extra?: Partial<Record<string, unknown>>) {
+  return {
+    approved: false,
+    reason,
+    confidence: 0,
+    success_message: "",
+    daily_limit_info: "",
+    error,
+    ...extra,
+  };
+}
+
+function todayUTC(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// --- Firebase ID token verification (Identity Toolkit lookup) ---
+async function verifyFirebaseIdToken(idToken: string): Promise<string> {
+  const apiKey = process.env.FIREBASE_WEB_API_KEY;
+  if (!apiKey) throw new Error("FIREBASE_WEB_API_KEY not configured");
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    },
+  );
+  if (!res.ok) throw new Error("invalid_id_token");
+  const data: any = await res.json();
+  const uid = data?.users?.[0]?.localId;
+  if (!uid) throw new Error("invalid_id_token");
+  return uid;
+}
+
+// --- Google OAuth2 access token via service account (cached) ---
+let cachedAccessToken: { token: string; projectId: string; expiresAt: number } | null = null;
+
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const b64 = pem
+    .replace(/-----BEGIN [^-]+-----/g, "")
+    .replace(/-----END [^-]+-----/g, "")
+    .replace(/\s+/g, "");
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
+}
+
+function b64url(input: ArrayBuffer | string): string {
+  let bin: string;
+  if (typeof input === "string") {
+    bin = input;
+  } else {
+    const bytes = new Uint8Array(input);
+    let s = "";
+    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    bin = s;
+  }
+  return btoa(bin).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+async function getGoogleAccessToken(): Promise<{ token: string; projectId: string }> {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT not configured");
+  const sa = JSON.parse(raw);
+  const { client_email, private_key, project_id } = sa as {
+    client_email: string;
+    private_key: string;
+    project_id: string;
+  };
+
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedAccessToken && cachedAccessToken.expiresAt - 60 > now) {
+    return { token: cachedAccessToken.token, projectId: cachedAccessToken.projectId };
+  }
+
+  const header = { alg: "RS256", typ: "JWT" };
+  const claims = {
+    iss: client_email,
+    scope: "https://www.googleapis.com/auth/datastore",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  };
+  const signingInput = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(claims))}`;
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    pemToArrayBuffer(private_key),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    key,
+    new TextEncoder().encode(signingInput),
+  );
+  const jwt = `${signingInput}.${b64url(sig)}`;
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+  if (!res.ok) throw new Error(`oauth_token_error_${res.status}`);
+  const data: any = await res.json();
+  cachedAccessToken = {
+    token: data.access_token,
+    projectId: project_id,
+    expiresAt: now + (data.expires_in ?? 3600),
+  };
+  return { token: cachedAccessToken.token, projectId: project_id };
+}
+
+// --- Firestore: server-side daily extra-album tracking ---
+const FS_DOC_PATH = (projectId: string, uid: string) =>
+  `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}/flags/review_extra`;
+
+async function getReviewExtraUsedToday(
+  projectId: string,
+  accessToken: string,
+  uid: string,
+): Promise<boolean> {
+  const res = await fetch(FS_DOC_PATH(projectId, uid), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.status === 404) return false;
+  if (!res.ok) throw new Error(`firestore_get_${res.status}`);
+  const data: any = await res.json();
+  const last = data?.fields?.lastGrantedDate?.stringValue;
+  return last === todayUTC();
+}
+
+async function setReviewExtraUsedToday(
+  projectId: string,
+  accessToken: string,
+  uid: string,
+): Promise<void> {
+  const url = `${FS_DOC_PATH(projectId, uid)}?updateMask.fieldPaths=lastGrantedDate`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fields: { lastGrantedDate: { stringValue: todayUTC() } },
+    }),
+  });
+  if (!res.ok) throw new Error(`firestore_patch_${res.status}`);
+}
+
 export const verifyReviewScreenshot = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
       .object({
+        idToken: z.string().min(20).max(8192),
         imageDataUrl: z.string().min(20).max(8_000_000),
-        dailyExtraUsedToday: z.boolean(),
       })
-      .parse(input)
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) {
+    if (!apiKey) return fail("Server not configured.", "missing_api_key");
+
+    // 1) Authenticate caller via Firebase ID token
+    let uid: string;
+    try {
+      uid = await verifyFirebaseIdToken(data.idToken);
+    } catch {
+      return fail("Not authenticated.", "unauthenticated");
+    }
+
+    // 2) Server-side daily limit check (Firestore) — do not trust the client
+    let accessToken: string;
+    let projectId: string;
+    try {
+      ({ token: accessToken, projectId } = await getGoogleAccessToken());
+    } catch (e) {
+      console.error("review reward oauth error", e);
+      return fail("Server not configured.", "oauth_error");
+    }
+
+    let alreadyUsed = false;
+    try {
+      alreadyUsed = await getReviewExtraUsedToday(projectId, accessToken, uid);
+    } catch (e) {
+      console.error("review reward firestore get error", e);
+      return fail("Server error.", "firestore_get");
+    }
+
+    if (alreadyUsed) {
       return {
         approved: false,
-        reason: "Server not configured.",
+        reason: "You have already used your extra album for today.",
         confidence: 0,
         success_message: "",
-        daily_limit_info: "",
-        error: "missing_api_key",
+        daily_limit_info: "오늘 이미 추가 앨범을 사용하셨습니다. (자정에 초기화됩니다)",
       };
     }
 
-    const userPayload = JSON.stringify({ daily_extra_used_today: data.dailyExtraUsedToday });
-
+    // 3) Call the AI gateway
+    const userPayload = JSON.stringify({ daily_extra_used_today: false });
     let resp: Response;
     try {
       resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -108,14 +291,7 @@ export const verifyReviewScreenshot = createServerFn({ method: "POST" })
       });
     } catch (e) {
       console.error("review reward fetch failed", e);
-      return {
-        approved: false,
-        reason: "Network error.",
-        confidence: 0,
-        success_message: "",
-        daily_limit_info: "",
-        error: "network",
-      };
+      return fail("Network error.", "network");
     }
 
     if (!resp.ok) {
@@ -125,62 +301,54 @@ export const verifyReviewScreenshot = createServerFn({ method: "POST" })
         resp.status === 429
           ? "rate_limited"
           : resp.status === 402
-          ? "payment_required"
-          : "gateway_error";
-      return {
-        approved: false,
-        reason:
-          resp.status === 429
-            ? "Too many requests. Please try again in a moment."
-            : resp.status === 402
+            ? "payment_required"
+            : "gateway_error";
+      return fail(
+        resp.status === 429
+          ? "Too many requests. Please try again in a moment."
+          : resp.status === 402
             ? "AI usage limit reached."
             : "AI verification failed.",
-        confidence: 0,
-        success_message: "",
-        daily_limit_info: "",
-        error: err,
-      };
+        err,
+      );
     }
 
-    const json = await resp.json().catch(() => null) as any;
+    const json = (await resp.json().catch(() => null)) as any;
     const content: string | undefined = json?.choices?.[0]?.message?.content;
-    if (!content) {
-      return {
-        approved: false,
-        reason: "Empty AI response.",
-        confidence: 0,
-        success_message: "",
-        daily_limit_info: "",
-        error: "empty_response",
-      };
-    }
+    if (!content) return fail("Empty AI response.", "empty_response");
 
     let parsed: any;
     try {
       parsed = JSON.parse(content);
     } catch {
-      // try to extract JSON
       const m = content.match(/\{[\s\S]*\}/);
       if (m) {
-        try { parsed = JSON.parse(m[0]); } catch {}
+        try {
+          parsed = JSON.parse(m[0]);
+        } catch {}
       }
     }
     if (!parsed || typeof parsed.approved !== "boolean") {
-      return {
-        approved: false,
-        reason: "Unexpected AI response.",
-        confidence: 0,
-        success_message: "",
-        daily_limit_info: "",
-        error: "parse_error",
-      };
+      return fail("Unexpected AI response.", "parse_error");
+    }
+
+    // 4) If approved, record server-side daily usage
+    if (parsed.approved) {
+      try {
+        await setReviewExtraUsedToday(projectId, accessToken, uid);
+      } catch (e) {
+        console.error("review reward firestore patch error", e);
+        return fail("Server error.", "firestore_patch");
+      }
     }
 
     return {
       approved: !!parsed.approved,
       reason: typeof parsed.reason === "string" ? parsed.reason : "",
       confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0,
-      success_message: typeof parsed.success_message === "string" ? parsed.success_message : "",
-      daily_limit_info: typeof parsed.daily_limit_info === "string" ? parsed.daily_limit_info : "",
+      success_message:
+        typeof parsed.success_message === "string" ? parsed.success_message : "",
+      daily_limit_info:
+        typeof parsed.daily_limit_info === "string" ? parsed.daily_limit_info : "",
     };
   });
