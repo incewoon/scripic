@@ -7,12 +7,7 @@
 // Override any field via VITE_FIREBASE_* env vars (useful for staging).
 
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
-import {
-  initializeAppCheck,
-  ReCaptchaV3Provider,
-  CustomProvider,
-  type AppCheck,
-} from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider, CustomProvider, type AppCheck } from "firebase/app-check";
 import { getFunctions, type Functions } from "firebase/functions";
 
 const env = (import.meta as any).env ?? {};
@@ -23,7 +18,7 @@ const firebaseConfig: FirebaseOptions = {
   projectId: env.VITE_FIREBASE_PROJECT_ID ?? "ai-album-app",
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET ?? "ai-album-app.appspot.com",
   messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "REPLACE_ME",
-  appId: env.VITE_FIREBASE_APP_ID ?? "REPLACE_ME",
+  appId: env.VITE_FIREBASE_APP_ID ?? "1:1035810884575:web:4eb93efa39f885a68c526a",
 };
 
 let _app: ReturnType<typeof initializeApp> | null = null;
