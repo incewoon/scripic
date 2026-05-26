@@ -19,7 +19,8 @@ export function useAuthReady() {
       const anyAuth = auth as any;
 
       if (typeof anyAuth.authStateReady === "function") {
-        anyAuth.authStateReady()
+        anyAuth
+          .authStateReady()
           .then(() => {
             if (initializedRef.current) return;
             initializedRef.current = true;
