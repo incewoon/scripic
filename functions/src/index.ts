@@ -63,6 +63,7 @@ function rateLimitKey(req: { app?: { appId?: string }; data?: any }): string {
 
 /**
  * Reserve today's album slot atomically. Throws if already used today.
+ * Limit is normally 1/day, raised to 2 if a review-bonus was granted today.
  * Pass commit=false to only PEEK (used by /chat which shouldn't burn a slot).
  */
 async function reserveDailyAlbum(key: string, commit: boolean): Promise<void> {
@@ -71,15 +72,47 @@ async function reserveDailyAlbum(key: string, commit: boolean): Promise<void> {
     const snap = await tx.get(docRef);
     const data = snap.data();
     const today = todayKey();
-    if (data?.lastDate === today && (data?.count ?? 0) >= 1) {
+    const sameDay = data?.lastDate === today;
+    const usedToday = sameDay ? (data?.count ?? 0) : 0;
+    const bonusToday = sameDay && data?.bonusGranted === true;
+    const limit = bonusToday ? 2 : 1;
+    if (usedToday >= limit) {
       throw new HttpsError("resource-exhausted", "daily album limit reached");
     }
     if (!commit) return;
-    if (data?.lastDate === today) {
+    if (sameDay) {
       tx.update(docRef, { count: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
     } else {
-      tx.set(docRef, { lastDate: today, count: 1, updatedAt: FieldValue.serverTimestamp() });
+      tx.set(docRef, { lastDate: today, count: 1, bonusGranted: false, updatedAt: FieldValue.serverTimestamp() });
     }
+  });
+}
+
+/**
+ * Grant a +1 album bonus for today (idempotent: a second call same day reports alreadyGranted).
+ */
+async function grantDailyBonus(key: string): Promise<{ alreadyGranted: boolean }> {
+  const docRef = db.collection("daily_limits").doc(key);
+  return await db.runTransaction(async (tx) => {
+    const snap = await tx.get(docRef);
+    const data = snap.data();
+    const today = todayKey();
+    const sameDay = data?.lastDate === today;
+    if (sameDay && data?.bonusGranted === true) {
+      return { alreadyGranted: true };
+    }
+    if (sameDay) {
+      tx.update(docRef, { bonusGranted: true, bonusGrantedAt: FieldValue.serverTimestamp() });
+    } else {
+      tx.set(docRef, {
+        lastDate: today,
+        count: 0,
+        bonusGranted: true,
+        bonusGrantedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+    return { alreadyGranted: false };
   });
 }
 
@@ -255,3 +288,105 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
   const used = data?.lastDate === today ? data?.count ?? 0 : 0;
   return { used, limit: 1, today };
 });
+
+// ---------------- grantReviewReward ----------------
+//
+// Verifies a screenshot of a social-media review of the app via Gemini Vision,
+// and on approval marks today's daily-limit doc with `bonusGranted: true`,
+// raising the per-device cap from 1 → 2 albums for the rest of the day.
+
+const REVIEW_SYSTEM_PROMPT = `You are the Reward System Agent for the Scripic app.
+Your ONLY job is to decide whether a screenshot shows a real social-media review/post about the Scripic app
+(an app that turns photos into meaningful memory albums).
+
+Accepted platforms include Instagram, Facebook, Threads, X (Twitter), TikTok, YouTube Community,
+KakaoStory, Naver Blog, Naver Cafe, Band, etc.
+
+Approve when the image is clearly a social-media post AND mentions Scripic / photo album / memory album /
+ai album / script pic / "사진 한 장 한 장에 이야기를" or contains praise of the app in context.
+Reject unrelated images, blank screenshots, food/cat/meme photos, or screenshots with no Scripic context.
+
+Output STRICT JSON only:
+{
+  "approved": true | false,
+  "reason": "one short sentence explaining your decision",
+  "success_message": "Korean celebration message if approved, otherwise empty string"
+}
+
+Pick a success_message similar to:
+- "🎉 와우! 멋진 후기 감사해요! 추가 앨범이 지급되었어요."
+- "❤️ 후기 공유 정말 감사합니다! 추가 앨범이 지급되었어요!"
+- "🌟 최고의 리뷰예요! 오늘 하나 더 만들 수 있게 됐어요."
+- "🎁 후기 업로드 확인 완료! 추가 앨범 생성권이 지급되었습니다."`;
+
+export const grantReviewReward = onCall(
+  {
+    enforceAppCheck: true,
+    secrets: [GEMINI_API_KEY],
+  },
+  async (req) => {
+    const { imageDataUrl } = (req.data ?? {}) as { imageDataUrl?: string };
+    if (!imageDataUrl || typeof imageDataUrl !== "string" || !imageDataUrl.startsWith("data:")) {
+      throw new HttpsError("invalid-argument", "imageDataUrl required");
+    }
+    if (imageDataUrl.length > 1_500_000) {
+      throw new HttpsError("invalid-argument", "image too large");
+    }
+
+    const key = rateLimitKey(req);
+
+    // Short-circuit: bonus already granted today.
+    const existing = await db.collection("daily_limits").doc(key).get();
+    const exData = existing.data();
+    if (exData?.lastDate === todayKey() && exData?.bonusGranted === true) {
+      return {
+        approved: false,
+        reason: "already_granted",
+        success_message: "",
+        daily_limit_info: "오늘 이미 추가 앨범을 사용하셨습니다. (자정에 초기화됩니다)",
+      };
+    }
+
+    // Verify the screenshot with Gemini Vision.
+    const body = toGeminiRequest([
+      { role: "system", content: REVIEW_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Please evaluate this screenshot per the rules above. JSON only." },
+          { type: "image_url", image_url: { url: imageDataUrl } },
+        ],
+      },
+    ]);
+
+    let parsed: { approved?: boolean; reason?: string; success_message?: string } = {};
+    try {
+      const result = await geminiGenerate(body);
+      const parts = result?.candidates?.[0]?.content?.parts ?? [];
+      const text = parts.map((p: any) => p?.text ?? "").join("\n").trim();
+      const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      parsed = JSON.parse(cleaned);
+    } catch (e: any) {
+      throw new HttpsError("internal", `verification_failed: ${e?.message ?? "unknown"}`);
+    }
+
+    if (!parsed.approved) {
+      return {
+        approved: false,
+        reason: parsed.reason ?? "Could not verify the screenshot.",
+        success_message: "",
+        daily_limit_info: "",
+      };
+    }
+
+    await grantDailyBonus(key);
+
+    return {
+      approved: true,
+      reason: parsed.reason ?? "ok",
+      success_message:
+        parsed.success_message ?? "🎁 후기 업로드 확인 완료! 추가 앨범 생성권이 지급되었습니다.",
+      daily_limit_info: "",
+    };
+  },
+);

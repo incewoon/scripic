@@ -1,6 +1,10 @@
 // Reminder logic: decide when to nudge the user to weave a new album,
 // then ask the native shell (or browser) to actually show the notification.
-import { supabase } from "@/integrations/supabase/client";
+//
+// Storage: this app uses anonymous Firebase Auth and keeps user state on
+// the device. Reminder bookkeeping (enabled flag, last-album timestamp,
+// last-reminder timestamp) lives in localStorage.
+
 import { getRecentPhotoCount, sendPhotoReminderNotification } from "@/lib/native";
 import { getTrackedPhotoCount } from "@/lib/photoActivity";
 
@@ -8,53 +12,45 @@ const RECENT_DAYS = 30;
 const RECENT_PHOTO_THRESHOLD = 15;
 const STALE_DAYS = 21; // 3 weeks
 const MIN_GAP_DAYS = 7; // don't nudge more than once a week
-
 const DAY = 24 * 60 * 60 * 1000;
 
-type ProfileRow = {
-  notifications_enabled: boolean;
-  last_album_created_at: string | null;
-  last_reminder_sent_at: string | null;
-};
+const ENABLED_KEY = "moara_notifications_enabled";
+const LAST_ALBUM_KEY = "moara_last_album_created_at";
+const LAST_REMINDER_KEY = "moara_last_reminder_sent_at";
 
-/**
- * Called on app start (and could be called by a periodic timer too).
- * Checks the user's recent activity and fires a local reminder when warranted.
- */
+function readNum(key: string): number | null {
+  if (typeof localStorage === "undefined") return null;
+  const v = localStorage.getItem(key);
+  if (!v) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function setNotificationsEnabled(enabled: boolean): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(ENABLED_KEY, enabled ? "1" : "0");
+}
+
+export function getNotificationsEnabled(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(ENABLED_KEY) === "1";
+}
+
 export async function maybeSendPhotoReminder(): Promise<{ sent: boolean; reason?: string }> {
-  const { data: userRes } = await supabase.auth.getUser();
-  const uid = userRes.user?.id;
-  if (!uid) return { sent: false, reason: "not_signed_in" };
+  if (!getNotificationsEnabled()) return { sent: false, reason: "disabled" };
 
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("notifications_enabled,last_album_created_at,last_reminder_sent_at")
-    .maybeSingle<ProfileRow>();
-
-  if (error || !profile) return { sent: false, reason: "no_profile" };
-  if (!profile.notifications_enabled) return { sent: false, reason: "disabled" };
-
-  // Throttle: never more than once every MIN_GAP_DAYS.
-  if (profile.last_reminder_sent_at) {
-    const last = new Date(profile.last_reminder_sent_at).getTime();
-    if (Date.now() - last < MIN_GAP_DAYS * DAY) {
-      return { sent: false, reason: "throttled" };
-    }
+  const lastReminder = readNum(LAST_REMINDER_KEY);
+  if (lastReminder && Date.now() - lastReminder < MIN_GAP_DAYS * DAY) {
+    return { sent: false, reason: "throttled" };
   }
 
-  // Condition A: native bridge reports >= 15 photos in last 30 days.
-  // Condition B: user picked >= 15 photos in-app in last 30 days (fallback).
-  // Condition C: no album made in 21+ days.
   const nativeCount = await getRecentPhotoCount(RECENT_DAYS);
   const trackedCount = await getTrackedPhotoCount(RECENT_DAYS);
   const photoCount = nativeCount >= 0 ? nativeCount : trackedCount;
   const photoTrigger = photoCount >= RECENT_PHOTO_THRESHOLD;
 
-  let staleTrigger = false;
-  if (profile.last_album_created_at) {
-    const last = new Date(profile.last_album_created_at).getTime();
-    staleTrigger = Date.now() - last >= STALE_DAYS * DAY;
-  }
+  const lastAlbum = readNum(LAST_ALBUM_KEY);
+  const staleTrigger = lastAlbum ? Date.now() - lastAlbum >= STALE_DAYS * DAY : false;
 
   if (!photoTrigger && !staleTrigger) {
     return { sent: false, reason: "no_trigger" };
@@ -66,22 +62,14 @@ export async function maybeSendPhotoReminder(): Promise<{ sent: boolean; reason?
     deepLink: "/create",
   });
 
-  // Mark last_reminder_sent_at so we don't spam.
-  await supabase
-    .from("profiles")
-    .update({ last_reminder_sent_at: new Date().toISOString() })
-    .eq("user_id", uid);
-
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(LAST_REMINDER_KEY, String(Date.now()));
+  }
   return { sent: true };
 }
 
 /** Called whenever an album is successfully created. */
 export async function recordAlbumCreated(): Promise<void> {
-  const { data: userRes } = await supabase.auth.getUser();
-  const uid = userRes.user?.id;
-  if (!uid) return;
-  await supabase
-    .from("profiles")
-    .update({ last_album_created_at: new Date().toISOString() })
-    .eq("user_id", uid);
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(LAST_ALBUM_KEY, String(Date.now()));
 }
