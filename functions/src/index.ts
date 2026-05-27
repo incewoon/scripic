@@ -63,6 +63,7 @@ function rateLimitKey(req: { app?: { appId?: string }; data?: any }): string {
 
 /**
  * Reserve today's album slot atomically. Throws if already used today.
+ * Limit is normally 1/day, raised to 2 if a review-bonus was granted today.
  * Pass commit=false to only PEEK (used by /chat which shouldn't burn a slot).
  */
 async function reserveDailyAlbum(key: string, commit: boolean): Promise<void> {
@@ -71,15 +72,47 @@ async function reserveDailyAlbum(key: string, commit: boolean): Promise<void> {
     const snap = await tx.get(docRef);
     const data = snap.data();
     const today = todayKey();
-    if (data?.lastDate === today && (data?.count ?? 0) >= 1) {
+    const sameDay = data?.lastDate === today;
+    const usedToday = sameDay ? (data?.count ?? 0) : 0;
+    const bonusToday = sameDay && data?.bonusGranted === true;
+    const limit = bonusToday ? 2 : 1;
+    if (usedToday >= limit) {
       throw new HttpsError("resource-exhausted", "daily album limit reached");
     }
     if (!commit) return;
-    if (data?.lastDate === today) {
+    if (sameDay) {
       tx.update(docRef, { count: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
     } else {
-      tx.set(docRef, { lastDate: today, count: 1, updatedAt: FieldValue.serverTimestamp() });
+      tx.set(docRef, { lastDate: today, count: 1, bonusGranted: false, updatedAt: FieldValue.serverTimestamp() });
     }
+  });
+}
+
+/**
+ * Grant a +1 album bonus for today (idempotent: a second call same day reports alreadyGranted).
+ */
+async function grantDailyBonus(key: string): Promise<{ alreadyGranted: boolean }> {
+  const docRef = db.collection("daily_limits").doc(key);
+  return await db.runTransaction(async (tx) => {
+    const snap = await tx.get(docRef);
+    const data = snap.data();
+    const today = todayKey();
+    const sameDay = data?.lastDate === today;
+    if (sameDay && data?.bonusGranted === true) {
+      return { alreadyGranted: true };
+    }
+    if (sameDay) {
+      tx.update(docRef, { bonusGranted: true, bonusGrantedAt: FieldValue.serverTimestamp() });
+    } else {
+      tx.set(docRef, {
+        lastDate: today,
+        count: 0,
+        bonusGranted: true,
+        bonusGrantedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+    return { alreadyGranted: false };
   });
 }
 
