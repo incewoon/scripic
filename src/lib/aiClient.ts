@@ -1,87 +1,32 @@
 // Single entry point for AI calls.
 //
-// All AI traffic goes through the Supabase Edge Function `gemini-proxy`
+// All AI traffic goes through Firebase Cloud Functions callables
+// (`chat`, `generateAlbum`) — enforced by App Check + per-device daily limit.
+// Prompts are assembled server-side; the client only forwards the
+// conversation, photos, and locale/mode metadata.
 
-import { callGeminiProxy } from "./gemini";
-import { canCreateAlbumToday } from "./dailyLimit";
-import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
-import { albumSystem, albumUserPrompt, toneInstruction, type Tone } from "./prompts-album";
+import { httpsCallable, FunctionsError } from "firebase/functions";
+import { getFns } from "@/integrations/firebase/client";
+import { ensureFirebaseUser } from "@/integrations/firebase/auth";
+import { canCreateAlbumToday, getDeviceId } from "./dailyLimit";
 
-// ---------------- helpers ----------------
+type CallableErrorShape = { code: string; message: string };
 
-type OAIPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
-
-function dataUrlToInlineData(url: string): { mimeType: string; data: string } | null {
-  const m = /^data:([^;]+);base64,(.+)$/.exec(url);
-  if (!m) return null;
-  return { mimeType: m[1], data: m[2] };
-}
-
-function partsFromOpenAIContent(content: any): any[] {
-  if (typeof content === "string") return [{ text: content }];
-  if (!Array.isArray(content)) return [{ text: String(content ?? "") }];
-  const out: any[] = [];
-  for (const p of content as OAIPart[]) {
-    if (p.type === "text") out.push({ text: p.text });
-    else if (p.type === "image_url") {
-      const inline = dataUrlToInlineData(p.image_url.url);
-      if (inline) out.push({ inlineData: inline });
-    }
+function normalizeError(e: unknown): never {
+  // Firebase SDK throws FunctionsError with `code` like "functions/resource-exhausted".
+  if (e instanceof FunctionsError) {
+    const err: any = new Error(e.message);
+    // Already namespaced: "functions/<code>"
+    err.code = e.code.startsWith("functions/") ? e.code : `functions/${e.code}`;
+    throw err;
   }
-  return out;
-}
-
-function toGeminiPayload(
-  messages: any[],
-  photos?: string[],
-  extraSystem?: string,
-): { contents: any[]; systemInstruction?: string } {
-  const systemTexts: string[] = [];
-  const contents: any[] = [];
-
-  for (const m of messages ?? []) {
-    if (m.role === "system") {
-      systemTexts.push(typeof m.content === "string" ? m.content : JSON.stringify(m.content));
-      continue;
-    }
-    contents.push({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: partsFromOpenAIContent(m.content),
-    });
+  if (typeof e === "object" && e !== null && "code" in e) {
+    const ce = e as CallableErrorShape;
+    const err: any = new Error(ce.message || "callable_error");
+    err.code = ce.code.startsWith("functions/") ? ce.code : `functions/${ce.code}`;
+    throw err;
   }
-
-  if (photos && photos.length) {
-    let lastUserIdx = -1;
-    for (let i = contents.length - 1; i >= 0; i--) {
-      if (contents[i].role === "user") {
-        lastUserIdx = i;
-        break;
-      }
-    }
-    if (lastUserIdx === -1) {
-      contents.push({ role: "user", parts: [] });
-      lastUserIdx = contents.length - 1;
-    }
-    for (const url of photos.slice(0, 3)) {
-      const inline = dataUrlToInlineData(url);
-      if (inline) contents[lastUserIdx].parts.push({ inlineData: inline });
-    }
-  }
-
-  if (extraSystem) systemTexts.unshift(extraSystem);
-  const systemInstruction = systemTexts.filter(Boolean).join("\n\n") || undefined;
-  return { contents, systemInstruction };
-}
-
-function mapProxyError(e: any): never {
-  const msg = e?.message ?? String(e);
-  const err: any = new Error(msg);
-  if (e?.status === 429 || msg === "daily_limit_exceeded") {
-    err.code = "functions/resource-exhausted";
-  } else if (e?.status === 401) {
-    err.code = "functions/unauthenticated";
-  }
-  throw err;
+  throw e instanceof Error ? e : new Error(String(e));
 }
 
 // ---------------- chat ----------------
@@ -94,27 +39,29 @@ export async function* aiChatStream(payload: {
   maxTurnsPerPhoto?: number;
 }): AsyncGenerator<string> {
   const startTime = performance.now();
-  console.log(`[AI Client] aiChatStream 요청 시작 - ${new Date().toISOString()}`);
+  console.log(`[AI Client] aiChatStream → callable chat`);
 
-  const mode = (payload.mode as Mode) ?? "creative";
-  const maxTurns = payload.maxTurnsPerPhoto ?? 3;
-  const system =
-    chatSystemPrompt(payload.lang, payload.photoCount, mode) +
-    turnLimitClause(payload.lang, payload.photoCount, maxTurns);
+  await ensureFirebaseUser(); // anonymous sign-in (also ensures App Check is initialized)
 
-  const { contents, systemInstruction } = toGeminiPayload(payload.messages, payload.photos, system);
+  const call = httpsCallable<any, { text: string }>(getFns(), "chat");
 
   try {
-    const text = await callGeminiProxy(contents, systemInstruction);
-
+    const res = await call({
+      messages: payload.messages,
+      photos: payload.photos,
+      photoCount: payload.photoCount,
+      lang: payload.lang,
+      mode: payload.mode,
+      maxTurnsPerPhoto: payload.maxTurnsPerPhoto ?? 3,
+      deviceId: getDeviceId(),
+    });
+    const text = res.data?.text ?? "";
     const endTime = performance.now();
-    console.log(`[AI Client] aiChatStream 완료 - 소요시간: ${(endTime - startTime).toFixed(0)}ms`);
-
+    console.log(`[AI Client] aiChatStream 완료 - ${(endTime - startTime).toFixed(0)}ms`);
     if (text) yield text;
   } catch (e) {
-    const endTime = performance.now();
-    console.error(`[AI Client] aiChatStream 실패 - ${(endTime - startTime).toFixed(0)}ms`, e);
-    mapProxyError(e);
+    console.error(`[AI Client] aiChatStream 실패`, e);
+    normalizeError(e);
   }
 }
 
@@ -129,65 +76,35 @@ export async function aiGenerateAlbum(payload: {
   tone: string;
 }): Promise<any> {
   const startTime = performance.now();
-  console.log(`[AI Client] aiGenerateAlbum 요청 시작 - ${new Date().toISOString()}`);
+  console.log(`[AI Client] aiGenerateAlbum → callable generateAlbum`);
 
-  const mode = (payload.mode as Mode) ?? "creative";
-  const tone = (payload.tone as Tone) ?? "politely";
+  await ensureFirebaseUser();
 
-  const system = albumSystem(payload.lang, mode) + toneInstruction(payload.lang, tone);
-  const transcript = buildTranscript(payload.messages);
-  const userPrompt = albumUserPrompt(
-    payload.lang,
-    payload.photoCount,
-    transcript,
-    mode,
-    payload.period,
-    payload.location,
-  );
-
-  const contents = [{ role: "user", parts: [{ text: userPrompt }] }];
+  const call = httpsCallable<any, any>(getFns(), "generateAlbum");
 
   try {
-    const text = await callGeminiProxy(contents, system);
-
+    const res = await call({
+      messages: payload.messages,
+      photoCount: payload.photoCount,
+      lang: payload.lang,
+      period: payload.period,
+      location: payload.location,
+      mode: payload.mode,
+      tone: payload.tone,
+      deviceId: getDeviceId(),
+    });
     const endTime = performance.now();
-    console.log(`[AI Client] aiGenerateAlbum 완료 - 소요시간: ${(endTime - startTime).toFixed(0)}ms`);
-
-    try {
-      const cleaned = text
-        .trim()
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/i, "");
-      return JSON.parse(cleaned);
-    } catch {
-      return { text };
-    }
+    console.log(`[AI Client] aiGenerateAlbum 완료 - ${(endTime - startTime).toFixed(0)}ms`);
+    return res.data;
   } catch (e) {
-    const endTime = performance.now();
-    console.error(`[AI Client] aiGenerateAlbum 실패 - ${(endTime - startTime).toFixed(0)}ms`, e);
-    mapProxyError(e);
+    console.error(`[AI Client] aiGenerateAlbum 실패`, e);
+    normalizeError(e);
   }
 }
 
-function buildTranscript(messages: any[]): string {
-  return (messages ?? [])
-    .filter((m) => m.role === "user" || m.role === "assistant")
-    .map((m) => {
-      const role = m.role === "user" ? "USER" : "ASSISTANT";
-      const content =
-        typeof m.content === "string"
-          ? m.content
-          : Array.isArray(m.content)
-            ? m.content
-                .map((p: any) => (p?.type === "text" ? p.text : p?.type === "image_url" ? "[image]" : ""))
-                .join(" ")
-            : String(m.content ?? "");
-      return `${role}: ${content}`;
-    })
-    .join("\n");
-}
-
 // ---------------- dailyStatus ----------------
+// Optimistic UI-only readout. The server is the source of truth (and will
+// reject with `resource-exhausted` if the local cache lies).
 export async function aiDailyStatus(): Promise<{
   used: number;
   limit: number;
