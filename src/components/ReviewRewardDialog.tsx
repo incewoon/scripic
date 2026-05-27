@@ -1,15 +1,22 @@
 import { useState } from "react";
 import { Gift, X, Upload, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { useServerFn } from "@tanstack/react-start";
-import { verifyReviewScreenshot } from "@/lib/reviewReward.functions";
-import { grantExtraAlbumToday } from "@/lib/dailyLimit";
+import { httpsCallable, FunctionsError } from "firebase/functions";
+import { getFns } from "@/integrations/firebase/client";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
+import { grantExtraAlbumToday, getDeviceId } from "@/lib/dailyLimit";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onGranted?: () => void;
+};
+
+type GrantResult = {
+  approved: boolean;
+  reason?: string;
+  success_message?: string;
+  daily_limit_info?: string;
 };
 
 async function fileToResizedDataUrl(file: File, maxDim = 1280, quality = 0.82): Promise<string> {
@@ -27,7 +34,6 @@ async function fileToResizedDataUrl(file: File, maxDim = 1280, quality = 0.82): 
 
 export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
   const { t } = useT();
-  const verify = useServerFn(verifyReviewScreenshot);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: "success" | "error" | "info"; text: string } | null>(null);
@@ -59,11 +65,10 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
     setBusy(true);
     setMessage(null);
     try {
-      const user = await ensureFirebaseUser();
-      const idToken = await user.getIdToken();
-      const result = await verify({
-        data: { idToken, imageDataUrl: preview },
-      });
+      await ensureFirebaseUser();
+      const call = httpsCallable<any, GrantResult>(getFns(), "grantReviewReward");
+      const res = await call({ imageDataUrl: preview, deviceId: getDeviceId() });
+      const result = res.data;
       if (result.approved) {
         grantExtraAlbumToday();
         setMessage({ kind: "success", text: result.success_message || t.reviewRewardSuccess });
@@ -73,8 +78,12 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
       } else {
         setMessage({ kind: "error", text: result.reason || t.reviewRewardError });
       }
-    } catch {
-      setMessage({ kind: "error", text: t.reviewRewardError });
+    } catch (e) {
+      if (e instanceof FunctionsError && e.code === "functions/resource-exhausted") {
+        setMessage({ kind: "info", text: t.reviewRewardAlreadyUsed });
+      } else {
+        setMessage({ kind: "error", text: t.reviewRewardError });
+      }
     } finally {
       setBusy(false);
     }
