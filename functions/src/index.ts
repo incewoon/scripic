@@ -360,20 +360,39 @@ export const grantReviewReward = onCall(
     ]);
 
     let parsed: { approved?: boolean; reason?: string; success_message?: string } = {};
+    let rawText = "";
     try {
       const result = await geminiGenerate(body);
       const parts = result?.candidates?.[0]?.content?.parts ?? [];
-      const text = parts.map((p: any) => p?.text ?? "").join("\n").trim();
-      const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-      parsed = JSON.parse(cleaned);
+      rawText = parts.map((p: any) => p?.text ?? "").join("\n").trim();
+      console.log("[reviewReward] image bytes:", imageDataUrl.length, "raw:", rawText.slice(0, 500));
+      const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        const s = cleaned.indexOf("{");
+        const e = cleaned.lastIndexOf("}");
+        if (s >= 0 && e > s) {
+          parsed = JSON.parse(cleaned.slice(s, e + 1));
+        } else {
+          throw new Error("no_json_in_response");
+        }
+      }
     } catch (e: any) {
-      throw new HttpsError("internal", `verification_failed: ${e?.message ?? "unknown"}`);
+      console.error("[reviewReward] verification_failed:", e?.message, "raw:", rawText.slice(0, 500));
+      return {
+        approved: false,
+        reason: "AI 응답을 해석하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
+        success_message: "",
+        daily_limit_info: "",
+      };
     }
 
     if (!parsed.approved) {
+      console.log("[reviewReward] rejected by AI:", parsed.reason);
       return {
         approved: false,
-        reason: parsed.reason ?? "Could not verify the screenshot.",
+        reason: parsed.reason ?? "후기 내용을 인식하지 못했어요. 'Scripic' 글자가 보이게 캡처해 주세요.",
         success_message: "",
         daily_limit_info: "",
       };
