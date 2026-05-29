@@ -128,7 +128,11 @@ function Chat() {
     try { setMeta(JSON.parse(sessionStorage.getItem("memori_meta") || "{}")); } catch {}
     try { setPhotoMetas(JSON.parse(sessionStorage.getItem("memori_photo_metas") || "[]")); } catch {}
     const opener = getLang() === "ko" ? "이 사진들 좀 봐줘." : "Take a look at these photos with me.";
-    void send(opener, ph, []);
+    // Build smaller AI-payload variants in parallel; first send uses them.
+    void (async () => {
+      const aiPhotos = await Promise.all(ph.map((p) => downscaleForAi(p)));
+      void send(opener, ph, [], aiPhotos);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authReady, navigate, user]);
 
