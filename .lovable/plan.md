@@ -1,86 +1,74 @@
-# 첫 AI 응답 지연 단축 — A + D + E 적용
+## 점검 결과
 
-B(`minInstances: 1`)와 C(`asia-northeast3` 리전 이전)는 별도 배포로 추후 진행합니다.
+### 1. "하루 1개 고정" 테스트 코드는 없음 ✅
 
-## A. 클라이언트 스트리밍 활성화 (가장 큰 효과)
+`functions/src/index.ts`의 `reserveDailyAlbum`(L69-89)을 확인했습니다:
 
-**문제**: 서버는 이미 `geminiStreamText` + `response.sendChunk({ delta })` 로 토큰을 흘려보내지만, 클라이언트가 비-스트리밍 `httpsCallable` 을 호출하므로 `sendChunk` 가 모두 버려지고 사용자는 전체 응답이 완성될 때까지 "..." 만 봄.
-
-**변경**: `src/lib/aiClient.ts` 의 `aiChatStream` 을 Firebase 12의 `httpsCallable(...).stream(payload)` 로 교체.
-
-```ts
-const call = httpsCallable<any, { text: string }, { delta?: string }>(getFns(), "chat");
-const { stream, data } = await call.stream({ ...payload, deviceId: getDeviceId() });
-for await (const chunk of stream) {
-  if (chunk?.delta) yield chunk.delta;
-}
-await data; // 스트리밍 중 발생한 서버 에러 표면화
+```
+const bonusToday = sameDay && data?.bonusGranted === true;
+const limit = bonusToday ? 2 : 1;
 ```
 
-- 서버 (`functions/src/index.ts`) 는 변경 없음 — 이미 `sendChunk` 사용 중.
-- `chat.tsx` 는 변경 불필요 — 이미 delta 누적 렌더링.
-- 첫 토큰 도착 시각을 콘솔에 로그로 남겨 효과 확인 가능.
+즉, `daily_limits/{key}.bonusGranted === true`이면 한도가 자동으로 2로 올라갑니다. 클라이언트 측 `dailyLimit.ts`도 `hasExtraGrantedToday() && !hasExtraUsedToday()`로 보너스를 정상 반영합니다. **하드코딩된 "1개 고정" 잔재 없음.**
 
-## D. Firebase 사전 워밍
+### 2. 진짜 원인 = `grantReviewReward` 실패 → 일반 에러 메시지로 폴백
 
-**문제**: `/chat` 진입 후에야 `ensureFirebaseUser()` + AppCheck 토큰 발급이 시작되어 첫 호출 앞에 그대로 더해짐.
+`ReviewRewardDialog.tsx`의 분기:
+- `approved === true` → 성공 메시지
+- `daily_limit_info` 있음 → "이미 사용" 안내
+- 그 외 → `result.reason || t.reviewRewardError` 노출
+- 예외 throw → catch에서 `t.reviewRewardError` ("확인하지 못했어요...")
 
-**변경**: `src/routes/create.tsx` 의 `Create()` 마운트 시점에 `void ensureFirebaseUser()` 호출. 사용자가 사진을 고르고 "AI와 대화하기" 누르는 동안 백그라운드에서 익명 로그인 + AppCheck 토큰 발급 완료. 실패해도 무시 (실제 호출 시 다시 시도).
+사용자가 보는 메시지가 정확히 한국어 `reviewRewardError`이므로 **catch 경로**일 가능성이 가장 높습니다. 즉 서버에서 `HttpsError("internal", "verification_failed: ...")`가 던져지고 있습니다 (L370). 가능한 트리거:
 
-```ts
-// create.tsx 상단 import 추가
-import { ensureFirebaseUser } from "@/integrations/firebase/auth";
+- **a)** Gemini가 ```json … ``` 외 다른 prefix(설명문)를 붙여 `JSON.parse` 실패
+- **b)** `gemini-2.5-flash-lite`가 스크린샷 이미지를 거부하거나 빈 응답을 반환
+- **c)** 프롬프트가 매우 엄격함: "Scripic / photo album / memory album / ai album / script pic / 사진 한 장 한 장에 이야기를" 키워드를 **명시적으로** 요구. 한국 SNS 후기에 'Scripic'이라는 영문 브랜드명이 안 들어가면 approved=false. 이 경우엔 `result.reason`(영문)이 표시돼야 정상인데, JSON 파싱 실패면 catch 폴백으로 한국어 에러가 나옵니다.
 
-// Create() 내부 첫 useEffect 부근
-useEffect(() => {
-  void ensureFirebaseUser().catch(() => {});
-}, []);
-```
+또한 클라이언트가 `approved=false` 경로를 받아도 `result.reason`이 비어있으면 같은 한국어 에러가 표시됩니다.
 
-## E. 채팅용 이미지 페이로드 축소
+### 3. 또 하나의 잠재 이슈
 
-**문제**: `fileToDataUrl(maxDim=1280, q=0.82)` 로 만든 dataURL 을 그대로 callable JSON 에 실어 보냄. 3장 기준 ~1.5~2MB → 업로드/전송 시간 + 서버→Gemini 전송 시간 증가.
+`ensureFirebaseUser()`만 호출하고 App Check 토큰이 안 잡히면 `rateLimitKey`에서 `failed-precondition`을 던질 수 있습니다 — 이것도 catch 경로로 같은 메시지를 보여줍니다.
 
-**변경**: `src/routes/chat.tsx` 의 자동-시작 effect 에서, 원본 photos 와 별도로 "AI 전송용 축소본"을 비동기 생성 후 첫 send 에 사용. UI 표시(헤더 썸네일, 미리보기 모달)와 저장된 앨범에는 원본(1280px) 유지.
+---
 
-```ts
-// chat.tsx 상단
-async function downscaleForAi(dataUrl: string, maxDim = 896, q = 0.75): Promise<string> {
-  const img = await new Promise<HTMLImageElement>((res, rej) => {
-    const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = dataUrl;
-  });
-  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-  if (scale >= 1) return dataUrl;
-  const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
-  const c = document.createElement("canvas");
-  c.width = w; c.height = h;
-  c.getContext("2d")!.drawImage(img, 0, 0, w, h);
-  return c.toDataURL("image/jpeg", q);
-}
+## 수정 계획
 
-// 자동-시작 effect
-const aiPhotos = await Promise.all(ph.map(p => downscaleForAi(p)));
-void send(opener, ph, [], aiPhotos);
-```
+### A. 서버 로깅 추가 (`functions/src/index.ts`, `grantReviewReward`)
 
-`send()` 시그니처에 `aiPhotos?: string[]` 추가, 내부에서 `aiChatStream({ photos: prior.length === 0 ? (aiPhotos ?? ph) : undefined, ... })` 로 분기. photoCount 등 다른 값은 그대로.
+- Gemini 호출 전후로 `console.log("[reviewReward] raw text:", text.slice(0,500))` 기록
+- JSON parse 실패 시 raw text와 cleaned text를 함께 로그
+- 이미지 mime/길이도 로그
 
-페이로드 약 50~60% 감소 예상 → 업로드 200~500ms 단축.
+→ 배포 후 Firebase Functions 로그에서 실제 응답을 확인하면 (a)/(b)/(c) 중 무엇인지 즉시 판별 가능.
 
-## 적용 순서
+### B. 클라이언트 에러 메시지 세분화 (`ReviewRewardDialog.tsx`)
 
-1. `src/lib/aiClient.ts` — `aiChatStream` 을 `.stream()` 으로 교체
-2. `src/routes/create.tsx` — 마운트 시 `ensureFirebaseUser()` 사전 호출
-3. `src/routes/chat.tsx` — `downscaleForAi` 추가 + 자동-시작에서 축소본 생성 + `send()` 에 `aiPhotos` 파라미터 추가
+`onSubmit` catch에서 `e.code`별로 다른 안내:
+- `functions/internal` & message가 `verification_failed`로 시작 → "AI 검증 중 일시 오류가 발생했어요. 잠시 후 다시 시도해주세요."
+- `functions/failed-precondition` → "디바이스 인증이 아직 준비되지 않았어요. 잠시 후 다시 시도해주세요."
+- 기존 `resource-exhausted` → 그대로
+- 그 외 → 기존 메시지
 
-## 검증
+→ 사용자가 보는 메시지로 원인을 즉시 좁힐 수 있게 됨.
 
-- 빌드 통과 확인
-- 콘솔에서 `[AI Client] aiChatStream 첫 토큰 - <ms>` 로그가 종료 로그보다 훨씬 먼저 찍히는지 확인
-- 네트워크 탭에서 `chat` 호출의 응답이 `Content-Type: text/event-stream` 으로 chunked 인지 확인
-- `/create` 진입 시 콘솔에 `[firebase-auth] anonymous sign-in ok` 또는 `existing user reused` 가 일찍 찍히는지 확인
+### C. 서버 파싱 견고화 (`grantReviewReward`)
 
-## 추후 (별도 배포)
+- ```json/``` 외에 첫 `{` ~ 마지막 `}` 슬라이스로 fallback parsing
+- 파싱 완전 실패 시 `internal` 대신 `{ approved:false, reason:"AI 응답을 해석하지 못했어요." }` 로 반환 → 한국어 친화 메시지가 그대로 사용자에게 노출
+- `parsed.reason`이 비어 있을 때 클라이언트 폴백 메시지("후기 내용을 인식하지 못했어요. 'Scripic'이라는 단어가 보이게 캡처해보세요.")로 안내 강화
 
-- **B**: `functions/src/index.ts` 의 `chat` 함수에 `minInstances: 1` 추가 → 콜드 스타트 제거
-- **C**: `setGlobalOptions({ region: "asia-northeast3" })` + 클라이언트 `getFunctions(app, "asia-northeast3")` → 한국 사용자 RTT 100~200ms 단축. 기존 us-central1 함수는 신규 함수 배포 후 삭제.
+### D. 프롬프트 완화 (선택, B/C 로그로 (c)가 확정되면 적용)
+
+REVIEW_SYSTEM_PROMPT의 승인 기준에 "한글로 'Scripic', '스크리픽', '사진 앨범 앱', 'AI 앨범' 등을 언급한 경우" 명시. 다만 너무 느슨하면 누구나 받을 수 있으니 로그 확인 후 결정.
+
+---
+
+## 작업 순서
+
+1. **A + B + C** 를 함께 적용 (코드 수정만, 동작 변경 없음 → 안전)
+2. Firebase Functions 배포(`firebase deploy --only functions:grantReviewReward`)는 사용자가 직접 진행
+3. 실제 스크린샷 1~2회 시도 후 로그 확인 → 필요 시 **D** 적용
+
+배포 명령은 별도 진행이 필요하다는 점, 그리고 로그 확인 후 D가 필요한지 결정한다는 점만 양해 부탁드립니다.

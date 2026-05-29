@@ -81,6 +81,10 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
     } catch (e) {
       if (e instanceof FunctionsError && e.code === "functions/resource-exhausted") {
         setMessage({ kind: "info", text: t.reviewRewardAlreadyUsed });
+      } else if (e instanceof FunctionsError && e.code === "functions/failed-precondition") {
+        setMessage({ kind: "error", text: "디바이스 인증이 아직 준비되지 않았어요. 잠시 후 다시 시도해 주세요." });
+      } else if (e instanceof FunctionsError && e.code === "functions/internal") {
+        setMessage({ kind: "error", text: "AI 검증 중 일시 오류가 발생했어요. 잠시 후 다시 시도해 주세요." });
       } else {
         setMessage({ kind: "error", text: t.reviewRewardError });
       }
