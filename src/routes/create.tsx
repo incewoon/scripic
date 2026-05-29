@@ -23,6 +23,7 @@ import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import { canCreateAlbumToday } from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
 import { PrivacyConsentDialog, shouldShowPrivacyConsent } from "@/components/PrivacyConsentDialog";
+import { ensureFirebaseUser } from "@/integrations/firebase/auth";
 
 const PHOTO_MAX = 3;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
