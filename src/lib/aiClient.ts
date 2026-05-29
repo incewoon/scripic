@@ -30,6 +30,8 @@ function normalizeError(e: unknown): never {
 }
 
 // ---------------- chat ----------------
+// Uses Firebase v12 streaming callables so server-side `response.sendChunk({ delta })`
+// arrives token-by-token (first token in ~1s instead of waiting for the entire reply).
 export async function* aiChatStream(payload: {
   messages: any[];
   photos?: string[];
@@ -39,14 +41,17 @@ export async function* aiChatStream(payload: {
   maxTurnsPerPhoto?: number;
 }): AsyncGenerator<string> {
   const startTime = performance.now();
-  console.log(`[AI Client] aiChatStream → callable chat`);
+  console.log(`[AI Client] aiChatStream → callable chat (stream)`);
 
   await ensureFirebaseUser(); // anonymous sign-in (also ensures App Check is initialized)
 
-  const call = httpsCallable<any, { text: string }>(getFns(), "chat");
+  const call = httpsCallable<any, { text: string }, { delta?: string }>(
+    getFns(),
+    "chat",
+  );
 
   try {
-    const res = await call({
+    const { stream, data } = await call.stream({
       messages: payload.messages,
       photos: payload.photos,
       photoCount: payload.photoCount,
@@ -55,10 +60,25 @@ export async function* aiChatStream(payload: {
       maxTurnsPerPhoto: payload.maxTurnsPerPhoto ?? 3,
       deviceId: getDeviceId(),
     });
-    const text = res.data?.text ?? "";
+
+    let firstChunkAt: number | null = null;
+    for await (const chunk of stream) {
+      const delta = chunk?.delta;
+      if (typeof delta === "string" && delta.length > 0) {
+        if (firstChunkAt == null) {
+          firstChunkAt = performance.now();
+          console.log(
+            `[AI Client] aiChatStream 첫 토큰 - ${(firstChunkAt - startTime).toFixed(0)}ms`,
+          );
+        }
+        yield delta;
+      }
+    }
+    await data; // surface server-side errors that fire after streaming begins
     const endTime = performance.now();
-    console.log(`[AI Client] aiChatStream 완료 - ${(endTime - startTime).toFixed(0)}ms`);
-    if (text) yield text;
+    console.log(
+      `[AI Client] aiChatStream 완료 - ${(endTime - startTime).toFixed(0)}ms`,
+    );
   } catch (e) {
     console.error(`[AI Client] aiChatStream 실패`, e);
     normalizeError(e);
