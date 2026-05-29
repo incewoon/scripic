@@ -186,7 +186,7 @@ function Chat() {
   }
 
 
-  async function send(text: string, ph = photos, prior = messages) {
+  async function send(text: string, ph = photos, prior = messages, aiPhotos?: string[]) {
     if (!authReady || !user) {
       toast.error(t.connectionError);
       return;
@@ -206,9 +206,10 @@ function Chat() {
       let assistant = "";
       setMessages(m => [...m, { role: "assistant", content: "" }]);
 
+      const photosForCall = prior.length === 0 ? (aiPhotos ?? ph) : undefined;
       for await (const delta of aiChatStream({
         messages: newMsgs,
-        photos: prior.length === 0 ? ph : undefined,
+        photos: photosForCall,
         photoCount: ph.length,
         lang: getLang(),
         mode,
