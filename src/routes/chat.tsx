@@ -49,6 +49,31 @@ function fmtTakenAt(iso: string | undefined, lang: string) {
   } catch { return undefined; }
 }
 
+// Smaller, lower-quality variant for the AI payload. Display + saved album
+// keep the original 1280px versions. Cuts the first-turn upload by ~50-60%.
+async function downscaleForAi(dataUrl: string, maxDim = 896, q = 0.75): Promise<string> {
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = dataUrl;
+    });
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    if (scale >= 1) return dataUrl;
+    const w = Math.round(img.width * scale);
+    const h = Math.round(img.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", q);
+  } catch {
+    return dataUrl;
+  }
+}
+
 function Chat() {
   const { t, lang } = useT();
   const navigate = useNavigate();
