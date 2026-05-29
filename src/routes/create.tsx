@@ -23,6 +23,7 @@ import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import { canCreateAlbumToday } from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
 import { PrivacyConsentDialog, shouldShowPrivacyConsent } from "@/components/PrivacyConsentDialog";
+import { ensureFirebaseUser } from "@/integrations/firebase/auth";
 
 const PHOTO_MAX = 3;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -133,6 +134,13 @@ function Create() {
   // Show privacy / Gemini consent once per session (or until "don't show again").
   useEffect(() => {
     if (shouldShowPrivacyConsent()) setPrivacyOpen(true);
+  }, []);
+
+  // Pre-warm Firebase anonymous auth + App Check token while the user picks
+  // photos. By the time they tap "AI와 대화하기" the first /chat call doesn't
+  // pay for sign-in or token issuance.
+  useEffect(() => {
+    void ensureFirebaseUser().catch(() => { /* retried at call time */ });
   }, []);
 
   useEffect(() => {

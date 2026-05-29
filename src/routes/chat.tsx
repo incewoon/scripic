@@ -49,6 +49,31 @@ function fmtTakenAt(iso: string | undefined, lang: string) {
   } catch { return undefined; }
 }
 
+// Smaller, lower-quality variant for the AI payload. Display + saved album
+// keep the original 1280px versions. Cuts the first-turn upload by ~50-60%.
+async function downscaleForAi(dataUrl: string, maxDim = 896, q = 0.75): Promise<string> {
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = dataUrl;
+    });
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    if (scale >= 1) return dataUrl;
+    const w = Math.round(img.width * scale);
+    const h = Math.round(img.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", q);
+  } catch {
+    return dataUrl;
+  }
+}
+
 function Chat() {
   const { t, lang } = useT();
   const navigate = useNavigate();
@@ -103,7 +128,11 @@ function Chat() {
     try { setMeta(JSON.parse(sessionStorage.getItem("memori_meta") || "{}")); } catch {}
     try { setPhotoMetas(JSON.parse(sessionStorage.getItem("memori_photo_metas") || "[]")); } catch {}
     const opener = getLang() === "ko" ? "이 사진들 좀 봐줘." : "Take a look at these photos with me.";
-    void send(opener, ph, []);
+    // Build smaller AI-payload variants in parallel; first send uses them.
+    void (async () => {
+      const aiPhotos = await Promise.all(ph.map((p) => downscaleForAi(p)));
+      void send(opener, ph, [], aiPhotos);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authReady, navigate, user]);
 
@@ -157,7 +186,7 @@ function Chat() {
   }
 
 
-  async function send(text: string, ph = photos, prior = messages) {
+  async function send(text: string, ph = photos, prior = messages, aiPhotos?: string[]) {
     if (!authReady || !user) {
       toast.error(t.connectionError);
       return;
@@ -177,9 +206,10 @@ function Chat() {
       let assistant = "";
       setMessages(m => [...m, { role: "assistant", content: "" }]);
 
+      const photosForCall = prior.length === 0 ? (aiPhotos ?? ph) : undefined;
       for await (const delta of aiChatStream({
         messages: newMsgs,
-        photos: prior.length === 0 ? ph : undefined,
+        photos: photosForCall,
         photoCount: ph.length,
         lang: getLang(),
         mode,
