@@ -136,6 +136,13 @@ function Create() {
     if (shouldShowPrivacyConsent()) setPrivacyOpen(true);
   }, []);
 
+  // Pre-warm Firebase anonymous auth + App Check token while the user picks
+  // photos. By the time they tap "AI와 대화하기" the first /chat call doesn't
+  // pay for sign-in or token issuance.
+  useEffect(() => {
+    void ensureFirebaseUser().catch(() => { /* retried at call time */ });
+  }, []);
+
   useEffect(() => {
     if (items.length > prevCountRef.current && scrollRef.current) {
       const el = scrollRef.current;
