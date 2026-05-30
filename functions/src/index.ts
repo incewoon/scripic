@@ -16,21 +16,9 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
 
-import {
-  geminiGenerate,
-  geminiStreamText,
-  toGeminiRequest,
-  GeminiRateLimitError,
-  type OpenAIMessage,
-} from "./gemini";
+import { geminiGenerate, geminiStreamText, toGeminiRequest, GeminiRateLimitError, type OpenAIMessage } from "./gemini";
 import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
-import {
-  albumSystem,
-  albumUserPrompt,
-  toneInstruction,
-  type Mode as AlbumMode,
-  type Tone,
-} from "./prompts-album";
+import { albumSystem, albumUserPrompt, toneInstruction, type Mode as AlbumMode, type Tone } from "./prompts-album";
 
 initializeApp();
 const db = getFirestore();
@@ -129,26 +117,29 @@ export const chat = onCall(
   },
   // @ts-ignore - streaming response 지원을 위한 임시 타입 무시
   async (request: any, response: any) => {
-    const { messages, photos, photoCount: pcFromClient, lang = "en", mode = "creative", maxTurnsPerPhoto: rawCap } =
-      (request.data ?? {}) as {
-        messages: OpenAIMessage[];
-        photos?: string[];
-        photoCount?: number;
-        lang?: string;
-        mode?: Mode;
-        maxTurnsPerPhoto?: number;
-      };
+    const {
+      messages,
+      photos,
+      photoCount: pcFromClient,
+      lang = "en",
+      mode = "creative",
+      maxTurnsPerPhoto: rawCap,
+    } = (request.data ?? {}) as {
+      messages: OpenAIMessage[];
+      photos?: string[];
+      photoCount?: number;
+      lang?: string;
+      mode?: Mode;
+      maxTurnsPerPhoto?: number;
+    };
 
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
     }
 
-
     const m: Mode = mode === "fact" || mode === "brief" ? mode : "creative";
-    const maxTurnsPerPhoto =
-      typeof rawCap === "number" && rawCap > 0 ? Math.min(20, Math.floor(rawCap)) : 3;
-    const photoCount =
-      typeof pcFromClient === "number" && pcFromClient > 0 ? pcFromClient : photos?.length ?? 0;
+    const maxTurnsPerPhoto = typeof rawCap === "number" && rawCap > 0 ? Math.min(20, Math.floor(rawCap)) : 3;
+    const photoCount = typeof pcFromClient === "number" && pcFromClient > 0 ? pcFromClient : (photos?.length ?? 0);
 
     // Inject photos into the first user message on the opening turn.
     const enriched: OpenAIMessage[] = [...messages];
@@ -170,8 +161,7 @@ export const chat = onCall(
       }
     }
 
-    const system =
-      chatSystemPrompt(lang, photoCount, m) + turnLimitClause(lang, photoCount, maxTurnsPerPhoto);
+    const system = chatSystemPrompt(lang, photoCount, m) + turnLimitClause(lang, photoCount, maxTurnsPerPhoto);
 
     const body = toGeminiRequest([{ role: "system", content: system }, ...enriched]);
 
@@ -221,16 +211,23 @@ export const generateAlbum = onCall(
     secrets: [GEMINI_API_KEY],
   },
   async (req) => {
-    const { messages, photoCount, lang = "en", period, location, mode = "creative", tone = "politely" } =
-      (req.data ?? {}) as {
-        messages: { role: string; content: any }[];
-        photoCount: number;
-        lang?: string;
-        period?: string;
-        location?: string;
-        mode?: AlbumMode;
-        tone?: Tone;
-      };
+    const {
+      messages,
+      photoCount,
+      lang = "en",
+      period,
+      location,
+      mode = "creative",
+      tone = "politely",
+    } = (req.data ?? {}) as {
+      messages: { role: string; content: any }[];
+      photoCount: number;
+      lang?: string;
+      period?: string;
+      location?: string;
+      mode?: AlbumMode;
+      tone?: Tone;
+    };
 
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
@@ -250,8 +247,8 @@ export const generateAlbum = onCall(
           typeof msg.content === "string"
             ? msg.content
             : Array.isArray(msg.content)
-            ? msg.content.find?.((c: any) => c.type === "text")?.text ?? "(photos)"
-            : "";
+              ? (msg.content.find?.((c: any) => c.type === "text")?.text ?? "(photos)")
+              : "";
         return `${msg.role === "user" ? "User" : "AI"}: ${t}`;
       })
       .join("\n");
@@ -317,7 +314,7 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
   const snap = await db.collection("daily_limits").doc(key).get();
   const data = snap.data();
   const today = todayKey();
-  const used = data?.lastDate === today ? data?.count ?? 0 : 0;
+  const used = data?.lastDate === today ? (data?.count ?? 0) : 0;
   return { used, limit: 1, today };
 });
 
@@ -418,9 +415,15 @@ export const grantReviewReward = onCall(
     try {
       const result = await geminiGenerate(body);
       const parts = result?.candidates?.[0]?.content?.parts ?? [];
-      rawText = parts.map((p: any) => p?.text ?? "").join("\n").trim();
+      rawText = parts
+        .map((p: any) => p?.text ?? "")
+        .join("\n")
+        .trim();
       console.log("[reviewReward] image bytes:", imageDataUrl.length, "raw:", rawText.slice(0, 500));
-      const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      const cleaned = rawText
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
       try {
         parsed = JSON.parse(cleaned);
       } catch {
@@ -457,8 +460,8 @@ export const grantReviewReward = onCall(
         approved: false,
         reason:
           isOldOrGeneric || !detected
-            ? "이 앱의 현재 브랜드(Scripic / 스크립픽 / ince.lovable.app)가 보이지 않아요. 현재 브랜드명이 보이는 후기 스크린샷을 올려주세요."
-            : "현재 브랜드를 확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
+            ? "이 앱의 현재 브랜드(Scripic / 스크립픽)가 보이지 않아요. 앱이름이 보이는 후기 스크린샷을 올려주세요."
+            : "앱이름을 확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
         success_message: "",
         daily_limit_info: "",
       };
@@ -468,9 +471,7 @@ export const grantReviewReward = onCall(
       console.log("[reviewReward] rejected by AI:", parsed.reason, "detected:", detected);
       return {
         approved: false,
-        reason:
-          parsed.reason ??
-          "후기 내용을 인식하지 못했어요. 'Scripic' 또는 'ince.lovable.app'이 보이게 캡처해 주세요.",
+        reason: parsed.reason ?? "후기 내용을 인식하지 못했어요. 'Scripic'이 보이게 캡처해 주세요.",
         success_message: "",
         daily_limit_info: "",
       };
@@ -481,8 +482,7 @@ export const grantReviewReward = onCall(
     return {
       approved: true,
       reason: parsed.reason ?? "ok",
-      success_message:
-        parsed.success_message ?? "🎁 후기 업로드 확인 완료! 추가 앨범 생성권이 지급되었습니다.",
+      success_message: parsed.success_message ?? "🎁 후기 업로드 확인 완료! 추가 앨범 생성권이 지급되었습니다.",
       daily_limit_info: "",
     };
   },
