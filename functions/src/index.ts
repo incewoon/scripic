@@ -52,13 +52,18 @@ function todayKey(d = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
-/** Stable identifier for rate-limiting. Prefer App Check appId. */
+/**
+ * Stable identifier for rate-limiting. Prefer the client-supplied deviceId
+ * (per-install UUID stored in localStorage) so the counter is independent
+ * across phones/tablets. App Check appId is the SAME for every install of
+ * the app, so it must only be used as a last-resort fallback.
+ */
 function rateLimitKey(req: { app?: { appId?: string }; data?: any }): string {
-  const appId = req.app?.appId;
-  if (appId) return `app:${appId}`;
   const deviceId = String(req.data?.deviceId ?? "").slice(0, 128);
   if (deviceId) return `dev:${deviceId}`;
-  throw new HttpsError("failed-precondition", "missing app check token and device id");
+  const appId = req.app?.appId;
+  if (appId) return `app:${appId}`;
+  throw new HttpsError("failed-precondition", "missing device id and app check token");
 }
 
 /**
