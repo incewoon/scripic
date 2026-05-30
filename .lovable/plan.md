@@ -1,74 +1,28 @@
-## 점검 결과
+## 확인된 내용
+- 현재 코드베이스에는 `grantReviewReward` export가 존재합니다.
+- 그런데 사용자가 올린 배포 로그에서는 Firebase가 배포 대상으로 `chat`, `generateAlbum`, `dailyStatus`만 인식했고, `grantReviewReward`는 아예 함수 목록에 없습니다.
+- 실제 브라우저 네트워크도 `https://us-central1-ai-album-app.cloudfunctions.net/grantReviewReward` 호출 후 `Failed to fetch`로 끝나서, 지금 보이는 "AI 검증 중 일시 오류"는 AI 판독 실패보다 **함수 미배포/미존재 상태**일 가능성이 가장 큽니다.
+- 하루 1개 + 후기 시 1개 추가 자체는 서버 코드상 `bonusGranted === true`일 때 2개까지 허용하도록 되어 있어, 현재 핵심 문제는 제한 로직보다 후기 보상 함수 경로 쪽입니다.
 
-### 1. "하루 1개 고정" 테스트 코드는 없음 ✅
+## 구현 계획
+1. **후기 보상 함수가 실제 배포 산출물에 포함되도록 정리**
+   - Functions 엔트리 export 경로를 다시 점검하고, Firebase가 함수 목록에 `grantReviewReward`를 인식하도록 배포 대상 코드를 정리합니다.
+   - 사용자가 `firebase deploy --only functions:grantReviewReward`로 바로 배포 가능하도록 함수명이 정확히 노출되는 상태로 맞춥니다.
 
-`functions/src/index.ts`의 `reserveDailyAlbum`(L69-89)을 확인했습니다:
+2. **후기 검증 서버 로직 재점검 및 보강**
+   - 현재 서버 반환 형식이 old deploy / new deploy 어느 경우에도 안정적으로 판별되도록 정리합니다.
+   - AI 응답 파싱 실패, 이미지 판독 실패, 이미 지급된 경우를 명확히 분리합니다.
+   - 현재 스크린샷처럼 `Scripic`이 아니라 `Memory Weaver` 표기가 보이는 경우도 인식 가능하도록 브랜드/키워드 기준을 완화할지 함께 반영합니다.
 
-```
-const bonusToday = sameDay && data?.bonusGranted === true;
-const limit = bonusToday ? 2 : 1;
-```
+3. **클라이언트 에러 메시지 흐름 정리**
+   - 함수 미배포/네트워크 실패/AI 반려/이미 지급됨이 서로 다른 메시지로 보이게 정리합니다.
+   - 지금처럼 모든 실패가 "AI 검증 중 일시 오류"로 뭉개지지 않도록 예외 분기를 명확히 합니다.
 
-즉, `daily_limits/{key}.bonusGranted === true`이면 한도가 자동으로 2로 올라갑니다. 클라이언트 측 `dailyLimit.ts`도 `hasExtraGrantedToday() && !hasExtraUsedToday()`로 보너스를 정상 반영합니다. **하드코딩된 "1개 고정" 잔재 없음.**
+4. **동작 검증 경로 맞춤**
+   - 배포 후에는 `grantReviewReward` 호출이 실제로 응답하는지 확인하고,
+   - 승인 시 `bonusGranted` 경로가 살아서 하루 총 2개까지 허용되는 흐름을 다시 검증합니다.
 
-### 2. 진짜 원인 = `grantReviewReward` 실패 → 일반 에러 메시지로 폴백
-
-`ReviewRewardDialog.tsx`의 분기:
-- `approved === true` → 성공 메시지
-- `daily_limit_info` 있음 → "이미 사용" 안내
-- 그 외 → `result.reason || t.reviewRewardError` 노출
-- 예외 throw → catch에서 `t.reviewRewardError` ("확인하지 못했어요...")
-
-사용자가 보는 메시지가 정확히 한국어 `reviewRewardError`이므로 **catch 경로**일 가능성이 가장 높습니다. 즉 서버에서 `HttpsError("internal", "verification_failed: ...")`가 던져지고 있습니다 (L370). 가능한 트리거:
-
-- **a)** Gemini가 ```json … ``` 외 다른 prefix(설명문)를 붙여 `JSON.parse` 실패
-- **b)** `gemini-2.5-flash-lite`가 스크린샷 이미지를 거부하거나 빈 응답을 반환
-- **c)** 프롬프트가 매우 엄격함: "Scripic / photo album / memory album / ai album / script pic / 사진 한 장 한 장에 이야기를" 키워드를 **명시적으로** 요구. 한국 SNS 후기에 'Scripic'이라는 영문 브랜드명이 안 들어가면 approved=false. 이 경우엔 `result.reason`(영문)이 표시돼야 정상인데, JSON 파싱 실패면 catch 폴백으로 한국어 에러가 나옵니다.
-
-또한 클라이언트가 `approved=false` 경로를 받아도 `result.reason`이 비어있으면 같은 한국어 에러가 표시됩니다.
-
-### 3. 또 하나의 잠재 이슈
-
-`ensureFirebaseUser()`만 호출하고 App Check 토큰이 안 잡히면 `rateLimitKey`에서 `failed-precondition`을 던질 수 있습니다 — 이것도 catch 경로로 같은 메시지를 보여줍니다.
-
----
-
-## 수정 계획
-
-### A. 서버 로깅 추가 (`functions/src/index.ts`, `grantReviewReward`)
-
-- Gemini 호출 전후로 `console.log("[reviewReward] raw text:", text.slice(0,500))` 기록
-- JSON parse 실패 시 raw text와 cleaned text를 함께 로그
-- 이미지 mime/길이도 로그
-
-→ 배포 후 Firebase Functions 로그에서 실제 응답을 확인하면 (a)/(b)/(c) 중 무엇인지 즉시 판별 가능.
-
-### B. 클라이언트 에러 메시지 세분화 (`ReviewRewardDialog.tsx`)
-
-`onSubmit` catch에서 `e.code`별로 다른 안내:
-- `functions/internal` & message가 `verification_failed`로 시작 → "AI 검증 중 일시 오류가 발생했어요. 잠시 후 다시 시도해주세요."
-- `functions/failed-precondition` → "디바이스 인증이 아직 준비되지 않았어요. 잠시 후 다시 시도해주세요."
-- 기존 `resource-exhausted` → 그대로
-- 그 외 → 기존 메시지
-
-→ 사용자가 보는 메시지로 원인을 즉시 좁힐 수 있게 됨.
-
-### C. 서버 파싱 견고화 (`grantReviewReward`)
-
-- ```json/``` 외에 첫 `{` ~ 마지막 `}` 슬라이스로 fallback parsing
-- 파싱 완전 실패 시 `internal` 대신 `{ approved:false, reason:"AI 응답을 해석하지 못했어요." }` 로 반환 → 한국어 친화 메시지가 그대로 사용자에게 노출
-- `parsed.reason`이 비어 있을 때 클라이언트 폴백 메시지("후기 내용을 인식하지 못했어요. 'Scripic'이라는 단어가 보이게 캡처해보세요.")로 안내 강화
-
-### D. 프롬프트 완화 (선택, B/C 로그로 (c)가 확정되면 적용)
-
-REVIEW_SYSTEM_PROMPT의 승인 기준에 "한글로 'Scripic', '스크리픽', '사진 앨범 앱', 'AI 앨범' 등을 언급한 경우" 명시. 다만 너무 느슨하면 누구나 받을 수 있으니 로그 확인 후 결정.
-
----
-
-## 작업 순서
-
-1. **A + B + C** 를 함께 적용 (코드 수정만, 동작 변경 없음 → 안전)
-2. Firebase Functions 배포(`firebase deploy --only functions:grantReviewReward`)는 사용자가 직접 진행
-3. 실제 스크린샷 1~2회 시도 후 로그 확인 → 필요 시 **D** 적용
-
-배포 명령은 별도 진행이 필요하다는 점, 그리고 로그 확인 후 D가 필요한지 결정한다는 점만 양해 부탁드립니다.
+## 기술 메모
+- 지금 증상은 "검토 AI가 틀렸다"보다 **배포된 백엔드에 해당 함수가 아직 없음** 쪽 신호가 훨씬 강합니다.
+- 이후 실제 AI 판독 단계로 넘어가면, 첨부하신 스크린샷은 브랜드명이 `Memory Weaver`로 보이므로 기존 프롬프트의 브랜드 허용 범위를 넓히는 편이 안전합니다.
+- 구현 시에는 프론트와 서버를 둘 다 손보되, 범위는 후기 보상 플로우에만 한정합니다.

@@ -295,21 +295,30 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
 // and on approval marks today's daily-limit doc with `bonusGranted: true`,
 // raising the per-device cap from 1 → 2 albums for the rest of the day.
 
-const REVIEW_SYSTEM_PROMPT = `You are the Reward System Agent for the Scripic app.
-Your ONLY job is to decide whether a screenshot shows a real social-media review/post about the Scripic app
-(an app that turns photos into meaningful memory albums).
+const REVIEW_SYSTEM_PROMPT = `You are the Reward System Agent for a photo-to-album app.
+The app is variously branded as "Scripic", "Memory Weaver", "메모리위버",
+"AI 앨범 만들기앱", "스크립픽", or referred to by its domain ince.lovable.app.
+It turns photos into meaningful memory albums (stories, captions, narration).
 
-Accepted platforms include Instagram, Facebook, Threads, X (Twitter), TikTok, YouTube Community,
-KakaoStory, Naver Blog, Naver Cafe, Band, etc.
+Your ONLY job is to decide whether a screenshot shows a real social-media review/post
+about THIS app (any of the names/domains above is acceptable).
 
-Approve when the image is clearly a social-media post AND mentions Scripic / photo album / memory album /
-ai album / script pic / "사진 한 장 한 장에 이야기를" or contains praise of the app in context.
-Reject unrelated images, blank screenshots, food/cat/meme photos, or screenshots with no Scripic context.
+Accepted platforms include Instagram, Facebook, Threads, X (Twitter), TikTok, YouTube,
+Naver Blog, Naver Cafe, KakaoStory, Band, 네이버 카페/블로그 등 SNS 전반.
 
-Output STRICT JSON only:
+Approve when the screenshot is clearly a social/community post AND mentions ANY of:
+- Scripic / 스크립픽 / Memory Weaver / 메모리위버
+- ince.lovable.app
+- "AI 앨범", "사진 앨범 앱", "추억 앨범", "AI 앨범 만들기"
+- a screenshot of the app itself embedded in a review/post context
+Be GENEROUS: if the post is plausibly about this app (Korean reviewers often write
+freeform praise + an app screenshot), approve it. Only reject if it is clearly
+unrelated (food/cat/meme/blank/no app context at all).
+
+Output STRICT JSON only — no markdown fences, no commentary:
 {
   "approved": true | false,
-  "reason": "one short sentence explaining your decision",
+  "reason": "one short sentence (Korean) explaining your decision",
   "success_message": "Korean celebration message if approved, otherwise empty string"
 }
 
