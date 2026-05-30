@@ -413,7 +413,7 @@ export const grantReviewReward = onCall(
       },
     ]);
 
-    let parsed: { approved?: boolean; reason?: string; success_message?: string } = {};
+    let parsed: { approved?: boolean; detected_brand?: string; reason?: string; success_message?: string } = {};
     let rawText = "";
     try {
       const result = await geminiGenerate(body);
@@ -434,6 +434,9 @@ export const grantReviewReward = onCall(
       }
     } catch (e: any) {
       console.error("[reviewReward] verification_failed:", e?.message, "raw:", rawText.slice(0, 500));
+      if (e instanceof GeminiRateLimitError) {
+        throw new HttpsError("resource-exhausted", "ai_rate_limit");
+      }
       return {
         approved: false,
         reason: "AI 응답을 해석하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
@@ -442,11 +445,32 @@ export const grantReviewReward = onCall(
       };
     }
 
-    if (!parsed.approved) {
-      console.log("[reviewReward] rejected by AI:", parsed.reason);
+    // Server-side brand guard: even if the model approved, the response must
+    // claim the current brand. Reject old "Memory Weaver" / generic-only cases.
+    const detected = String(parsed.detected_brand ?? "").toLowerCase();
+    const isCurrentBrand = detected === "scripic";
+    const isOldOrGeneric = detected === "memory_weaver" || detected === "generic" || detected === "none";
+
+    if (parsed.approved && !isCurrentBrand) {
+      console.log("[reviewReward] override-reject: model approved but detected_brand=", detected);
       return {
         approved: false,
-        reason: parsed.reason ?? "후기 내용을 인식하지 못했어요. 'Scripic' 글자가 보이게 캡처해 주세요.",
+        reason:
+          isOldOrGeneric || !detected
+            ? "이 앱의 현재 브랜드(Scripic / 스크립픽 / ince.lovable.app)가 보이지 않아요. 현재 브랜드명이 보이는 후기 스크린샷을 올려주세요."
+            : "현재 브랜드를 확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
+        success_message: "",
+        daily_limit_info: "",
+      };
+    }
+
+    if (!parsed.approved) {
+      console.log("[reviewReward] rejected by AI:", parsed.reason, "detected:", detected);
+      return {
+        approved: false,
+        reason:
+          parsed.reason ??
+          "후기 내용을 인식하지 못했어요. 'Scripic' 또는 'ince.lovable.app'이 보이게 캡처해 주세요.",
         success_message: "",
         daily_limit_info: "",
       };
