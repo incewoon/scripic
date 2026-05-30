@@ -115,17 +115,16 @@ async function grantDailyBonus(key: string): Promise<{ alreadyGranted: boolean }
     return { alreadyGranted: false };
   });
 }
-
 // ---------------- chat (streaming) ----------------
-
 export const chat = onCall(
   {
     enforceAppCheck: true,
     secrets: [GEMINI_API_KEY],
   },
-  async (req, response) => {
+  // @ts-ignore - streaming response 지원을 위한 임시 타입 무시
+  async (request: any, response: any) => {
     const { messages, photos, photoCount: pcFromClient, lang = "en", mode = "creative", maxTurnsPerPhoto: rawCap } =
-      (req.data ?? {}) as {
+      (request.data ?? {}) as {
         messages: OpenAIMessage[];
         photos?: string[];
         photoCount?: number;
@@ -137,6 +136,7 @@ export const chat = onCall(
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
     }
+
 
     const m: Mode = mode === "fact" || mode === "brief" ? mode : "creative";
     const maxTurnsPerPhoto =
