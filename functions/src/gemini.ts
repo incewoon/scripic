@@ -59,6 +59,15 @@ function getKey(): string {
   return k;
 }
 
+export class GeminiRateLimitError extends Error {
+  status: number;
+  constructor(status: number, msg: string) {
+    super(msg);
+    this.name = "GeminiRateLimitError";
+    this.status = status;
+  }
+}
+
 export async function geminiGenerate(body: any): Promise<any> {
   const url = `${BASE}/${MODEL}:generateContent?key=${getKey()}`;
   const res = await fetch(url, {
@@ -68,6 +77,9 @@ export async function geminiGenerate(body: any): Promise<any> {
   });
   if (!res.ok) {
     const txt = await res.text();
+    if (res.status === 429 || res.status === 503) {
+      throw new GeminiRateLimitError(res.status, `Gemini busy ${res.status}: ${txt}`);
+    }
     throw new Error(`Gemini error ${res.status}: ${txt}`);
   }
   return res.json();
@@ -83,6 +95,9 @@ export async function* geminiStreamText(body: any): AsyncGenerator<string> {
   });
   if (!res.ok || !res.body) {
     const txt = await res.text().catch(() => "");
+    if (res.status === 429 || res.status === 503) {
+      throw new GeminiRateLimitError(res.status, `Gemini busy ${res.status}: ${txt}`);
+    }
     throw new Error(`Gemini stream error ${res.status}: ${txt}`);
   }
   const reader = (res.body as any).getReader();

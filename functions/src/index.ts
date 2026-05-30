@@ -20,6 +20,7 @@ import {
   geminiGenerate,
   geminiStreamText,
   toGeminiRequest,
+  GeminiRateLimitError,
   type OpenAIMessage,
 } from "./gemini";
 import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
@@ -52,13 +53,18 @@ function todayKey(d = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
-/** Stable identifier for rate-limiting. Prefer App Check appId. */
+/**
+ * Stable identifier for rate-limiting. Prefer the client-supplied deviceId
+ * (per-install UUID stored in localStorage) so the counter is independent
+ * across phones/tablets. App Check appId is the SAME for every install of
+ * the app, so it must only be used as a last-resort fallback.
+ */
 function rateLimitKey(req: { app?: { appId?: string }; data?: any }): string {
-  const appId = req.app?.appId;
-  if (appId) return `app:${appId}`;
   const deviceId = String(req.data?.deviceId ?? "").slice(0, 128);
   if (deviceId) return `dev:${deviceId}`;
-  throw new HttpsError("failed-precondition", "missing app check token and device id");
+  const appId = req.app?.appId;
+  if (appId) return `app:${appId}`;
+  throw new HttpsError("failed-precondition", "missing device id and app check token");
 }
 
 /**
@@ -176,6 +182,9 @@ export const chat = onCall(
         if (response?.sendChunk) response.sendChunk({ delta });
       }
     } catch (e: any) {
+      if (e instanceof GeminiRateLimitError) {
+        throw new HttpsError("resource-exhausted", "ai_rate_limit");
+      }
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
     return { text: full };
@@ -263,15 +272,38 @@ export const generateAlbum = onCall(
       },
     );
 
-    const result = await geminiGenerate(body);
+    const rollbackDailyCount = async () => {
+      try {
+        await db.runTransaction(async (tx) => {
+          const ref = db.collection("daily_limits").doc(key);
+          const snap = await tx.get(ref);
+          const data = snap.data();
+          if (data?.lastDate === todayKey() && (data?.count ?? 0) > 0) {
+            tx.update(ref, {
+              count: FieldValue.increment(-1),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+        });
+      } catch (e) {
+        console.error("[generateAlbum] rollback failed:", (e as any)?.message);
+      }
+    };
+
+    let result: any;
+    try {
+      result = await geminiGenerate(body);
+    } catch (e: any) {
+      await rollbackDailyCount();
+      if (e instanceof GeminiRateLimitError) {
+        throw new HttpsError("resource-exhausted", "ai_rate_limit");
+      }
+      throw new HttpsError("internal", e?.message ?? "gemini failed");
+    }
     const parts = result?.candidates?.[0]?.content?.parts ?? [];
     const fc = parts.find((p: any) => p.functionCall)?.functionCall;
     if (!fc?.args) {
-      // rollback the daily counter so the user can retry today
-      await db
-        .collection("daily_limits")
-        .doc(key)
-        .set({ lastDate: todayKey(), count: 0, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      await rollbackDailyCount();
       throw new HttpsError("internal", "gemini did not return album");
     }
     return fc.args;
@@ -296,31 +328,44 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
 // raising the per-device cap from 1 → 2 albums for the rest of the day.
 
 const REVIEW_SYSTEM_PROMPT = `You are the Reward System Agent for a photo-to-album app.
-The app is variously branded as "Scripic", "Memory Weaver", "메모리위버",
-"AI 앨범 만들기앱", "스크립픽", or referred to by its domain ince.lovable.app.
-It turns photos into meaningful memory albums (stories, captions, narration).
+The CURRENT brand is ONLY one of these names/domains:
+- "Scripic"
+- "스크립픽"
+- "ince.lovable.app"
 
-Your ONLY job is to decide whether a screenshot shows a real social-media review/post
-about THIS app (any of the names/domains above is acceptable).
+IMPORTANT — DO NOT accept these OLD or generic names by themselves. They are NOT
+the current brand and must be rejected if no current brand mark is visible:
+- "Memory Weaver", "메모리위버"
+- "AI 앨범", "AI 앨범 만들기", "AI 앨범 만들기앱", "사진 앨범 앱", "추억 앨범"
+
+Your ONLY job is to decide whether the screenshot is a real social-media review/post
+about THIS app that clearly shows the CURRENT brand (Scripic / 스크립픽 / ince.lovable.app).
 
 Accepted platforms include Instagram, Facebook, Threads, X (Twitter), TikTok, YouTube,
-Naver Blog, Naver Cafe, KakaoStory, Band, 네이버 카페/블로그 등 SNS 전반.
+Naver Blog, Naver Cafe, KakaoStory, Band — any social or community post is fine.
 
-Approve when the screenshot is clearly a social/community post AND mentions ANY of:
-- Scripic / 스크립픽 / Memory Weaver / 메모리위버
-- ince.lovable.app
-- "AI 앨범", "사진 앨범 앱", "추억 앨범", "AI 앨범 만들기"
-- a screenshot of the app itself embedded in a review/post context
-Be GENEROUS: if the post is plausibly about this app (Korean reviewers often write
-freeform praise + an app screenshot), approve it. Only reject if it is clearly
-unrelated (food/cat/meme/blank/no app context at all).
+APPROVE only if BOTH are true:
+1) The image is clearly a social/community post or review context (not a bare app screen,
+   not a private chat, not a meme), AND
+2) The image visibly contains at least one of: "Scripic", "스크립픽", or "ince.lovable.app"
+   (in text, caption, URL, app header, or screenshot embedded in the post).
+
+REJECT (approved=false) when:
+- Only old brand "Memory Weaver" / "메모리위버" is visible, with no current brand mark.
+- Only generic phrases like "AI 앨범" appear without Scripic / 스크립픽 / ince.lovable.app.
+- The image is unrelated (food, pet, meme, blank, random screenshot).
+- It is just an app screenshot with no review/post wrapper.
 
 Output STRICT JSON only — no markdown fences, no commentary:
 {
   "approved": true | false,
+  "detected_brand": "scripic" | "memory_weaver" | "generic" | "none",
   "reason": "one short sentence (Korean) explaining your decision",
   "success_message": "Korean celebration message if approved, otherwise empty string"
 }
+
+If rejecting because only "Memory Weaver / 메모리위버" is visible, set reason to
+"이 앱의 현재 브랜드(Scripic / 스크립픽 / ince.lovable.app)가 보이지 않아요. 현재 브랜드명이 보이는 후기 스크린샷을 올려주세요."
 
 Pick a success_message similar to:
 - "🎉 와우! 멋진 후기 감사해요! 추가 앨범이 지급되었어요."
@@ -368,7 +413,7 @@ export const grantReviewReward = onCall(
       },
     ]);
 
-    let parsed: { approved?: boolean; reason?: string; success_message?: string } = {};
+    let parsed: { approved?: boolean; detected_brand?: string; reason?: string; success_message?: string } = {};
     let rawText = "";
     try {
       const result = await geminiGenerate(body);
@@ -389,6 +434,9 @@ export const grantReviewReward = onCall(
       }
     } catch (e: any) {
       console.error("[reviewReward] verification_failed:", e?.message, "raw:", rawText.slice(0, 500));
+      if (e instanceof GeminiRateLimitError) {
+        throw new HttpsError("resource-exhausted", "ai_rate_limit");
+      }
       return {
         approved: false,
         reason: "AI 응답을 해석하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
@@ -397,11 +445,32 @@ export const grantReviewReward = onCall(
       };
     }
 
-    if (!parsed.approved) {
-      console.log("[reviewReward] rejected by AI:", parsed.reason);
+    // Server-side brand guard: even if the model approved, the response must
+    // claim the current brand. Reject old "Memory Weaver" / generic-only cases.
+    const detected = String(parsed.detected_brand ?? "").toLowerCase();
+    const isCurrentBrand = detected === "scripic";
+    const isOldOrGeneric = detected === "memory_weaver" || detected === "generic" || detected === "none";
+
+    if (parsed.approved && !isCurrentBrand) {
+      console.log("[reviewReward] override-reject: model approved but detected_brand=", detected);
       return {
         approved: false,
-        reason: parsed.reason ?? "후기 내용을 인식하지 못했어요. 'Scripic' 글자가 보이게 캡처해 주세요.",
+        reason:
+          isOldOrGeneric || !detected
+            ? "이 앱의 현재 브랜드(Scripic / 스크립픽 / ince.lovable.app)가 보이지 않아요. 현재 브랜드명이 보이는 후기 스크린샷을 올려주세요."
+            : "현재 브랜드를 확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
+        success_message: "",
+        daily_limit_info: "",
+      };
+    }
+
+    if (!parsed.approved) {
+      console.log("[reviewReward] rejected by AI:", parsed.reason, "detected:", detected);
+      return {
+        approved: false,
+        reason:
+          parsed.reason ??
+          "후기 내용을 인식하지 못했어요. 'Scripic' 또는 'ince.lovable.app'이 보이게 캡처해 주세요.",
         success_message: "",
         daily_limit_info: "",
       };
