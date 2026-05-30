@@ -95,6 +95,9 @@ export async function* geminiStreamText(body: any): AsyncGenerator<string> {
   });
   if (!res.ok || !res.body) {
     const txt = await res.text().catch(() => "");
+    if (res.status === 429 || res.status === 503) {
+      throw new GeminiRateLimitError(res.status, `Gemini busy ${res.status}: ${txt}`);
+    }
     throw new Error(`Gemini stream error ${res.status}: ${txt}`);
   }
   const reader = (res.body as any).getReader();
