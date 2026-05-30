@@ -272,15 +272,38 @@ export const generateAlbum = onCall(
       },
     );
 
-    const result = await geminiGenerate(body);
+    const rollbackDailyCount = async () => {
+      try {
+        await db.runTransaction(async (tx) => {
+          const ref = db.collection("daily_limits").doc(key);
+          const snap = await tx.get(ref);
+          const data = snap.data();
+          if (data?.lastDate === todayKey() && (data?.count ?? 0) > 0) {
+            tx.update(ref, {
+              count: FieldValue.increment(-1),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+        });
+      } catch (e) {
+        console.error("[generateAlbum] rollback failed:", (e as any)?.message);
+      }
+    };
+
+    let result: any;
+    try {
+      result = await geminiGenerate(body);
+    } catch (e: any) {
+      await rollbackDailyCount();
+      if (e instanceof GeminiRateLimitError) {
+        throw new HttpsError("resource-exhausted", "ai_rate_limit");
+      }
+      throw new HttpsError("internal", e?.message ?? "gemini failed");
+    }
     const parts = result?.candidates?.[0]?.content?.parts ?? [];
     const fc = parts.find((p: any) => p.functionCall)?.functionCall;
     if (!fc?.args) {
-      // rollback the daily counter so the user can retry today
-      await db
-        .collection("daily_limits")
-        .doc(key)
-        .set({ lastDate: todayKey(), count: 0, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      await rollbackDailyCount();
       throw new HttpsError("internal", "gemini did not return album");
     }
     return fc.args;
