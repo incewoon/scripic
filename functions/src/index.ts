@@ -20,6 +20,7 @@ import {
   geminiGenerate,
   geminiStreamText,
   toGeminiRequest,
+  GeminiRateLimitError,
   type OpenAIMessage,
 } from "./gemini";
 import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
