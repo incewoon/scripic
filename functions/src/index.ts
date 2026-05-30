@@ -328,31 +328,44 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
 // raising the per-device cap from 1 → 2 albums for the rest of the day.
 
 const REVIEW_SYSTEM_PROMPT = `You are the Reward System Agent for a photo-to-album app.
-The app is variously branded as "Scripic", "Memory Weaver", "메모리위버",
-"AI 앨범 만들기앱", "스크립픽", or referred to by its domain ince.lovable.app.
-It turns photos into meaningful memory albums (stories, captions, narration).
+The CURRENT brand is ONLY one of these names/domains:
+- "Scripic"
+- "스크립픽"
+- "ince.lovable.app"
 
-Your ONLY job is to decide whether a screenshot shows a real social-media review/post
-about THIS app (any of the names/domains above is acceptable).
+IMPORTANT — DO NOT accept these OLD or generic names by themselves. They are NOT
+the current brand and must be rejected if no current brand mark is visible:
+- "Memory Weaver", "메모리위버"
+- "AI 앨범", "AI 앨범 만들기", "AI 앨범 만들기앱", "사진 앨범 앱", "추억 앨범"
+
+Your ONLY job is to decide whether the screenshot is a real social-media review/post
+about THIS app that clearly shows the CURRENT brand (Scripic / 스크립픽 / ince.lovable.app).
 
 Accepted platforms include Instagram, Facebook, Threads, X (Twitter), TikTok, YouTube,
-Naver Blog, Naver Cafe, KakaoStory, Band, 네이버 카페/블로그 등 SNS 전반.
+Naver Blog, Naver Cafe, KakaoStory, Band — any social or community post is fine.
 
-Approve when the screenshot is clearly a social/community post AND mentions ANY of:
-- Scripic / 스크립픽 / Memory Weaver / 메모리위버
-- ince.lovable.app
-- "AI 앨범", "사진 앨범 앱", "추억 앨범", "AI 앨범 만들기"
-- a screenshot of the app itself embedded in a review/post context
-Be GENEROUS: if the post is plausibly about this app (Korean reviewers often write
-freeform praise + an app screenshot), approve it. Only reject if it is clearly
-unrelated (food/cat/meme/blank/no app context at all).
+APPROVE only if BOTH are true:
+1) The image is clearly a social/community post or review context (not a bare app screen,
+   not a private chat, not a meme), AND
+2) The image visibly contains at least one of: "Scripic", "스크립픽", or "ince.lovable.app"
+   (in text, caption, URL, app header, or screenshot embedded in the post).
+
+REJECT (approved=false) when:
+- Only old brand "Memory Weaver" / "메모리위버" is visible, with no current brand mark.
+- Only generic phrases like "AI 앨범" appear without Scripic / 스크립픽 / ince.lovable.app.
+- The image is unrelated (food, pet, meme, blank, random screenshot).
+- It is just an app screenshot with no review/post wrapper.
 
 Output STRICT JSON only — no markdown fences, no commentary:
 {
   "approved": true | false,
+  "detected_brand": "scripic" | "memory_weaver" | "generic" | "none",
   "reason": "one short sentence (Korean) explaining your decision",
   "success_message": "Korean celebration message if approved, otherwise empty string"
 }
+
+If rejecting because only "Memory Weaver / 메모리위버" is visible, set reason to
+"이 앱의 현재 브랜드(Scripic / 스크립픽 / ince.lovable.app)가 보이지 않아요. 현재 브랜드명이 보이는 후기 스크린샷을 올려주세요."
 
 Pick a success_message similar to:
 - "🎉 와우! 멋진 후기 감사해요! 추가 앨범이 지급되었어요."
