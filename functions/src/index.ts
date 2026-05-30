@@ -182,6 +182,9 @@ export const chat = onCall(
         if (response?.sendChunk) response.sendChunk({ delta });
       }
     } catch (e: any) {
+      if (e instanceof GeminiRateLimitError) {
+        throw new HttpsError("resource-exhausted", "ai_rate_limit");
+      }
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
     return { text: full };
