@@ -4,7 +4,7 @@ import { useT } from "@/lib/i18n";
 import { httpsCallable, FunctionsError } from "firebase/functions";
 import { getFns } from "@/integrations/firebase/client";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
-import { grantExtraAlbumToday, getDeviceId } from "@/lib/dailyLimit";
+import { grantExtraAlbumToday, getDeviceId, getLocalDate } from "@/lib/dailyLimit";
 
 type Props = {
   open: boolean;
@@ -67,7 +67,7 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
     try {
       await ensureFirebaseUser();
       const call = httpsCallable<any, GrantResult>(getFns(), "grantReviewReward");
-      const res = await call({ imageDataUrl: preview, deviceId: getDeviceId() });
+      const res = await call({ imageDataUrl: preview, deviceId: getDeviceId(), localDate: getLocalDate() });
       const result = res.data;
       if (result.approved) {
         grantExtraAlbumToday();

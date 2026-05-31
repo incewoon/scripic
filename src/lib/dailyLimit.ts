@@ -13,6 +13,11 @@ export function todayKey(d = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Local YYYY-MM-DD sent to server for timezone-aware daily limit. */
+export function getLocalDate(): string {
+  return new Date().toLocaleDateString("en-CA");
+}
+
 export function getLastAlbumDate(): string | null {
   if (typeof localStorage === "undefined") return null;
   return localStorage.getItem(KEY);
