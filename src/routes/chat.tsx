@@ -280,7 +280,10 @@ function Chat() {
       navigate({ to: "/album/$id", params: { id } });
     } catch (err: any) {
       const code = err?.code ?? "";
-      if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
+      const kind = err?.details?.kind;
+      if (kind === "ai_quota") toast.error(t.aiQuota);
+      else if (kind === "daily_limit") toast.error(t.dailyLimitBody);
+      else if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
       else toast.error(t.failed);
       setGenerating(false);
       finishingRef.current = false;
