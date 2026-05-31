@@ -8,7 +8,7 @@
 import { httpsCallable, FunctionsError } from "firebase/functions";
 import { getFns } from "@/integrations/firebase/client";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
-import { canCreateAlbumToday, getDeviceId } from "./dailyLimit";
+import { canCreateAlbumToday, getDeviceId, todayKey } from "./dailyLimit";
 
 type CallableErrorShape = { code: string; message: string };
 
@@ -131,6 +131,6 @@ export async function aiDailyStatus(): Promise<{
   today: string;
 }> {
   const used = canCreateAlbumToday() ? 0 : 1;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayKey();
   return { used, limit: 1, today };
 }

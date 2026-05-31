@@ -6,7 +6,7 @@ const DEVICE_KEY = "moara_device_id";
 const EXTRA_GRANTED_KEY = "moara_extra_album_granted_date";
 const EXTRA_USED_KEY = "moara_extra_album_used_date";
 
-function todayKey(d = new Date()): string {
+export function todayKey(d = new Date()): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
