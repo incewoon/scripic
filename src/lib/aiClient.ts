@@ -8,7 +8,7 @@
 import { httpsCallable, FunctionsError } from "firebase/functions";
 import { getFns } from "@/integrations/firebase/client";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
-import { canCreateAlbumToday, getDeviceId, todayKey } from "./dailyLimit";
+import { canCreateAlbumToday, getDeviceId, getLocalDate, todayKey } from "./dailyLimit";
 
 type CallableErrorShape = { code: string; message: string };
 
@@ -61,6 +61,7 @@ export async function* aiChatStream(payload: {
       mode: payload.mode,
       maxTurnsPerPhoto: payload.maxTurnsPerPhoto ?? 3,
       deviceId: getDeviceId(),
+      localDate: getLocalDate(),
     });
 
     let firstChunkAt: number | null = null;
@@ -114,6 +115,7 @@ export async function aiGenerateAlbum(payload: {
       mode: payload.mode,
       tone: payload.tone,
       deviceId: getDeviceId(),
+      localDate: getLocalDate(),
     });
     const endTime = performance.now();
     console.log(`[AI Client] aiGenerateAlbum 완료 - ${(endTime - startTime).toFixed(0)}ms`);
