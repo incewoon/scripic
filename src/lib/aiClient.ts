@@ -18,12 +18,14 @@ function normalizeError(e: unknown): never {
     const err: any = new Error(e.message);
     // Already namespaced: "functions/<code>"
     err.code = e.code.startsWith("functions/") ? e.code : `functions/${e.code}`;
+    err.details = (e as any).details; // preserve { kind: "ai_quota" | "daily_limit", ... }
     throw err;
   }
   if (typeof e === "object" && e !== null && "code" in e) {
-    const ce = e as CallableErrorShape;
+    const ce = e as CallableErrorShape & { details?: any };
     const err: any = new Error(ce.message || "callable_error");
     err.code = ce.code.startsWith("functions/") ? ce.code : `functions/${ce.code}`;
+    err.details = ce.details;
     throw err;
   }
   throw e instanceof Error ? e : new Error(String(e));
