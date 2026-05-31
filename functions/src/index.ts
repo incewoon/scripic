@@ -402,11 +402,12 @@ export const grantReviewReward = onCall(
     }
 
     const key = rateLimitKey(req);
+    const today = validateClientDate(req.data?.localDate);
 
     // Short-circuit: bonus already granted today.
     const existing = await db.collection("daily_limits").doc(key).get();
     const exData = existing.data();
-    if (exData?.lastDate === todayKey() && exData?.bonusGranted === true) {
+    if (exData?.lastDate === today && exData?.bonusGranted === true) {
       return {
         approved: false,
         reason: "already_granted",
@@ -494,7 +495,7 @@ export const grantReviewReward = onCall(
       };
     }
 
-    await grantDailyBonus(key);
+    await grantDailyBonus(key, today);
 
     return {
       approved: true,
