@@ -79,8 +79,13 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
         setMessage({ kind: "error", text: result.reason || t.reviewRewardError });
       }
     } catch (e: any) {
+      const kind = (e as any)?.details?.kind;
       if (e instanceof FunctionsError && e.code === "functions/resource-exhausted") {
-        setMessage({ kind: "info", text: t.reviewRewardAlreadyUsed });
+        if (kind === "ai_quota") {
+          setMessage({ kind: "error", text: "AI 서비스의 일일 한도가 모두 사용되었어요. 잠시 후(보통 UTC 자정 = 한국 시간 오전 9시) 다시 시도해주세요." });
+        } else {
+          setMessage({ kind: "info", text: t.reviewRewardAlreadyUsed });
+        }
       } else if (e instanceof FunctionsError && e.code === "functions/failed-precondition") {
         setMessage({ kind: "error", text: "디바이스 인증이 아직 준비되지 않았어요. 잠시 후 다시 시도해 주세요." });
       } else if (e instanceof FunctionsError && e.code === "functions/internal") {
