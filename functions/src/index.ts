@@ -34,14 +34,24 @@ setGlobalOptions({
 
 // ---------------- helpers ----------------
 
-function todayKey(d = new Date()): string {
-  // Align with Korea Standard Time (UTC+9) so resets happen at 00:00 KST.
-  return new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(d);
+/**
+ * Day key for daily limits — supplied by the client in the user's LOCAL timezone
+ * as "YYYY-MM-DD". The server validates the format and that it's within ±1 day
+ * of the server's UTC date (covers any timezone offset on Earth).
+ */
+function validateClientDate(clientDate: unknown): string {
+  if (typeof clientDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(clientDate)) {
+    throw new HttpsError("invalid-argument", "invalid date format");
+  }
+  const today = new Date();
+  const dates = [-1, 0, 1].map((offset) => {
+    const d = new Date(today.getTime() + offset * 86400000);
+    return d.toISOString().slice(0, 10);
+  });
+  if (!dates.includes(clientDate)) {
+    throw new HttpsError("invalid-argument", "date out of range");
+  }
+  return clientDate;
 }
 
 /**
@@ -63,12 +73,11 @@ function rateLimitKey(req: { app?: { appId?: string }; data?: any }): string {
  * Limit is normally 1/day, raised to 2 if a review-bonus was granted today.
  * Pass commit=false to only PEEK (used by /chat which shouldn't burn a slot).
  */
-async function reserveDailyAlbum(key: string, commit: boolean): Promise<void> {
+async function reserveDailyAlbum(key: string, today: string, commit: boolean): Promise<void> {
   const docRef = db.collection("daily_limits").doc(key);
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(docRef);
     const data = snap.data();
-    const today = todayKey();
     const sameDay = data?.lastDate === today;
     const usedToday = sameDay ? (data?.count ?? 0) : 0;
     const bonusToday = sameDay && data?.bonusGranted === true;
@@ -92,12 +101,11 @@ async function reserveDailyAlbum(key: string, commit: boolean): Promise<void> {
 /**
  * Grant a +1 album bonus for today (idempotent: a second call same day reports alreadyGranted).
  */
-async function grantDailyBonus(key: string): Promise<{ alreadyGranted: boolean }> {
+async function grantDailyBonus(key: string, today: string): Promise<{ alreadyGranted: boolean }> {
   const docRef = db.collection("daily_limits").doc(key);
   return await db.runTransaction(async (tx) => {
     const snap = await tx.get(docRef);
     const data = snap.data();
-    const today = todayKey();
     const sameDay = data?.lastDate === today;
     if (sameDay && data?.bonusGranted === true) {
       return { alreadyGranted: true };
@@ -116,6 +124,7 @@ async function grantDailyBonus(key: string): Promise<{ alreadyGranted: boolean }
     return { alreadyGranted: false };
   });
 }
+
 // ---------------- chat (streaming) ----------------
 export const chat = onCall(
   {
