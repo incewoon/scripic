@@ -225,7 +225,10 @@ function Chat() {
       }
     } catch (err: any) {
       const code = err?.code ?? "";
-      if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
+      const kind = err?.details?.kind;
+      if (kind === "ai_quota") toast.error(t.aiQuota);
+      else if (kind === "daily_limit") toast.error(t.dailyLimitBody);
+      else if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
       else if (code === "functions/unauthenticated" || code === "functions/permission-denied") toast.error(t.connectionError);
       else toast.error(t.connectionError);
     } finally { setBusy(false); }
