@@ -1,49 +1,68 @@
-## 확인된 문제 3가지
+## 확인한 핵심 원인
 
-### 1. 다른 폰에서 후기 검증 시도 → "오늘 이미 추가 앨범 사용" 메시지
-원인: `functions/src/index.ts`의 `rateLimitKey()`가 App Check `appId`를 1순위 키로 쓰고 있는데, **App Check appId는 앱 등록 단위의 식별자라 같은 앱을 설치한 모든 기기에서 동일합니다.** 그래서 한 기기에서 보너스를 받으면 `daily_limits/app:<appId>` 문서 하나에 `bonusGranted=true`가 찍히고, 다른 기기에서 후기 검증을 호출해도 같은 문서를 보고 "이미 지급됨" 단락 처리됩니다. `reserveDailyAlbum`의 1/2개 카운트도 같은 이유로 기기 간 공유돼서, 한 기기가 만들면 다른 기기에서 못 만드는 상황이 생길 수 있음.
+A, B 둘 다 **시간대 불일치 가능성이 매우 높습니다.**
 
-### 2. 태블릿에서 앨범 마무리 단계 "요청이 너무 많다, 잠시 후 다시 시도"
-원인: 이건 후기/제한 로직이 아니라 **`generateAlbum` → Gemini 호출이 429(quota/rate limit)로 떨어진 경우**입니다. 현재 `geminiGenerate`는 비-2xx 응답을 그대로 `Error("Gemini error 429: ...")`로 throw → `HttpsError("internal", ...)`로 클라이언트에 전달되고, `create.tsx` 쪽에서 일반 에러 메시지로 보입니다. 사용자에겐 "요청이 너무 많아요"처럼 한국어로 안내되고 있고 진행은 막혀 있는 상태. 추가로 이 케이스에서 **이미 burn된 일일 카운터가 롤백되지 않아** 사용자가 오늘 다시 시도하면 1개 제한에 막힐 수 있음(`reserveDailyAlbum`은 호출 직후에 +1을 커밋함).
+- **서버**는 `functions/src/index.ts`의 `todayKey()`에서 **UTC 날짜**를 쓰고 있습니다.
+- **클라이언트**는 `src/lib/dailyLimit.ts`의 `todayKey()`에서 **기기 로컬 날짜**를 쓰고 있습니다.
+- 한국에서는 **오전 9시 전까지는 UTC 기준으로 아직 전날**이라서,
+  - 앱 화면은 “새 날이 시작됨”으로 판단하고
+  - 서버는 “아직 어제”로 판단하는 상태가 생깁니다.
+- 그래서 사용자가 본 **“자정에 초기화”** 안내와 실제 서버 동작이 어긋납니다.
 
-### 3. Memory Weaver 옛 스크린샷이 정상 승인됨
-원인: 직전 수정에서 프롬프트를 너무 관대하게 풀면서 "Memory Weaver / 메모리위버"를 명시적 허용 브랜드로 넣었습니다. 사용자가 원하는 건 **현재 브랜드(Scripic / 스크립픽 / ince.lovable.app)만 인정**.
+추가로 지금은 `functions/resource-exhausted` 하나로
+- **진짜 AI 과부하(429/503)**
+- **하루 생성 한도 초과**
+를 같이 처리해서, B의 **“요청이 너무 많아요”**도 실제로는 한도 오류일 수 있습니다.
 
----
+## 구현 계획
 
-## 구현 계획 (functions와 client 둘 다 손봄, 범위는 위 3건에 한정)
+### 1) 서버/클라이언트의 날짜 기준을 동일하게 맞추기
+- 모든 callable 요청에 **사용자 시간대 정보**를 함께 보내도록 정리합니다.
+- 서버의 일일 제한 키 계산을 UTC 고정이 아니라 **같은 시간대 기준의 day key**로 바꿉니다.
+- 보너스 지급, 일일 카운트, 다음 가능 시점 계산을 모두 같은 기준으로 통일합니다.
+- 문구도 그 기준에 맞게 수정해 **“자정 초기화” 안내와 실제 동작이 일치**하도록 합니다.
 
-### A. 디바이스별로 안전하게 분리되는 rate-limit 키
-`functions/src/index.ts`의 `rateLimitKey()`를 바꿔서:
-- 항상 클라이언트가 보내는 `deviceId`를 1순위로 사용 (`dev:<deviceId>`).
-- `deviceId`가 비어 있을 때만 App Check `appId`를 보조 키로 사용.
-- 두 값 다 없으면 기존처럼 `failed-precondition`.
+### 2) 한도 초과와 AI 과부하를 분리해서 처리하기
+- 서버에서
+  - **일일 앨범 한도 초과**
+  - **AI 제공자 과부하**
+  를 구분된 오류 신호로 내려주도록 정리합니다.
+- 클라이언트에서는
+  - 한도 초과면: 제한 안내/후기 보너스 흐름으로 연결
+  - AI 과부하면: “잠시 후 다시 시도” 메시지
+  로 분리해 보여주겠습니다.
+- 이렇게 하면 B에서 보신 에러가 **실제 AI 문제인지, 시간대 꼬임인지** 화면에서도 바로 드러납니다.
 
-이미 `ReviewRewardDialog`와 `create.tsx`(확인 필요)에서 `getDeviceId()`를 보내고 있고, `getDeviceId()`는 `localStorage`에 저장된 per-install UUID라 기기별로 다릅니다. 이걸 1순위로만 바꾸면 보너스/일일카운트가 기기별로 독립됩니다. (`chat`/`generateAlbum`도 같은 키 함수를 쓰므로 `deviceId`가 전달되는지 확인하고, 누락이면 보내도록 보강.)
+### 3) 후기 보너스 후 상태를 서버 기준으로 다시 동기화하기
+- 지금은 홈/생성 진입 제한이 `localStorage` 기반이라 서버 상태와 잠깐 어긋날 수 있습니다.
+- `dailyStatus`를 실제로 활용해서
+  - 오늘 사용 개수
+  - 오늘 한도(1 또는 2)
+  - 보너스 지급 여부
+  - 다음 리셋 시각
+  을 서버 기준으로 읽도록 바꿉니다.
+- 후기 인증 성공 직후에도 로컬 플래그만 믿지 않고 **서버 상태를 재조회**해서 바로 2번째 앨범 생성이 가능하게 맞춥니다.
 
-### B. Gemini 429(과부하/쿼터) 케이스 처리 강화
-1. `functions/src/gemini.ts`에 사용자 정의 에러 클래스(`GeminiRateLimitError`) 추가하고, `res.status === 429` 또는 `503`일 때 이걸 throw.
-2. `generateAlbum` 핸들러에서:
-   - try/catch로 감싸 `GeminiRateLimitError`면 `HttpsError("resource-exhausted", "ai_rate_limit")`로 변환.
-   - 이 경로에서는 **방금 차감한 일일 카운터를 롤백**(현재 `gemini did not return album` 분기처럼 `count: 0`로 merge)해서 사용자가 오늘 재시도할 수 있게 함.
-3. `chat` 핸들러도 동일하게 429를 `resource-exhausted`로 매핑(여긴 카운터를 안 까니까 롤백 불필요).
-4. 클라이언트(`src/lib/aiClient.ts` 또는 `src/routes/create.tsx`)의 호출부에서 `functions/resource-exhausted` && reason `ai_rate_limit`이면 "지금 AI가 많이 붐벼요. 1–2분 뒤 다시 시도해 주세요. 오늘 앨범 생성권은 그대로 남아 있어요." 같은 명확한 메시지로 분기.
+### 4) A/B 케이스 기준으로 검증하기
+- 한국시간 **오전 9시 이전 / 이후** 각각 확인
+- 첫 앨범 생성 → 후기 보너스 승인 → 추가 앨범 생성
+- 같은 기기 / 다른 기기
+- `ince.lovable.app` / preview 에서 각각
+  - 한도 초과 메시지
+  - AI 과부하 메시지
+  - 연결 오류 메시지
+  가 올바르게 나뉘는지 검증합니다.
 
-### C. 후기 검증 프롬프트 다시 빡빡하게
-`REVIEW_SYSTEM_PROMPT`를 다음 기준으로 재작성:
-- 허용 브랜드: **Scripic / 스크립픽 / ince.lovable.app** 만.
-- "Memory Weaver / 메모리위버 / AI 앨범 만들기앱" 같은 **구 브랜드/일반 명칭만 보이는 경우는 명시적으로 거부**하고, reason에 "이 앱의 현재 브랜드(Scripic / 스크립픽 / ince.lovable.app)가 보이지 않아요"라고 안내.
-- 단순 앱 스크린샷 단독(소셜 게시 맥락 없음)도 거부.
-- 응답은 기존 `{ approved, reason, success_message }` JSON 형식 유지.
-- 추가 안전장치: 서버에서 파싱 후, `approved===true`라도 OCR/AI가 추출한 reason 안에 "memory weaver"가 보이고 "scripic"이 보이지 않으면 서버 측에서 한 번 더 reject(이중 가드).
+## 기술 메모
 
-### D. 검증
-- 배포 후, 동일 계정 두 기기에서:
-  - 기기 A에서 앨범 1개 만들고 후기 보너스 받기 → 기기 B에서 첫 앨범이 정상적으로 만들어지는지(이전엔 막힘).
-- 일부러 Memory Weaver 스크린샷 업로드 → 거부 + 안내 메시지 노출.
-- `generateAlbum` 호출 시 (가능하면 강제 429 시뮬레이션, 어렵다면 로그 확인) "AI가 많이 붐벼요" 메시지가 나오고 일일 카운트는 그대로인지 확인.
-
-## 기술 메모 (내부용)
-- `daily_limits` 문서 키 스킴이 `app:` → `dev:`로 바뀌면 **기존 문서들은 그대로 두고 새 키로 신규 생성**. 마이그레이션 불필요(자정 기준 리셋이라 자연 정리됨). 단, 오늘 기기 A에서 받은 보너스는 키 변경 후 사라진 것처럼 보일 수 있음을 인지.
-- Gemini 429는 보통 프로젝트 단위 분당 토큰/요청 한도. 코드 레벨에서 우회는 불가하고, UX와 카운터 보존만 정리.
-- 프롬프트 강화 시에도 모델이 종종 친절하게 approve할 수 있으니, 서버측 후처리 가드(브랜드 토큰 검사)를 같이 두는 게 안전.
+- 원인 후보 1순위:
+  - `functions/src/index.ts`의 UTC day key
+  - `src/lib/dailyLimit.ts`의 로컬 day key
+- 오해를 키우는 부분:
+  - `src/routes/chat.tsx`에서 `functions/resource-exhausted`를 전부 `t.rateLimit`으로 표시
+  - `src/routes/index.tsx`, `src/routes/create.tsx`가 서버 상태가 아니라 로컬 상태로만 진입 제한
+- 이 수정이 들어가면 사용자가 본
+  - A의 “보너스는 받은 것 같은데 다시 막힘”
+  - B의 “마무리에서 요청이 너무 많아요”
+  - 오전 9시 이후 갑자기 정상화
+  를 한 번에 설명할 수 있습니다.
