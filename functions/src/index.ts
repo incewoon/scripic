@@ -74,7 +74,11 @@ async function reserveDailyAlbum(key: string, commit: boolean): Promise<void> {
     const bonusToday = sameDay && data?.bonusGranted === true;
     const limit = bonusToday ? 2 : 1;
     if (usedToday >= limit) {
-      throw new HttpsError("resource-exhausted", "daily album limit reached");
+      throw new HttpsError("resource-exhausted", "daily_limit_reached", {
+        kind: "daily_limit",
+        usedToday,
+        limit,
+      });
     }
     if (!commit) return;
     if (sameDay) {
