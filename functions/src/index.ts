@@ -74,7 +74,11 @@ async function reserveDailyAlbum(key: string, commit: boolean): Promise<void> {
     const bonusToday = sameDay && data?.bonusGranted === true;
     const limit = bonusToday ? 2 : 1;
     if (usedToday >= limit) {
-      throw new HttpsError("resource-exhausted", "daily album limit reached");
+      throw new HttpsError("resource-exhausted", "daily_limit_reached", {
+        kind: "daily_limit",
+        usedToday,
+        limit,
+      });
     }
     if (!commit) return;
     if (sameDay) {
@@ -176,7 +180,7 @@ export const chat = onCall(
       }
     } catch (e: any) {
       if (e instanceof GeminiRateLimitError) {
-        throw new HttpsError("resource-exhausted", "ai_rate_limit");
+        throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status });
       }
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
@@ -296,7 +300,7 @@ export const generateAlbum = onCall(
     } catch (e: any) {
       await rollbackDailyCount();
       if (e instanceof GeminiRateLimitError) {
-        throw new HttpsError("resource-exhausted", "ai_rate_limit");
+        throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status });
       }
       throw new HttpsError("internal", e?.message ?? "gemini failed");
     }
@@ -441,7 +445,7 @@ export const grantReviewReward = onCall(
     } catch (e: any) {
       console.error("[reviewReward] verification_failed:", e?.message, "raw:", rawText.slice(0, 500));
       if (e instanceof GeminiRateLimitError) {
-        throw new HttpsError("resource-exhausted", "ai_rate_limit");
+        throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status });
       }
       return {
         approved: false,
