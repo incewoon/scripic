@@ -255,7 +255,8 @@ export const generateAlbum = onCall(
 
     // Enforce 1 album / day BEFORE we burn a Gemini call.
     const key = rateLimitKey(req);
-    await reserveDailyAlbum(key, true);
+    const today = validateClientDate(req.data?.localDate);
+    await reserveDailyAlbum(key, today, true);
 
     const transcript = messages
       .map((msg) => {
@@ -291,7 +292,7 @@ export const generateAlbum = onCall(
           const ref = db.collection("daily_limits").doc(key);
           const snap = await tx.get(ref);
           const data = snap.data();
-          if (data?.lastDate === todayKey() && (data?.count ?? 0) > 0) {
+          if (data?.lastDate === today && (data?.count ?? 0) > 0) {
             tx.update(ref, {
               count: FieldValue.increment(-1),
               updatedAt: FieldValue.serverTimestamp(),
@@ -327,9 +328,9 @@ export const generateAlbum = onCall(
 
 export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
   const key = rateLimitKey(req);
+  const today = validateClientDate(req.data?.localDate);
   const snap = await db.collection("daily_limits").doc(key).get();
   const data = snap.data();
-  const today = todayKey();
   const used = data?.lastDate === today ? (data?.count ?? 0) : 0;
   return { used, limit: 1, today };
 });
