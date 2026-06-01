@@ -342,14 +342,9 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
 // raising the per-device cap from 1 → 2 albums for the rest of the day.
 
 const REVIEW_SYSTEM_PROMPT = `You are the Reward System Agent for a photo-to-album app.
-The CURRENT brand is ONLY one of these names/domains:
+IMPORTANT - The CURRENT brand is ONLY one of these names/domains:
 - "Scripic"
 - "스크립픽"
-
-IMPORTANT — DO NOT accept these OLD or generic names by themselves. They are NOT
-the current brand and must be rejected if no current brand mark is visible:
-- "Memory Weaver", "메모리위버"
-- "AI 앨범", "AI 앨범 만들기", "AI 앨범 만들기앱", "사진 앨범 앱", "추억 앨범"
 
 Your ONLY job is to decide whether the screenshot is a real social-media review/post
 about THIS app that clearly shows the CURRENT brand (Scripic / 스크립픽 / ince.lovable.app).
