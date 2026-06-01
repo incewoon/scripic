@@ -355,7 +355,7 @@ Naver Blog, Naver Cafe, KakaoStory, Band — any social or community post is fin
 APPROVE only if BOTH are true:
 1) The image is clearly a social/community post or review context (not a bare app screen,
    not a private chat, not a meme), AND
-2) The image visibly contains at least one of: "Scripic", "스크립픽", or "ince.lovable.app"
+2) The image visibly contains at least one of: "Scripic" or "스크립픽"
    (in text, caption, URL, app header, or screenshot embedded in the post).
 
 REJECT (approved=false) when:
