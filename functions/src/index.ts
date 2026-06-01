@@ -347,7 +347,7 @@ IMPORTANT - The CURRENT brand is ONLY one of these names/domains:
 - "스크립픽"
 
 Your ONLY job is to decide whether the screenshot is a real social-media review/post
-about THIS app that clearly shows the CURRENT brand (Scripic / 스크립픽 / ince.lovable.app).
+about THIS app that clearly shows the CURRENT brand (Scripic / 스크립픽).
 
 Accepted platforms include Instagram, Facebook, Threads, X (Twitter), TikTok, YouTube,
 Naver Blog, Naver Cafe, KakaoStory, Band — any social or community post is fine.
