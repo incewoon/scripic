@@ -24,19 +24,26 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 const READY_TOKEN = "[READY_TO_FINISH]";
 
-const AFFIRMATIVE_EN = /\b(yes|yeah|yep|sure|ok|okay|sounds good|let'?s|please do|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
-const AFFIRMATIVE_KO = /(네|예|좋아|좋아요|응|그래|그래요|끝|완성|마무리|충분|괜찮|해주세요|해줘|부탁|ㅇㅇ|ㅇㅋ)/;
+const AFFIRMATIVE_EN = /\b(yes|yeah|yep|sure|ok|okay|sounds good|let'?s|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
+const AFFIRMATIVE_KO = /(네|넵|예|응|어|그래(요)?|좋아(요)?|ㅇㅇ|ㅇㅋ|오케이|콜|끝|완성|마무리|충분|됐어|그래그래)/;
 
 function isAffirmative(text: string) {
   return AFFIRMATIVE_EN.test(text) || AFFIRMATIVE_KO.test(text);
 }
 
-const WRAP_HINT_EN = /(weave (these|them|it) into|wrap (this|it) up|finish (the|your) album|create the album now|put (this|these) together)/i;
-const WRAP_HINT_KO = /(앨범으로 정리|앨범을 정리|마무리해|마무리할까|정리해드려|정리해 드려|정리할까|완성해드려|완성해 드려|완성할까)/;
+const WRAP_HINT_EN = /(weave (these|them|it) into|wrap (this|it) up|finish (the|your) album|create the album now|put (this|these) together|shall i (put|wrap|finish))/i;
+const WRAP_HINT_KO = /(앨범으로 (정리|마무리)|이대로 (정리|마무리)|정리할까요|마무리할까요|완성할까요|정리해 ?드릴까요|마무리해 ?드릴까요|완성해 ?드릴까요)/;
 function isWrapProposal(text: string | undefined) {
   if (!text) return false;
   if (text.includes(READY_TOKEN)) return true;
   return WRAP_HINT_EN.test(text) || WRAP_HINT_KO.test(text);
+}
+
+// User explicitly asks to finalize, regardless of whether AI proposed wrap-up yet.
+const EXPLICIT_FINISH_KO = /((앨범|이걸|이거|이제)\s*)?(마무리|정리|완성|마감|끝내)(\s*(해|해줘|해주세요|해주실|할래|할까|하자|부탁|좀)|$)/;
+const EXPLICIT_FINISH_EN = /\b(finish (it|this|the album)|wrap (it|this) up|wrap up|finalize|complete (it|the album)|put (it|this|them|these) together|create the album|make the album)\b/i;
+function isExplicitFinishRequest(text: string) {
+  return EXPLICIT_FINISH_KO.test(text) || EXPLICIT_FINISH_EN.test(text);
 }
 
 function fmtTakenAt(iso: string | undefined, lang: string) {
