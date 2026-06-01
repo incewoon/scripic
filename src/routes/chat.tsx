@@ -204,10 +204,11 @@ function Chat() {
     setMessages(newMsgs);
     setBusy(true);
 
-    // detect: user is responding to a wrap-up suggestion
+    // detect: user is responding to a wrap-up suggestion, OR is explicitly asking to finalize now
     const lastAssistant = [...prior].reverse().find(m => m.role === "assistant");
     const wrapProposed = isWrapProposal(lastAssistant?.content);
-    const userAgreed = wrapProposed && isAffirmative(text);
+    const userExplicit = isExplicitFinishRequest(text);
+    const userAgreed = userExplicit || (wrapProposed && isAffirmative(text));
 
     try {
       let assistant = "";
@@ -226,7 +227,12 @@ function Chat() {
         setMessages(m => m.map((x, i) => i === m.length - 1 ? { ...x, content: assistant } : x));
       }
 
-      if (userAgreed && !finishingRef.current) {
+      // Trigger finish when:
+      //  - user agreed to a prior wrap proposal (existing flow), OR
+      //  - user explicitly requested finalize this turn (even if AI just acknowledged without token), OR
+      //  - AI's just-streamed reply itself contains a wrap proposal (READY token / hint)
+      const aiNowProposing = isWrapProposal(assistant);
+      if ((userAgreed || aiNowProposing) && !finishingRef.current) {
         finishingRef.current = true;
         setTimeout(() => { void finish(); }, 600);
       }
