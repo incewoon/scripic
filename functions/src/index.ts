@@ -345,7 +345,6 @@ const REVIEW_SYSTEM_PROMPT = `You are the Reward System Agent for a photo-to-alb
 The CURRENT brand is ONLY one of these names/domains:
 - "Scripic"
 - "스크립픽"
-- "ince.lovable.app"
 
 IMPORTANT — DO NOT accept these OLD or generic names by themselves. They are NOT
 the current brand and must be rejected if no current brand mark is visible:
