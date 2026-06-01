@@ -210,8 +210,9 @@ function Chat() {
     const userExplicit = isExplicitFinishRequest(text);
     const userAgreed = userExplicit || (wrapProposed && isAffirmative(text));
 
+    let assistant = "";
+    let streamError: any = null;
     try {
-      let assistant = "";
       setMessages(m => [...m, { role: "assistant", content: "" }]);
 
       const photosForCall = prior.length === 0 ? (aiPhotos ?? ph) : undefined;
@@ -226,17 +227,8 @@ function Chat() {
         assistant += delta;
         setMessages(m => m.map((x, i) => i === m.length - 1 ? { ...x, content: assistant } : x));
       }
-
-      // Trigger finish when:
-      //  - user agreed to a prior wrap proposal (existing flow), OR
-      //  - user explicitly requested finalize this turn (even if AI just acknowledged without token), OR
-      //  - AI's just-streamed reply itself contains a wrap proposal (READY token / hint)
-      const aiNowProposing = isWrapProposal(assistant);
-      if ((userAgreed || aiNowProposing) && !finishingRef.current) {
-        finishingRef.current = true;
-        setTimeout(() => { void finish(); }, 600);
-      }
     } catch (err: any) {
+      streamError = err;
       const code = err?.code ?? "";
       const kind = err?.details?.kind;
       if (kind === "ai_quota") toast.error(t.aiQuota);
@@ -244,7 +236,29 @@ function Chat() {
       else if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
       else if (code === "functions/unauthenticated" || code === "functions/permission-denied") toast.error(t.connectionError);
       else toast.error(t.connectionError);
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
+
+    // Decide whether to finalize. Run AFTER the try/catch so that even if the
+    // stream errored partway, an explicit user finish request still proceeds
+    // to album generation using whatever transcript we have.
+    const aiNowProposing = isWrapProposal(assistant);
+    const shouldFinish = userExplicit || userAgreed || aiNowProposing;
+    if (shouldFinish && !finishingRef.current && !leavingRef.current) {
+      // If user explicitly asked to finish, do it even when the stream failed.
+      // For the implicit paths (AI-led proposal / generic agreement), only
+      // proceed when we actually got a clean stream.
+      if (userExplicit || !streamError) {
+        finishingRef.current = true;
+        // Build the final transcript locally so finish() doesn't depend on
+        // React state catching up between setMessages and setTimeout.
+        const finalMsgs: Msg[] = assistant
+          ? [...newMsgs, { role: "assistant", content: assistant }]
+          : [...newMsgs];
+        setTimeout(() => { void finish(finalMsgs); }, 400);
+      }
+    }
   }
 
   async function onSend() {
@@ -255,8 +269,9 @@ function Chat() {
     await send(v);
   }
 
-  async function finish() {
-    if (messages.length < 2) { toast.error(t.talkMore); finishingRef.current = false; return; }
+  async function finish(messagesOverride?: Msg[]) {
+    const msgs = messagesOverride ?? messages;
+    if (msgs.length < 2) { toast.error(t.talkMore); finishingRef.current = false; return; }
     setGenerating(true);
     try {
       const album = await aiGenerateAlbum({
