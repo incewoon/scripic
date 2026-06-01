@@ -405,7 +405,7 @@ function Chat() {
           <Link to="/create" onClick={tryLeave} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
           <div className="text-xs text-muted-foreground">{t.chatPhotos(photos.length)}</div>
           <button
-            onClick={finish}
+            onClick={() => void finish()}
             disabled={generating || busy}
             className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-50"
           >
