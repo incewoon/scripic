@@ -379,7 +379,7 @@ Output STRICT JSON only — no markdown fences, no commentary:
 }
 
 If rejecting because only "Memory Weaver / 메모리위버" is visible, set reason to
-"이 앱의 현재 브랜드(Scripic / 스크립픽 / ince.lovable.app)가 보이지 않아요. 현재 브랜드명이 보이는 후기 스크린샷을 올려주세요."
+"이 앱의 현재 브랜드(Scripic / 스크립픽)가 보이지 않아요. 현재 브랜드명이 보이는 후기 스크린샷을 올려주세요."
 
 Pick a success_message similar to:
 - "🎉 와우! 멋진 후기 감사해요! 추가 앨범이 지급되었어요."
