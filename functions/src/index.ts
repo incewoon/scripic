@@ -359,8 +359,7 @@ APPROVE only if BOTH are true:
    (in text, caption, URL, app header, or screenshot embedded in the post).
 
 REJECT (approved=false) when:
-- Only old brand "Memory Weaver" / "메모리위버" is visible, with no current brand mark.
-- Only generic phrases like "AI 앨범" appear without Scripic / 스크립픽 / ince.lovable.app.
+- Only generic phrases like "AI 앨범" appear without Scripic / 스크립픽.
 - The image is unrelated (food, pet, meme, blank, random screenshot).
 - It is just an app screenshot with no review/post wrapper.
 
