@@ -181,6 +181,12 @@ export const chat = onCall(
 
     const body = toGeminiRequest([{ role: "system", content: system }, ...enriched]);
 
+    // 이번에 모델이 만들 응답이 마지막 허용 턴인지 판단.
+    // enriched에 있는 assistant 메시지 수 + 1 = 이번 응답 번호.
+    const totalCap = Math.max(1, photoCount * maxTurnsPerPhoto);
+    const assistantSoFar = enriched.filter((msg) => msg.role === "assistant").length;
+    const isLastAllowedTurn = assistantSoFar + 1 >= totalCap;
+
     let full = "";
     try {
       for await (const delta of geminiStreamText(body)) {
@@ -193,9 +199,31 @@ export const chat = onCall(
       }
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
+
+    // 안전망: 마지막 허용 턴인데 모델이 종료 제안/READY_TO_FINISH를 빠뜨렸으면
+    // 서버에서 한 줄 덧붙여 보장한다. 스트리밍 응답은 이미 클라이언트에 흘러갔지만
+    // 클라이언트는 최종 텍스트(setMessages)를 callable의 반환값(text)으로 갱신하지 않으므로,
+    // 보강 텍스트도 sendChunk로 마저 흘려서 화면에 추가로 표시되게 한다.
+    const hasReadyToken = full.includes("[READY_TO_FINISH]");
+    const wrapRegex =
+      lang === "ko"
+        ? /(정리해\s*드릴까요|마무리해\s*드릴까요|완성해\s*드릴까요|앨범으로\s*(정리|마무리)|이대로\s*(정리|마무리))/
+        : /(shall i (put|wrap|finish)|put (this|these|them) together|wrap (it|this) up|finish (the|your) album)/i;
+    const hasWrapAsk = wrapRegex.test(full);
+    if (isLastAllowedTurn && !hasReadyToken) {
+      const tail = hasWrapAsk
+        ? "\n[READY_TO_FINISH]"
+        : lang === "ko"
+          ? "\n\n이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[READY_TO_FINISH]"
+          : "\n\nI think we have enough now. Shall I put these together into your album?\n[READY_TO_FINISH]";
+      full += tail;
+      if (response?.sendChunk) response.sendChunk({ delta: tail });
+    }
+
     return { text: full };
   },
 );
+
 
 // ---------------- generateAlbum ----------------
 
