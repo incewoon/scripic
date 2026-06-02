@@ -209,7 +209,7 @@ export const chat = onCall(
       typeof lastUserMessage?.content === "string"
         ? lastUserMessage.content
         : Array.isArray(lastUserMessage?.content)
-          ? (lastUserMessage.content.find((c: any) => c.type === "text")?.text ?? "")
+          ? ((lastUserMessage.content.find((c: any) => c.type === "text") as any)?.text ?? "")
           : "";
 
     const positiveKeywords =
