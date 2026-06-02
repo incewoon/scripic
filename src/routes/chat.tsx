@@ -24,8 +24,8 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 const READY_TOKEN = "[READY_TO_FINISH]";
 
-const AFFIRMATIVE_EN = /\b(yes|yeah|yep|sure|ok|okay|sounds good|let'?s|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
-const AFFIRMATIVE_KO = /(네|넵|예|응|어|그래(요)?|좋아(요)?|ㅇㅇ|ㅇㅋ|오케이|콜|끝|완성|마무리|충분|됐어|그래그래)/;
+const AFFIRMATIVE_EN = /\b(yes|yeah|yep|yup|sure|ok|okay|sounds good|let'?s|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
+const AFFIRMATIVE_KO = /(네|넹|넵|넴|예|응|웅|어|그래(요)?|좋아(요)?|ㅇㅇ|ㅇㅋ|오케이|콜|끝|완성|마무리|충분|됐어|그래그래)/;
 
 function isAffirmative(text: string) {
   return AFFIRMATIVE_EN.test(text) || AFFIRMATIVE_KO.test(text);
@@ -37,6 +37,15 @@ function isWrapProposal(text: string | undefined) {
   if (!text) return false;
   if (text.includes(READY_TOKEN)) return true;
   return WRAP_HINT_EN.test(text) || WRAP_HINT_KO.test(text);
+}
+
+const FINISH_ACK_EN = /\b(got it|i'?ll (put|wrap|finish|create)|putting it together now|wrapping it up now|finishing (it|the album) now|creating the album now)\b/i;
+const FINISH_ACK_KO = /(바로\s*(정리|마무리|완성)(해|할게|할게요|하겠습니다|해드릴게요|해 드릴게요)|지금\s*(정리|마무리|완성)(해|할게|할게요|하겠습니다|해드릴게요|해 드릴게요)|정리해\s*드릴게요|마무리해\s*드릴게요|완성해\s*드릴게요)/;
+
+function isFinishAcknowledgement(text: string | undefined) {
+  if (!text) return false;
+  if (text.includes(READY_TOKEN)) return true;
+  return FINISH_ACK_EN.test(text) || FINISH_ACK_KO.test(text);
 }
 
 // User explicitly asks to finalize, regardless of whether AI proposed wrap-up yet.
