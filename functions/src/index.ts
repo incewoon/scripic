@@ -125,13 +125,16 @@ async function grantDailyBonus(key: string, today: string): Promise<{ alreadyGra
   });
 }
 
+
+    }
+
 // ---------------- chat (streaming) ----------------
 export const chat = onCall(
   {
     enforceAppCheck: true,
     secrets: [GEMINI_API_KEY],
   },
-  // @ts-ignore - streaming response 지원을 위한 임시 타입 무시
+  // @ts-ignore
   async (request: any, response: any) => {
     const {
       messages,
@@ -157,7 +160,7 @@ export const chat = onCall(
     const maxTurnsPerPhoto = typeof rawCap === "number" && rawCap > 0 ? Math.min(20, Math.floor(rawCap)) : 3;
     const photoCount = typeof pcFromClient === "number" && pcFromClient > 0 ? pcFromClient : (photos?.length ?? 0);
 
-    // Inject photos into the first user message on the opening turn.
+    // 사진 주입 로직 (기존과 동일)
     const enriched: OpenAIMessage[] = [...messages];
     const hasPhotos = enriched.some((msg) => Array.isArray(msg.content));
     if (!hasPhotos && photos?.length) {
@@ -181,11 +184,10 @@ export const chat = onCall(
 
     const body = toGeminiRequest([{ role: "system", content: system }, ...enriched]);
 
-    // 이번에 모델이 만들 응답이 마지막 허용 턴인지 판단.
-    // enriched에 있는 assistant 메시지 수 + 1 = 이번 응답 번호.
-    const totalCap = Math.max(1, photoCount * maxTurnsPerPhoto);
+    // === 수정된 턴 계산 ===
+    const totalCap = Math.min(12, Math.max(1, photoCount * maxTurnsPerPhoto));
     const assistantSoFar = enriched.filter((msg) => msg.role === "assistant").length;
-    const isLastAllowedTurn = assistantSoFar + 1 >= totalCap;
+    const isProposalTurn = assistantSoFar + 1 === totalCap; // 마무리 제안 턴
 
     let full = "";
     try {
@@ -200,22 +202,35 @@ export const chat = onCall(
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
 
-    // 안전망: 마지막 허용 턴인데 모델이 종료 제안/READY_TO_FINISH를 빠뜨렸으면
-    // 서버에서 한 줄 덧붙여 보장한다. 스트리밍 응답은 이미 클라이언트에 흘러갔지만
-    // 클라이언트는 최종 텍스트(setMessages)를 callable의 반환값(text)으로 갱신하지 않으므로,
-    // 보강 텍스트도 sendChunk로 마저 흘려서 화면에 추가로 표시되게 한다.
+    // === [PROPOSE_FINISH] / [READY_TO_FINISH] 처리 로직 (핵심 수정) ===
+    const hasProposeToken = full.includes("[PROPOSE_FINISH]");
     const hasReadyToken = full.includes("[READY_TO_FINISH]");
-    const wrapRegex =
-      lang === "ko"
-        ? /(정리해\s*드릴까요|마무리해\s*드릴까요|완성해\s*드릴까요|앨범으로\s*(정리|마무리)|이대로\s*(정리|마무리))/
-        : /(shall i (put|wrap|finish)|put (this|these|them) together|wrap (it|this) up|finish (the|your) album)/i;
-    const hasWrapAsk = wrapRegex.test(full);
-    if (isLastAllowedTurn && !hasReadyToken) {
-      const tail = hasWrapAsk
-        ? "\n[READY_TO_FINISH]"
-        : lang === "ko"
-          ? "\n\n이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[READY_TO_FINISH]"
-          : "\n\nI think we have enough now. Shall I put these together into your album?\n[READY_TO_FINISH]";
+
+    // 사용자가 이전 제안에 긍정적으로 답했는지 검사
+    const lastUserMessage = [...enriched].reverse().find((msg) => msg.role === "user");
+    const lastUserText = typeof lastUserMessage?.content === "string" 
+      ? lastUserMessage.content 
+      : Array.isArray(lastUserMessage?.content) 
+        ? lastUserMessage.content.find((c: any) => c.type === "text")?.text ?? "" 
+        : "";
+
+    const positiveKeywords = /(네|넵|넹|ㅇㅋ|ㅇㅇ|그래|좋아|좋아요|해줘|만들어줘|정리해줘|마무리해줘|앨범으로|이대로.*(정리|마무리)|sure|yes|okay|go ahead|make it)/i;
+    const userSaidPositive = positiveKeywords.test(lastUserText);
+
+    // 안전망 + 강제 토큰 처리
+    if (isProposalTurn && !hasProposeToken && !hasReadyToken) {
+      // 마지막 턴인데 제안 토큰이 없으면 강제로 제안 + [PROPOSE_FINISH]
+      const tail = lang === "ko"
+        ? "\n\n이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[PROPOSE_FINISH]"
+        : "\n\nI think we have enough now. Shall I put these together into your album?\n[PROPOSE_FINISH]";
+      full += tail;
+      if (response?.sendChunk) response.sendChunk({ delta: tail });
+    } 
+    else if (userSaidPositive && !hasReadyToken) {
+      // 사용자가 긍정적으로 답했으면 [READY_TO_FINISH] 추가
+      const tail = lang === "ko"
+        ? "\n네, 바로 정리해드릴게요.\n[READY_TO_FINISH]"
+        : "\nGot it, putting it together now.\n[READY_TO_FINISH]";
       full += tail;
       if (response?.sendChunk) response.sendChunk({ delta: tail });
     }
