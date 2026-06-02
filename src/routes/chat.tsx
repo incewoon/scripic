@@ -253,7 +253,17 @@ function Chat() {
     // stream errored partway, an explicit user finish request still proceeds
     // to album generation using whatever transcript we have.
     const aiNowProposing = isWrapProposal(assistant);
-    const shouldFinish = userExplicit || userAgreed || aiNowProposing;
+    const aiNowAcknowledgedFinish = isFinishAcknowledgement(assistant);
+    const shouldFinish = userExplicit || userAgreed || aiNowProposing || (wrapProposed && aiNowAcknowledgedFinish);
+    console.log("[Chat] finish check", {
+      userExplicit,
+      userAgreed,
+      wrapProposed,
+      aiNowProposing,
+      aiNowAcknowledgedFinish,
+      shouldFinish,
+      streamError: !!streamError,
+    });
     if (shouldFinish && !finishingRef.current && !leavingRef.current) {
       // If user explicitly asked to finish, do it even when the stream failed.
       // For the implicit paths (AI-led proposal / generic agreement), only
@@ -265,6 +275,7 @@ function Chat() {
         const finalMsgs: Msg[] = assistant
           ? [...newMsgs, { role: "assistant", content: assistant }]
           : [...newMsgs];
+        console.log("[Chat] scheduling finish", { messageCount: finalMsgs.length });
         setTimeout(() => { void finish(finalMsgs); }, 400);
       }
     }
@@ -280,11 +291,18 @@ function Chat() {
 
   async function finish(messagesOverride?: Msg[]) {
     const msgs = messagesOverride ?? messages;
+    console.log("[Chat] finish() called", {
+      override: !!messagesOverride,
+      messageCount: msgs.length,
+      generating,
+      busy,
+    });
     if (msgs.length < 2) { toast.error(t.talkMore); finishingRef.current = false; return; }
     setGenerating(true);
     try {
+      console.log("[Chat] calling aiGenerateAlbum", { messageCount: msgs.length, photoCount: photos.length });
       const album = await aiGenerateAlbum({
-        messages,
+        messages: msgs,
         photoCount: photos.length,
         lang: getLang(),
         period: meta.period,
