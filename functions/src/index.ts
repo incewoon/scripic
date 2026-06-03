@@ -261,7 +261,7 @@ export const chat = onCall(
             ? "\n\n그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?\n[PROPOSE_FINISH]"
             : "\n\nShall I put together the album based on what we've shared so far?\n[PROPOSE_FINISH]";
         full += tail;
-        if (response?.sendChunk) response.sendChunk({ delta: tail });
+        if (response?.sendChunk) response.sendChunk({ delta: full });
       }
     } else if (assistantSoFar + 1 > totalCap) {
       if (!hasReadyToken) {
