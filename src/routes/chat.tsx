@@ -249,35 +249,43 @@ function Chat() {
       setBusy(false);
     }
 
-    // Decide whether to finalize. Run AFTER the try/catch so that even if the
-    // stream errored partway, an explicit user finish request still proceeds
-    // to album generation using whatever transcript we have.
-    const aiNowProposing = isWrapProposal(assistant);
-    const aiNowAcknowledgedFinish = isFinishAcknowledgement(assistant);
-    const shouldFinish = userExplicit || userAgreed || aiNowProposing || (wrapProposed && aiNowAcknowledgedFinish);
+    // 단일 트리거: 서버가 [READY_TO_FINISH]를 보낸 순간에만 finish() 호출.
+    // 명시적 종료 명령은 서버가 [PROPOSE_FINISH]로 한 번 더 확인하므로 여기서 finish하지 않음.
+    const aiReady = assistant.includes(READY_TOKEN);
+
+    const finalMsgs: Msg[] = assistant
+      ? [...newMsgs, { role: "assistant", content: assistant }]
+      : [...newMsgs];
+
     console.log("[Chat] finish check", {
       userExplicit,
       userAgreed,
       wrapProposed,
-      aiNowProposing,
-      aiNowAcknowledgedFinish,
-      shouldFinish,
+      aiReady,
+      totalMessages: finalMsgs.length,
       streamError: !!streamError,
     });
-    if (shouldFinish && !finishingRef.current && !leavingRef.current) {
-      // If user explicitly asked to finish, do it even when the stream failed.
-      // For the implicit paths (AI-led proposal / generic agreement), only
-      // proceed when we actually got a clean stream.
-      if (userExplicit || !streamError) {
-        finishingRef.current = true;
-        // Build the final transcript locally so finish() doesn't depend on
-        // React state catching up between setMessages and setTimeout.
-        const finalMsgs: Msg[] = assistant
-          ? [...newMsgs, { role: "assistant", content: assistant }]
-          : [...newMsgs];
-        console.log("[Chat] scheduling finish", { messageCount: finalMsgs.length });
-        setTimeout(() => { void finish(finalMsgs); }, 400);
-      }
+
+    if (aiReady && !finishingRef.current && !leavingRef.current && !streamError) {
+      finishingRef.current = true;
+      setTimeout(() => { void finish(finalMsgs); }, 400);
+      return;
+    }
+
+    // 하드 캡: 전체 메시지가 MAX_TOTAL_MESSAGES 이상이면 사용자 응답을 기다리지 않고 강제 마무리.
+    if (!aiReady && !finishingRef.current && !leavingRef.current && !streamError &&
+        finalMsgs.length >= MAX_TOTAL_MESSAGES) {
+      finishingRef.current = true;
+      const closingMsg: Msg = {
+        role: "assistant",
+        content: getLang() === "ko"
+          ? "이제 앨범으로 정리해드릴게요."
+          : "Let me put this together as your album now.",
+      };
+      const withClosing = [...finalMsgs, closingMsg];
+      setMessages(withClosing);
+      console.log("[Chat] hard cap reached, force finishing in 2s", { messageCount: withClosing.length });
+      setTimeout(() => { void finish(withClosing); }, 2000);
     }
   }
 
