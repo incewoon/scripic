@@ -471,7 +471,7 @@ function Chat() {
                 ? "bg-primary text-primary-foreground rounded-br-sm"
                 : "glass text-foreground rounded-bl-sm border border-border/50"
             }`}>
-              {(m.content || "...").replaceAll(READY_TOKEN, "").trim() || "..."}
+              {sanitizeForDisplay(m.content || "...") || "..."}
             </div>
           </div>
         ))}
