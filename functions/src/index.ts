@@ -283,8 +283,6 @@ export const chat = onCall(
     // 항상 한 번만 전송
     if (response?.sendChunk) response.sendChunk({ delta: full });
     return { text: full };
-
-    return { text: full };
   },
 );
 
