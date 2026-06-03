@@ -33,15 +33,19 @@ function sanitizeForDisplay(text: string) {
   return text.replace(TOKEN_RE, "").trim();
 }
 
-const AFFIRMATIVE_EN = /\b(yes|yeah|yep|yup|sure|ok|okay|sounds good|let'?s|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
-const AFFIRMATIVE_KO = /(네|넹|넵|넴|예|응|웅|어|그래(요)?|좋아(요)?|ㅇㅇ|ㅇㅋ|오케이|콜|끝|완성|마무리|충분|됐어|그래그래)/;
+const AFFIRMATIVE_EN =
+  /\b(yes|yeah|yep|yup|sure|ok|okay|sounds good|let'?s|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
+const AFFIRMATIVE_KO =
+  /(네|넹|넵|넴|예|응|웅|어|그래(요)?|좋아(요)?|ㅇㅇ|ㅇㅋ|오케이|콜|끝|완성|마무리|충분|됐어|그래그래)/;
 
 function isAffirmative(text: string) {
   return AFFIRMATIVE_EN.test(text) || AFFIRMATIVE_KO.test(text);
 }
 
-const WRAP_HINT_EN = /(weave (these|them|it) into|wrap (this|it) up|finish (the|your) album|create the album now|put (this|these) together|shall i (put|wrap|finish))/i;
-const WRAP_HINT_KO = /(앨범으로 (정리|마무리)|이대로 (정리|마무리)|정리할까요|마무리할까요|완성할까요|정리해 ?드릴까요|마무리해 ?드릴까요|완성해 ?드릴까요)/;
+const WRAP_HINT_EN =
+  /(weave (these|them|it) into|wrap (this|it) up|finish (the|your) album|create the album now|put (this|these) together|shall i (put|wrap|finish))/i;
+const WRAP_HINT_KO =
+  /(앨범으로 (정리|마무리)|이대로 (정리|마무리)|정리할까요|마무리할까요|완성할까요|정리해 ?드릴까요|마무리해 ?드릴까요|완성해 ?드릴까요)/;
 function isWrapProposal(text: string | undefined) {
   if (!text) return false;
   if (text.includes(PROPOSE_TOKEN) || text.includes(READY_TOKEN)) return true;
@@ -49,8 +53,10 @@ function isWrapProposal(text: string | undefined) {
 }
 
 // User explicitly asks to finalize.
-const EXPLICIT_FINISH_KO = /((앨범|이걸|이거|이제)\s*)?(마무리|정리|완성|마감|끝내)(\s*(해|해줘|해주세요|해주실|할래|할까|하자|부탁|좀)|$)/;
-const EXPLICIT_FINISH_EN = /\b(finish (it|this|the album)|wrap (it|this) up|wrap up|finalize|complete (it|the album)|put (it|this|them|these) together|create the album|make the album)\b/i;
+const EXPLICIT_FINISH_KO =
+  /((앨범|이걸|이거|이제)\s*)?(마무리|정리|완성|마감|끝내)(\s*(해|해줘|해주세요|해주실|할래|할까|하자|부탁|좀)|$)/;
+const EXPLICIT_FINISH_EN =
+  /\b(finish (it|this|the album)|wrap (it|this) up|wrap up|finalize|complete (it|the album)|put (it|this|them|these) together|create the album|make the album)\b/i;
 function isExplicitFinishRequest(text: string) {
   return EXPLICIT_FINISH_KO.test(text) || EXPLICIT_FINISH_EN.test(text);
 }
@@ -60,9 +66,15 @@ function fmtTakenAt(iso: string | undefined, lang: string) {
   try {
     const d = new Date(iso);
     return d.toLocaleString(lang === "ko" ? "ko-KR" : undefined, {
-      year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
-  } catch { return undefined; }
+  } catch {
+    return undefined;
+  }
 }
 
 // Smaller, lower-quality variant for the AI payload. Display + saved album
@@ -80,7 +92,8 @@ async function downscaleForAi(dataUrl: string, maxDim = 896, q = 0.75): Promise<
     const w = Math.round(img.width * scale);
     const h = Math.round(img.height * scale);
     const canvas = document.createElement("canvas");
-    canvas.width = w; canvas.height = h;
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return dataUrl;
     ctx.drawImage(img, 0, 0, w, h);
@@ -138,11 +151,18 @@ function Chat() {
     if (!authReady || !user || autoStartedRef.current) return;
     autoStartedRef.current = true;
     const raw = sessionStorage.getItem("memori_photos");
-    if (!raw) { navigate({ to: "/create" }); return; }
+    if (!raw) {
+      navigate({ to: "/create" });
+      return;
+    }
     const ph: string[] = JSON.parse(raw);
     setPhotos(ph);
-    try { setMeta(JSON.parse(sessionStorage.getItem("memori_meta") || "{}")); } catch {}
-    try { setPhotoMetas(JSON.parse(sessionStorage.getItem("memori_photo_metas") || "[]")); } catch {}
+    try {
+      setMeta(JSON.parse(sessionStorage.getItem("memori_meta") || "{}"));
+    } catch {}
+    try {
+      setPhotoMetas(JSON.parse(sessionStorage.getItem("memori_photo_metas") || "[]"));
+    } catch {}
     const opener = getLang() === "ko" ? "이 사진들 좀 봐줘." : "Take a look at these photos with me.";
     // Build smaller AI-payload variants in parallel; first send uses them.
     void (async () => {
@@ -156,7 +176,9 @@ function Chat() {
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const onScroll = () => { stickToBottomRef.current = isNearBottom(); };
+    const onScroll = () => {
+      stickToBottomRef.current = isNearBottom();
+    };
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
@@ -201,7 +223,6 @@ function Chat() {
     window.setTimeout(() => scrollToLatest("smooth"), 300);
   }
 
-
   async function send(text: string, ph = photos, prior = messages, aiPhotos?: string[]) {
     if (!authReady || !user) {
       toast.error(t.connectionError);
@@ -214,7 +235,7 @@ function Chat() {
     setBusy(true);
 
     // detect: user is responding to a wrap-up suggestion, OR is explicitly asking to finalize now
-    const lastAssistant = [...prior].reverse().find(m => m.role === "assistant");
+    const lastAssistant = [...prior].reverse().find((m) => m.role === "assistant");
     const wrapProposed = isWrapProposal(lastAssistant?.content);
     const userExplicit = isExplicitFinishRequest(text);
     const userAgreed = userExplicit || (wrapProposed && isAffirmative(text));
@@ -222,7 +243,7 @@ function Chat() {
     let assistant = "";
     let streamError: any = null;
     try {
-      setMessages(m => [...m, { role: "assistant", content: "" }]);
+      setMessages((m) => [...m, { role: "assistant", content: "" }]);
 
       const photosForCall = prior.length === 0 ? (aiPhotos ?? ph) : undefined;
       for await (const delta of aiChatStream({
@@ -234,7 +255,7 @@ function Chat() {
         maxTurnsPerPhoto: 3,
       })) {
         assistant += delta;
-        setMessages(m => m.map((x, i) => i === m.length - 1 ? { ...x, content: assistant } : x));
+        setMessages((m) => m.map((x, i) => (i === m.length - 1 ? { ...x, content: assistant } : x)));
       }
     } catch (err: any) {
       streamError = err;
@@ -243,7 +264,8 @@ function Chat() {
       if (kind === "ai_quota") toast.error(t.aiQuota);
       else if (kind === "daily_limit") toast.error(t.dailyLimitBody);
       else if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
-      else if (code === "functions/unauthenticated" || code === "functions/permission-denied") toast.error(t.connectionError);
+      else if (code === "functions/unauthenticated" || code === "functions/permission-denied")
+        toast.error(t.connectionError);
       else toast.error(t.connectionError);
     } finally {
       setBusy(false);
@@ -252,10 +274,17 @@ function Chat() {
     // 단일 트리거: 서버가 [READY_TO_FINISH]를 보낸 순간에만 finish() 호출.
     // 명시적 종료 명령은 서버가 [PROPOSE_FINISH]로 한 번 더 확인하므로 여기서 finish하지 않음.
     const aiReady = assistant.includes(READY_TOKEN);
+    const aiProposed = assistant.includes(PROPOSE_TOKEN);
 
-    const finalMsgs: Msg[] = assistant
-      ? [...newMsgs, { role: "assistant", content: assistant }]
-      : [...newMsgs];
+    // 임시 디버그 로그
+    console.log("[Chat] DEBUG", {
+      aiReady,
+      aiProposed,
+      assistantLast100: assistant.slice(-100),
+      finalMsgCount: finalMsgs.length,
+    });
+
+    const finalMsgs: Msg[] = assistant ? [...newMsgs, { role: "assistant", content: assistant }] : [...newMsgs];
 
     console.log("[Chat] finish check", {
       userExplicit,
@@ -268,24 +297,31 @@ function Chat() {
 
     if (aiReady && !finishingRef.current && !leavingRef.current && !streamError) {
       finishingRef.current = true;
-      setTimeout(() => { void finish(finalMsgs); }, 400);
+      setTimeout(() => {
+        void finish(finalMsgs);
+      }, 400);
       return;
     }
 
     // 하드 캡: 전체 메시지가 MAX_TOTAL_MESSAGES 이상이면 사용자 응답을 기다리지 않고 강제 마무리.
-    if (!aiReady && !finishingRef.current && !leavingRef.current && !streamError &&
-        finalMsgs.length >= MAX_TOTAL_MESSAGES) {
+    if (
+      !aiReady &&
+      !finishingRef.current &&
+      !leavingRef.current &&
+      !streamError &&
+      finalMsgs.length >= MAX_TOTAL_MESSAGES
+    ) {
       finishingRef.current = true;
       const closingMsg: Msg = {
         role: "assistant",
-        content: getLang() === "ko"
-          ? "이제 앨범으로 정리해드릴게요."
-          : "Let me put this together as your album now.",
+        content: getLang() === "ko" ? "이제 앨범으로 정리해드릴게요." : "Let me put this together as your album now.",
       };
       const withClosing = [...finalMsgs, closingMsg];
       setMessages(withClosing);
       console.log("[Chat] hard cap reached, force finishing in 2s", { messageCount: withClosing.length });
-      setTimeout(() => { void finish(withClosing); }, 2000);
+      setTimeout(() => {
+        void finish(withClosing);
+      }, 2000);
     }
   }
 
@@ -305,7 +341,11 @@ function Chat() {
       generating,
       busy,
     });
-    if (msgs.length < 2) { toast.error(t.talkMore); finishingRef.current = false; return; }
+    if (msgs.length < 2) {
+      toast.error(t.talkMore);
+      finishingRef.current = false;
+      return;
+    }
     setGenerating(true);
     try {
       console.log("[Chat] calling aiGenerateAlbum", { messageCount: msgs.length, photoCount: photos.length });
@@ -360,7 +400,9 @@ function Chat() {
   const previewOpenRef = useRef(false);
 
   const previewOpen = previewIdx != null;
-  useEffect(() => { previewOpenRef.current = previewOpen; }, [previewOpen]);
+  useEffect(() => {
+    previewOpenRef.current = previewOpen;
+  }, [previewOpen]);
 
   useEffect(() => {
     if (!previewOpen) return;
@@ -381,7 +423,7 @@ function Chat() {
   const previewWhere = previewMeta?.city;
   const hasMeta = !!(previewWhen || previewWhere);
 
-  const hasConversation = messages.some(m => m.role === "user");
+  const hasConversation = messages.some((m) => m.role === "user");
   const [confirmLeave, setConfirmLeave] = useState(false);
   const leavingRef = useRef(false);
 
@@ -431,20 +473,19 @@ function Chat() {
   }, [hasConversation, generating]);
 
   return (
-    <div
-      className="mx-auto max-w-md flex flex-col h-[100dvh]"
-      style={{ paddingBottom: keyboardInset }}
-    >
+    <div className="mx-auto max-w-md flex flex-col h-[100dvh]" style={{ paddingBottom: keyboardInset }}>
       <div className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border/40">
         <header className="flex items-center justify-between px-5 pt-6 pb-3">
-          <Link to="/create" onClick={tryLeave} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
+          <Link to="/create" onClick={tryLeave} className="p-2 -ml-2 text-foreground/70">
+            <ArrowLeft size={20} />
+          </Link>
           <div className="text-xs text-muted-foreground">{t.chatPhotos(photos.length)}</div>
           <button
             onClick={() => void finish()}
             disabled={generating || busy}
             className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-50"
           >
-            <Sparkles size={12}/> {generating ? t.creating : t.finish}
+            <Sparkles size={12} /> {generating ? t.creating : t.finish}
           </button>
         </header>
 
@@ -457,26 +498,34 @@ function Chat() {
               aria-label={t.photoOf(i + 1)}
             >
               <img src={p} alt="" className="w-12 h-12 object-cover rounded-md" />
-              <span className="absolute top-0.5 left-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-[18px] h-[18px] flex items-center justify-center ring-1 ring-background shadow-sm">{i+1}</span>
+              <span className="absolute top-0.5 left-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-[18px] h-[18px] flex items-center justify-center ring-1 ring-background shadow-sm">
+                {i + 1}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-3 pb-3 space-y-3">
-        {messages.filter((_, i) => i > 0 || messages[0]?.role === "assistant").map((m, i) => (
-          <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-            <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-              m.role === "user"
-                ? "bg-primary text-primary-foreground rounded-br-sm"
-                : "glass text-foreground rounded-bl-sm border border-border/50"
-            }`}>
-              {sanitizeForDisplay(m.content || "...") || "..."}
+        {messages
+          .filter((_, i) => i > 0 || messages[0]?.role === "assistant")
+          .map((m, i) => (
+            <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+              <div
+                className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                  m.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-br-sm"
+                    : "glass text-foreground rounded-bl-sm border border-border/50"
+                }`}
+              >
+                {sanitizeForDisplay(m.content || "...") || "..."}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
         {busy && messages[messages.length - 1]?.role === "user" && (
-          <div className="flex justify-start"><div className="glass px-4 py-2.5 rounded-2xl text-sm border border-border/50">...</div></div>
+          <div className="flex justify-start">
+            <div className="glass px-4 py-2.5 rounded-2xl text-sm border border-border/50">...</div>
+          </div>
         )}
         <div ref={bottomRef} aria-hidden="true" className="h-px" />
       </div>
@@ -486,16 +535,19 @@ function Chat() {
           <input
             ref={inputRef}
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value)}
             onFocus={handleInputFocus}
-            onKeyDown={e => e.key === "Enter" && onSend()}
+            onKeyDown={(e) => e.key === "Enter" && onSend()}
             placeholder={t.inputPlaceholder}
             disabled={busy}
             className="flex-1 bg-transparent px-3 py-2 outline-none text-sm"
           />
-          <button onClick={onSend} disabled={busy || !input.trim()}
-            className="p-2.5 rounded-full bg-primary text-primary-foreground disabled:opacity-40">
-            <Send size={16}/>
+          <button
+            onClick={onSend}
+            disabled={busy || !input.trim()}
+            className="p-2.5 rounded-full bg-primary text-primary-foreground disabled:opacity-40"
+          >
+            <Send size={16} />
           </button>
         </div>
       </div>
@@ -508,7 +560,9 @@ function Chat() {
           <div
             className="relative max-w-md w-full bg-card rounded-2xl overflow-hidden shadow-[var(--shadow-warm)]"
             onClick={(e) => e.stopPropagation()}
-            onTouchStart={(e) => { (e.currentTarget as any)._tx = e.touches[0].clientX; }}
+            onTouchStart={(e) => {
+              (e.currentTarget as any)._tx = e.touches[0].clientX;
+            }}
             onTouchEnd={(e) => {
               const sx = (e.currentTarget as any)._tx as number | undefined;
               if (sx == null) return;
@@ -522,20 +576,26 @@ function Chat() {
               onClick={() => setPreviewIdx(null)}
               className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur rounded-full p-2 text-foreground/70"
               aria-label={t.close}
-            ><X size={16} /></button>
+            >
+              <X size={16} />
+            </button>
             {previewIdx > 0 && (
               <button
                 onClick={() => setPreviewIdx(previewIdx - 1)}
                 className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur rounded-full p-2 text-foreground/70"
                 aria-label="prev"
-              >‹</button>
+              >
+                ‹
+              </button>
             )}
             {previewIdx < photos.length - 1 && (
               <button
                 onClick={() => setPreviewIdx(previewIdx + 1)}
                 className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur rounded-full p-2 text-foreground/70"
                 aria-label="next"
-              >›</button>
+              >
+                ›
+              </button>
             )}
             <img
               src={photos[previewIdx]}
@@ -545,15 +605,27 @@ function Chat() {
             <div className="px-5 py-4 text-[13px] warm-text">
               <div className="flex items-center justify-between mb-2">
                 <div className="font-display text-base">{t.photoOf(previewIdx + 1)}</div>
-                <div className="text-[11px] warm-muted">{previewIdx + 1} / {photos.length}</div>
+                <div className="text-[11px] warm-muted">
+                  {previewIdx + 1} / {photos.length}
+                </div>
               </div>
               {hasMeta ? (
                 <div className="space-y-1.5 warm-muted">
                   {previewWhen && (
-                    <div className="flex items-center gap-2"><Calendar size={13}/> <span>{t.when}: {previewWhen}</span></div>
+                    <div className="flex items-center gap-2">
+                      <Calendar size={13} />{" "}
+                      <span>
+                        {t.when}: {previewWhen}
+                      </span>
+                    </div>
                   )}
                   {previewWhere && (
-                    <div className="flex items-center gap-2"><MapPin size={13}/> <span>{t.where}: {previewWhere}</span></div>
+                    <div className="flex items-center gap-2">
+                      <MapPin size={13} />{" "}
+                      <span>
+                        {t.where}: {previewWhere}
+                      </span>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -565,13 +637,29 @@ function Chat() {
       )}
 
       {confirmLeave && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-5" onClick={() => setConfirmLeave(false)}>
-          <div className="bg-card rounded-2xl max-w-sm w-full p-5 shadow-[var(--shadow-warm)]" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-5"
+          onClick={() => setConfirmLeave(false)}
+        >
+          <div
+            className="bg-card rounded-2xl max-w-sm w-full p-5 shadow-[var(--shadow-warm)]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="font-display text-lg mb-1.5">{t.leaveTitle}</div>
             <div className="text-sm warm-muted mb-5 leading-relaxed">{t.leaveDesc}</div>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setConfirmLeave(false)} className="px-4 py-2 text-sm rounded-full border border-border/60">{t.keepGoing}</button>
-              <button onClick={doLeave} className="px-4 py-2 text-sm rounded-full bg-destructive text-destructive-foreground">{t.leaveConfirm}</button>
+              <button
+                onClick={() => setConfirmLeave(false)}
+                className="px-4 py-2 text-sm rounded-full border border-border/60"
+              >
+                {t.keepGoing}
+              </button>
+              <button
+                onClick={doLeave}
+                className="px-4 py-2 text-sm rounded-full bg-destructive text-destructive-foreground"
+              >
+                {t.leaveConfirm}
+              </button>
             </div>
           </div>
         </div>
