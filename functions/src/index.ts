@@ -270,7 +270,7 @@ export const chat = onCall(
             ? "\n\n이제 앨범으로 정리해드릴게요.\n[READY_TO_FINISH]"
             : "\n\nLet me put this together as your album now.\n[READY_TO_FINISH]";
         full += tail;
-        if (response?.sendChunk) response.sendChunk({ delta: tail });
+        if (response?.sendChunk) response.sendChunk({ delta: full });
       }
     } else if (willBeLastTurn && !hasProposeToken && !hasReadyToken) {
       const tail =
@@ -278,7 +278,7 @@ export const chat = onCall(
           ? "\n\n이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[PROPOSE_FINISH]"
           : "\n\nI think we have enough now. Shall I put these together into your album?\n[PROPOSE_FINISH]";
       full += tail;
-      if (response?.sendChunk) response.sendChunk({ delta: tail });
+      if (response?.sendChunk) response.sendChunk({ delta: full });
     }
 
     return { text: full };
