@@ -240,36 +240,26 @@ export const chat = onCall(
     //  3) 캡 초과 → READY (안전망)
     //  4) 마지막 허용 턴 → PROPOSE
     if (wrapProposedPrev && userPositive) {
-      if (!hasReadyToken) {
-        const tail =
-          lang === "ko"
-            ? "\n네, 바로 정리해드릴게요.\n[READY_TO_FINISH]"
-            : "\nGot it, putting it together now.\n[READY_TO_FINISH]";
-        full += tail;
-        if (response?.sendChunk) response.sendChunk({ delta: full });
-      }
+      const tail =
+        lang === "ko"
+          ? "\n네, 바로 정리해드릴게요.\n[READY_TO_FINISH]"
+          : "\nGot it, putting it together now.\n[READY_TO_FINISH]";
+      full += tail;
     } else if (userExplicitFinish) {
-      if (hasReadyToken) {
-        full = full.replace(/\[READY_TO_FINISH\]/g, "").trimEnd();
-      }
       if (!full.includes("[PROPOSE_FINISH]")) {
         const tail =
           lang === "ko"
             ? "\n\n그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?\n[PROPOSE_FINISH]"
             : "\n\nShall I put together the album based on what we've shared so far?\n[PROPOSE_FINISH]";
         full += tail;
-        if (response?.sendChunk) response.sendChunk({ delta: full });
       }
     } else if (assistantSoFar + 1 > totalCap) {
-      if (!hasReadyToken) {
-        const tail =
-          lang === "ko"
-            ? "\n\n이제 앨범으로 정리해드릴게요.\n[READY_TO_FINISH]"
-            : "\n\nLet me put this together as your album now.\n[READY_TO_FINISH]";
-        full += tail;
-        if (response?.sendChunk) response.sendChunk({ delta: full });
-      }
-    } else if (willBeLastTurn && !hasProposeToken && !hasReadyToken) {
+      const tail =
+        lang === "ko"
+          ? "\n\n이제 앨범으로 정리해드릴게요.\n[READY_TO_FINISH]"
+          : "\n\nLet me put this together as your album now.\n[READY_TO_FINISH]";
+      full += tail;
+    } else if (willBeLastTurn) {
       const tail =
         lang === "ko"
           ? "\n\n이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[PROPOSE_FINISH]"
@@ -277,7 +267,7 @@ export const chat = onCall(
       full += tail;
     }
 
-    // 항상 한 번만 전송
+    // 항상 한 번만 전송 (일반 턴 포함)
     if (response?.sendChunk) response.sendChunk({ delta: full });
     return { text: full };
   },
