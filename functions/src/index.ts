@@ -214,10 +214,7 @@ export const chat = onCall(
 
     const userExplicitFinish = EXPLICIT_FINISH_KO.test(lastUserText) || EXPLICIT_FINISH_EN.test(lastUserText);
     const userPositive = POSITIVE_KO.test(lastUserText) || POSITIVE_EN.test(lastUserText);
-    const wrapProposedPrev =
-      prevAssistantText.includes("[PROPOSE_FINISH]") ||
-      WRAP_HINT_KO.test(prevAssistantText) ||
-      WRAP_HINT_EN.test(prevAssistantText);
+    const wrapProposedPrev = prevAssistantText.includes("[PROPOSE_FINISH]");
 
     let full = "";
     try {
