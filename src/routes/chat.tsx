@@ -23,6 +23,15 @@ export const Route = createFileRoute("/chat")({
 type Msg = { role: "user" | "assistant"; content: string };
 
 const READY_TOKEN = "[READY_TO_FINISH]";
+const PROPOSE_TOKEN = "[PROPOSE_FINISH]";
+const TOKEN_RE = /\[(READY_TO_FINISH|PROPOSE_FINISH)\]/g;
+
+// 전체 대화(사용자+AI) 최대 메시지 수. 도달 시 강제 마무리.
+const MAX_TOTAL_MESSAGES = 12;
+
+function sanitizeForDisplay(text: string) {
+  return text.replace(TOKEN_RE, "").trim();
+}
 
 const AFFIRMATIVE_EN = /\b(yes|yeah|yep|yup|sure|ok|okay|sounds good|let'?s|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
 const AFFIRMATIVE_KO = /(네|넹|넵|넴|예|응|웅|어|그래(요)?|좋아(요)?|ㅇㅇ|ㅇㅋ|오케이|콜|끝|완성|마무리|충분|됐어|그래그래)/;
@@ -35,20 +44,11 @@ const WRAP_HINT_EN = /(weave (these|them|it) into|wrap (this|it) up|finish (the|
 const WRAP_HINT_KO = /(앨범으로 (정리|마무리)|이대로 (정리|마무리)|정리할까요|마무리할까요|완성할까요|정리해 ?드릴까요|마무리해 ?드릴까요|완성해 ?드릴까요)/;
 function isWrapProposal(text: string | undefined) {
   if (!text) return false;
-  if (text.includes(READY_TOKEN)) return true;
+  if (text.includes(PROPOSE_TOKEN) || text.includes(READY_TOKEN)) return true;
   return WRAP_HINT_EN.test(text) || WRAP_HINT_KO.test(text);
 }
 
-const FINISH_ACK_EN = /\b(got it|i'?ll (put|wrap|finish|create)|putting it together now|wrapping it up now|finishing (it|the album) now|creating the album now)\b/i;
-const FINISH_ACK_KO = /(바로\s*(정리|마무리|완성)(해|할게|할게요|하겠습니다|해드릴게요|해 드릴게요)|지금\s*(정리|마무리|완성)(해|할게|할게요|하겠습니다|해드릴게요|해 드릴게요)|정리해\s*드릴게요|마무리해\s*드릴게요|완성해\s*드릴게요)/;
-
-function isFinishAcknowledgement(text: string | undefined) {
-  if (!text) return false;
-  if (text.includes(READY_TOKEN)) return true;
-  return FINISH_ACK_EN.test(text) || FINISH_ACK_KO.test(text);
-}
-
-// User explicitly asks to finalize, regardless of whether AI proposed wrap-up yet.
+// User explicitly asks to finalize.
 const EXPLICIT_FINISH_KO = /((앨범|이걸|이거|이제)\s*)?(마무리|정리|완성|마감|끝내)(\s*(해|해줘|해주세요|해주실|할래|할까|하자|부탁|좀)|$)/;
 const EXPLICIT_FINISH_EN = /\b(finish (it|this|the album)|wrap (it|this) up|wrap up|finalize|complete (it|the album)|put (it|this|them|these) together|create the album|make the album)\b/i;
 function isExplicitFinishRequest(text: string) {
@@ -249,35 +249,43 @@ function Chat() {
       setBusy(false);
     }
 
-    // Decide whether to finalize. Run AFTER the try/catch so that even if the
-    // stream errored partway, an explicit user finish request still proceeds
-    // to album generation using whatever transcript we have.
-    const aiNowProposing = isWrapProposal(assistant);
-    const aiNowAcknowledgedFinish = isFinishAcknowledgement(assistant);
-    const shouldFinish = userExplicit || userAgreed || aiNowProposing || (wrapProposed && aiNowAcknowledgedFinish);
+    // 단일 트리거: 서버가 [READY_TO_FINISH]를 보낸 순간에만 finish() 호출.
+    // 명시적 종료 명령은 서버가 [PROPOSE_FINISH]로 한 번 더 확인하므로 여기서 finish하지 않음.
+    const aiReady = assistant.includes(READY_TOKEN);
+
+    const finalMsgs: Msg[] = assistant
+      ? [...newMsgs, { role: "assistant", content: assistant }]
+      : [...newMsgs];
+
     console.log("[Chat] finish check", {
       userExplicit,
       userAgreed,
       wrapProposed,
-      aiNowProposing,
-      aiNowAcknowledgedFinish,
-      shouldFinish,
+      aiReady,
+      totalMessages: finalMsgs.length,
       streamError: !!streamError,
     });
-    if (shouldFinish && !finishingRef.current && !leavingRef.current) {
-      // If user explicitly asked to finish, do it even when the stream failed.
-      // For the implicit paths (AI-led proposal / generic agreement), only
-      // proceed when we actually got a clean stream.
-      if (userExplicit || !streamError) {
-        finishingRef.current = true;
-        // Build the final transcript locally so finish() doesn't depend on
-        // React state catching up between setMessages and setTimeout.
-        const finalMsgs: Msg[] = assistant
-          ? [...newMsgs, { role: "assistant", content: assistant }]
-          : [...newMsgs];
-        console.log("[Chat] scheduling finish", { messageCount: finalMsgs.length });
-        setTimeout(() => { void finish(finalMsgs); }, 400);
-      }
+
+    if (aiReady && !finishingRef.current && !leavingRef.current && !streamError) {
+      finishingRef.current = true;
+      setTimeout(() => { void finish(finalMsgs); }, 400);
+      return;
+    }
+
+    // 하드 캡: 전체 메시지가 MAX_TOTAL_MESSAGES 이상이면 사용자 응답을 기다리지 않고 강제 마무리.
+    if (!aiReady && !finishingRef.current && !leavingRef.current && !streamError &&
+        finalMsgs.length >= MAX_TOTAL_MESSAGES) {
+      finishingRef.current = true;
+      const closingMsg: Msg = {
+        role: "assistant",
+        content: getLang() === "ko"
+          ? "이제 앨범으로 정리해드릴게요."
+          : "Let me put this together as your album now.",
+      };
+      const withClosing = [...finalMsgs, closingMsg];
+      setMessages(withClosing);
+      console.log("[Chat] hard cap reached, force finishing in 2s", { messageCount: withClosing.length });
+      setTimeout(() => { void finish(withClosing); }, 2000);
     }
   }
 
@@ -463,7 +471,7 @@ function Chat() {
                 ? "bg-primary text-primary-foreground rounded-br-sm"
                 : "glass text-foreground rounded-bl-sm border border-border/50"
             }`}>
-              {(m.content || "...").replaceAll(READY_TOKEN, "").trim() || "..."}
+              {sanitizeForDisplay(m.content || "...") || "..."}
             </div>
           </div>
         ))}
