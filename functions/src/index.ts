@@ -223,7 +223,9 @@ export const chat = onCall(
     try {
       for await (const delta of geminiStreamText(body)) {
         full += delta;
-        if (response?.sendChunk) response.sendChunk({ delta });
+        // 스트리밍 중엔 컨트롤 토큰 제거 — 서버가 종료 후 주입
+        const safeChunk = delta.replace(/\[(READY_TO_FINISH|PROPOSE_FINISH)\]/g, "");
+        if (response?.sendChunk && safeChunk) response.sendChunk({ delta: safeChunk });
       }
     } catch (e: any) {
       if (e instanceof GeminiRateLimitError) {
@@ -231,10 +233,9 @@ export const chat = onCall(
       }
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
-
-    // AI가 자체 생성한 [READY_TO_FINISH]는 서버에서만 제어
-    full = full.replace(/\[READY_TO_FINISH\]/g, "").trimEnd();
-    const hasProposeToken = full.includes("[PROPOSE_FINISH]");
+    // AI 생성 토큰 전부 제거 — 서버 로직이 단독으로 재주입
+    full = full.replace(/\[(READY_TO_FINISH|PROPOSE_FINISH)\]/g, "").trimEnd();
+    const hasProposeToken = false;
     const hasReadyToken = false;
 
     // 우선순위:
