@@ -5,7 +5,7 @@ export type Mode = "creative" | "fact" | "brief";
 
 export function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPhoto: number) {
   const rawCap = Math.max(1, photoCount * maxTurnsPerPhoto);
-  const totalCap = Math.min(6, rawCap); // 최대 6턴(전체 12메시지)
+  const totalCap = Math.min(12, rawCap); // ← 12로 변경
   const lastTurn = totalCap;
 
   if (lang === "ko") {
