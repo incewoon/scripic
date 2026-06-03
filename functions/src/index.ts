@@ -183,7 +183,7 @@ export const chat = onCall(
 
     // === 턴 계산 ===
     // totalCap = 어시스턴트 메시지 최대 개수. 전체 대화 12메시지(사용자 6 + AI 6) 기준 cap 6.
-    const totalCap = Math.min(6, Math.max(1, photoCount * maxTurnsPerPhoto));
+    const totalCap = Math.min(12, Math.max(1, photoCount * maxTurnsPerPhoto));
     const assistantSoFar = enriched.filter((msg) => msg.role === "assistant").length;
     const willBeLastTurn = assistantSoFar + 1 >= totalCap;
 
@@ -201,11 +201,16 @@ export const chat = onCall(
 
     // 정규식 — 클라이언트와 동일 규칙
     const EXPLICIT_FINISH_KO = /(마무리|정리|완성|마감|끝내|앨범\s*만들)\s*(해|해줘|해주세요|할래|할까|하자|부탁|좀)?/;
-    const EXPLICIT_FINISH_EN = /\b(finish (it|this|the album)|wrap (it|this) up|wrap up|finalize|complete (it|the album)|put (it|this|them|these) together|create the album|make the album)\b/i;
-    const POSITIVE_KO = /^\s*(네+|넵+|넹+|예+|응+|웅+|어+|ㅇㅇ+|ㅇㅋ+|오케이|콜|그래(요)?|좋아(요)?|좋아요|좋습니다|좋지|해(줘|주세요)?|만들어(줘|주세요)?|정리해(줘|주세요)?|마무리해(줘|주세요)?)[!.~ㅋㅎ\s]*$/;
-    const POSITIVE_EN = /^\s*(yes|yeah|yep|yup|sure|ok|okay|okey|sounds good|go ahead|do it|please do|let'?s go)[!.~\s]*$/i;
-    const WRAP_HINT_KO = /(앨범으로 (정리|마무리)|이대로 (정리|마무리)|정리할까요|마무리할까요|완성할까요|정리해 ?드릴까요|마무리해 ?드릴까요|완성해 ?드릴까요)/;
-    const WRAP_HINT_EN = /(shall i (put|wrap|finish)|wrap (this|it) up|finish (the|your) album|put (this|these) together|create the album now)/i;
+    const EXPLICIT_FINISH_EN =
+      /\b(finish (it|this|the album)|wrap (it|this) up|wrap up|finalize|complete (it|the album)|put (it|this|them|these) together|create the album|make the album)\b/i;
+    const POSITIVE_KO =
+      /^\s*(네+|넵+|넹+|예+|응+|웅+|어+|ㅇㅇ+|ㅇㅋ+|오케이|콜|그래(요)?|좋아(요)?|좋아요|좋습니다|좋지|해(줘|주세요)?|만들어(줘|주세요)?|정리해(줘|주세요)?|마무리해(줘|주세요)?)[!.~ㅋㅎ\s]*$/;
+    const POSITIVE_EN =
+      /^\s*(yes|yeah|yep|yup|sure|ok|okay|okey|sounds good|go ahead|do it|please do|let'?s go)[!.~\s]*$/i;
+    const WRAP_HINT_KO =
+      /(앨범으로 (정리|마무리)|이대로 (정리|마무리)|정리할까요|마무리할까요|완성할까요|정리해 ?드릴까요|마무리해 ?드릴까요|완성해 ?드릴까요)/;
+    const WRAP_HINT_EN =
+      /(shall i (put|wrap|finish)|wrap (this|it) up|finish (the|your) album|put (this|these) together|create the album now)/i;
 
     const userExplicitFinish = EXPLICIT_FINISH_KO.test(lastUserText) || EXPLICIT_FINISH_EN.test(lastUserText);
     const userPositive = POSITIVE_KO.test(lastUserText) || POSITIVE_EN.test(lastUserText);
@@ -237,9 +242,10 @@ export const chat = onCall(
     //  4) 마지막 허용 턴 → PROPOSE
     if (wrapProposedPrev && userPositive) {
       if (!hasReadyToken) {
-        const tail = lang === "ko"
-          ? "\n네, 바로 정리해드릴게요.\n[READY_TO_FINISH]"
-          : "\nGot it, putting it together now.\n[READY_TO_FINISH]";
+        const tail =
+          lang === "ko"
+            ? "\n네, 바로 정리해드릴게요.\n[READY_TO_FINISH]"
+            : "\nGot it, putting it together now.\n[READY_TO_FINISH]";
         full += tail;
         if (response?.sendChunk) response.sendChunk({ delta: tail });
       }
@@ -248,24 +254,27 @@ export const chat = onCall(
         full = full.replace(/\[READY_TO_FINISH\]/g, "").trimEnd();
       }
       if (!full.includes("[PROPOSE_FINISH]")) {
-        const tail = lang === "ko"
-          ? "\n\n그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?\n[PROPOSE_FINISH]"
-          : "\n\nShall I put together the album based on what we've shared so far?\n[PROPOSE_FINISH]";
+        const tail =
+          lang === "ko"
+            ? "\n\n그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?\n[PROPOSE_FINISH]"
+            : "\n\nShall I put together the album based on what we've shared so far?\n[PROPOSE_FINISH]";
         full += tail;
         if (response?.sendChunk) response.sendChunk({ delta: tail });
       }
     } else if (assistantSoFar + 1 > totalCap) {
       if (!hasReadyToken) {
-        const tail = lang === "ko"
-          ? "\n\n이제 앨범으로 정리해드릴게요.\n[READY_TO_FINISH]"
-          : "\n\nLet me put this together as your album now.\n[READY_TO_FINISH]";
+        const tail =
+          lang === "ko"
+            ? "\n\n이제 앨범으로 정리해드릴게요.\n[READY_TO_FINISH]"
+            : "\n\nLet me put this together as your album now.\n[READY_TO_FINISH]";
         full += tail;
         if (response?.sendChunk) response.sendChunk({ delta: tail });
       }
     } else if (willBeLastTurn && !hasProposeToken && !hasReadyToken) {
-      const tail = lang === "ko"
-        ? "\n\n이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[PROPOSE_FINISH]"
-        : "\n\nI think we have enough now. Shall I put these together into your album?\n[PROPOSE_FINISH]";
+      const tail =
+        lang === "ko"
+          ? "\n\n이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[PROPOSE_FINISH]"
+          : "\n\nI think we have enough now. Shall I put these together into your album?\n[PROPOSE_FINISH]";
       full += tail;
       if (response?.sendChunk) response.sendChunk({ delta: tail });
     }
