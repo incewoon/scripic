@@ -182,7 +182,7 @@ export const chat = onCall(
     const body = toGeminiRequest([{ role: "system", content: system }, ...enriched]);
 
     // === 턴 계산 ===
-    // totalCap = 어시스턴트 메시지 최대 개수. 전체 대화 12메시지(사용자 6 + AI 6) 기준 cap 6.
+    // totalCap = 어시스턴트 메시지 최대 개수. 전체 대화 12메시지(사용자 6 + AI 6) 기준 cap 12.
     const totalCap = Math.min(12, Math.max(1, photoCount * maxTurnsPerPhoto));
     const assistantSoFar = enriched.filter((msg) => msg.role === "assistant").length;
     const willBeLastTurn = assistantSoFar + 1 >= totalCap;
@@ -232,8 +232,10 @@ export const chat = onCall(
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
 
+    // AI가 자체 생성한 [READY_TO_FINISH]는 서버에서만 제어
+    full = full.replace(/\[READY_TO_FINISH\]/g, "").trimEnd();
     const hasProposeToken = full.includes("[PROPOSE_FINISH]");
-    const hasReadyToken = full.includes("[READY_TO_FINISH]");
+    const hasReadyToken = false;
 
     // 우선순위:
     //  1) 직전이 마무리 제안 + 사용자가 긍정 → READY (앨범 생성 트리거)
