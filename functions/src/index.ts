@@ -249,7 +249,7 @@ export const chat = onCall(
             ? "\n네, 바로 정리해드릴게요.\n[READY_TO_FINISH]"
             : "\nGot it, putting it together now.\n[READY_TO_FINISH]";
         full += tail;
-        if (response?.sendChunk) response.sendChunk({ delta: tail });
+        if (response?.sendChunk) response.sendChunk({ delta: full });
       }
     } else if (userExplicitFinish) {
       if (hasReadyToken) {
