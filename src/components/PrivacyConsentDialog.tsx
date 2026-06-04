@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ShieldCheck, X, ExternalLink } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
-export const PRIVACY_POLICY_URL = "https://your-privacy-policy-url.com";
+export const PRIVACY_POLICY_URL = "https://ai-album-app.web.app/privacy.html";
 
 const SESSION_KEY = "memori_privacy_consent_session";
 const DISMISS_KEY = "memori_privacy_consent_dismissed";
