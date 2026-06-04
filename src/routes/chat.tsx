@@ -276,6 +276,8 @@ function Chat() {
     const aiReady = assistant.includes(READY_TOKEN);
     const aiProposed = assistant.includes(PROPOSE_TOKEN);
 
+    const finalMsgs: Msg[] = assistant ? [...newMsgs, { role: "assistant", content: assistant }] : [...newMsgs];
+
     // 임시 디버그 로그
     console.log("[Chat] DEBUG", {
       aiReady,
@@ -283,8 +285,6 @@ function Chat() {
       assistantLast100: assistant.slice(-100),
       finalMsgCount: finalMsgs.length,
     });
-
-    const finalMsgs: Msg[] = assistant ? [...newMsgs, { role: "assistant", content: assistant }] : [...newMsgs];
 
     console.log("[Chat] finish check", {
       userExplicit,
