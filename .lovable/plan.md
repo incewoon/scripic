@@ -1,94 +1,93 @@
+## 문제 진단
 
-## 목표
+스크린샷과 코드 점검 결과, 마무리 로직에 다음 3가지 버그가 있음.
 
-현재 흐름은 (a) AI가 마무리 제안을 하고도 사용자 확인 없이 넘어가거나, (b) 사용자가 명령형 답변("마무리해줘")을 하면 곧바로 생성으로 들어가서, 의도와 어긋남. 또 12턴이 넘도록 종료되지 않는 케이스도 존재.
+### 1. 사용자가 "정리해줘" 같은 명시적 종료 명령을 반복하면 AI가 계속 PROPOSE만 한다
+서버 `index.ts`의 `POSITIVE_KO` 정규식이 `^\s*(...)$`로 anchored 되어 있어, "어 정리해줘"처럼 **단어 사이에 공백이 있는 답변**은 POSITIVE로 인식되지 않음. 결과:
+- `userPositive = false`
+- `userExplicitFinish = true` → 우선순위 2번 분기로 다시 `[PROPOSE_FINISH]` 추가
+- 그래서 사용자가 몇 번을 "정리해줘"라고 해도 계속 다시 묻기만 함.
 
-다음 3가지 룰로 단순화한다.
+### 2. 부정 응답("아니", "잠깐만")인데도 강제 마무리되고, "정리해드릴게요" 문구가 두 줄로 중복
+- 모델이 프롬프트 지시를 따라 자연스럽게 "그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?" 같은 문장을 생성함.
+- 서버는 토큰만 제거한 뒤(`replace`로) 같은 의미의 문장을 한 번 더 tail로 붙임 → **같은 문장이 2줄**로 출력됨 (스크린샷의 "그럼 지금까지... / 그럼 지금까지..." 중복).
+- 또한 `willBeLastTurn` / `assistantSoFar+1 > totalCap` 분기는 **사용자의 부정 의도와 무관하게** READY/PROPOSE를 강제로 붙여서, "아니/잠깐만" 같은 응답에도 마무리로 진입.
 
-1. **명시적 종료 명령**(마무리해줘 / 정리해줘 / 만들어줘 / make the album 등)
-   - 곧바로 앨범을 만들지 않는다.
-   - AI가 "그럼 이대로 앨범으로 정리해드릴까요?" 같은 마무리 제안만 응답한다 (`[PROPOSE_FINISH]`).
-   - 다음 턴에 사용자가 긍정 응답("네/넵/넹/ㅇㅋ/ㅇㅇ/그래/좋아/해줘" 등)을 하면 그때 앨범 생성으로 진입.
-
-2. **AI 자발적 마무리 제안 후**(자연 종료턴 or 위 1번에서 만들어진 제안)
-   - 사용자의 다음 답변이 긍정이면 → 앨범 생성.
-   - 부정/추가 발화면 → 일반 대화 계속.
-
-3. **하드 캡: 총 12번의 대화(AI 6 + 사용자 6 = 12 메시지) 도달 시 강제 종료**
-   - 12번째 메시지를 보낸 뒤에는 사용자 응답을 기다리지 않는다.
-   - "이제 앨범으로 정리해드릴게요." 한 줄을 채팅에 표시하고 약 2초 후 자동으로 `finish()` 실행.
+### 3. READY 토큰이 떨어진 이후 2초 딜레이 없이 곧바로 앨범 생성으로 진입
+`src/routes/chat.tsx`의 READY 분기는 `setTimeout(..., 400)`으로 0.4초 후 `finish()` 호출. 사용자는 마지막 "정리해드릴게요" 한 줄을 읽을 시간(약 2초)을 원함. 하드캡 분기만 2초가 적용되어 있음.
 
 ---
 
-## 변경 파일
+## 수정 계획
 
-### A. `functions/src/index.ts` — `chat` callable
+### A. `functions/src/index.ts` — chat 콜러블 후처리 로직 정리
 
-`isProposalTurn` / 강제 토큰 부착 로직 재정의:
+1) **정규식 보강** — 공백/조사가 섞인 긍정 답변도 잡도록 변경
+   ```ts
+   const POSITIVE_KO =
+     /(^|\s)(네+|넵+|넹+|예+|응+|웅+|어+|ㅇㅇ+|ㅇㅋ+|오케이|콜|그래(요)?|좋아(요)?|좋습니다|좋지|해(줘|주세요)?|만들어(줘|주세요)?|정리해(줘|주세요)?|마무리해(줘|주세요)?)(\s|[!.~ㅋㅎ]|$)/;
+   ```
+   - 명시적 종료 명령("정리해줘", "어 정리해줘", "그래 만들어줘" 등)이 wrapProposedPrev 상태에서 들어오면 모두 POSITIVE로 잡힘.
 
-- 입력에서 마지막 user 메시지 텍스트를 뽑아 두 가지를 판정:
-  - `userExplicitFinish` — 명시적 종료 명령 정규식(클라이언트와 동일 규칙)
-  - `userPositive` — 긍정 응답 정규식(네/넵/넹/ㅇㅋ/ㅇㅇ/그래/좋아/해줘/만들어줘 등)
-- 직전 assistant 메시지에 `[PROPOSE_FINISH]` 또는 마무리 제안 문구가 있었는지(`wrapProposedPrev`) 판정.
-- 응답 생성 후 후처리:
-  - **a) `userExplicitFinish === true`**: 모델 응답을 무시하고, 무조건 "그럼 이대로 앨범으로 정리해드릴까요?" + `[PROPOSE_FINISH]` 로 덮어쓴다(또는 모델 응답 뒤에 강제로 부착하고 `[READY_TO_FINISH]`는 제거). 즉 한 번 더 확인을 받게 함.
-  - **b) `wrapProposedPrev && userPositive`**: 응답에 `[READY_TO_FINISH]`가 없으면 강제로 부착("네, 바로 정리해드릴게요. [READY_TO_FINISH]"). 이게 실제 앨범 생성 트리거.
-  - **c) `assistantSoFar + 1 === totalCap`** (= 6번째 AI 메시지가 될 차례)이고 위 어떤 토큰도 없으면 → 기존처럼 `[PROPOSE_FINISH]`를 강제.
-  - **d) `assistantSoFar + 1 > totalCap`** (이미 마지막 턴 넘어선 안전망) → `[READY_TO_FINISH]`를 강제로 부착.
+2) **NEGATIVE 정규식 추가** — 부정 의도가 명확하면 어떤 강제 분기도 발동하지 않도록
+   ```ts
+   const NEGATIVE_KO = /^(아니(요|야)?|아냐|잠깐(만)?|잠시(만)?|기다려(줘)?|아직|싫어|싫|노노|ㄴㄴ|놉|안 ?돼|좀 ?더|더 ?할래|계속)/;
+   const NEGATIVE_EN = /^(no|nope|nah|wait|hold on|not yet|later|continue|keep going|one more)/i;
+   const userNegative = NEGATIVE_KO.test(lastUserText.trim()) || NEGATIVE_EN.test(lastUserText.trim());
+   ```
 
-여기서 `totalCap = 6` (= 12 메시지 / 2). `maxTurnsPerPhoto` 계산은 그대로 두되 12 cap을 그대로 유지.
+3) **분기 우선순위 재정의** (가장 중요한 변경)
+   ```text
+   if (userNegative) {
+     // 어떤 강제 토큰도 붙이지 않음. 일반 대화 진행.
+   } else if (wrapProposedPrev && (userPositive || userExplicitFinish)) {
+     // 모델 응답에서 "정리/마무리해드릴게요" 류 문장이 이미 있으면 제거 후 READY tail.
+     // → "네, 바로 정리해드릴게요. [READY_TO_FINISH]" 한 줄만 남도록.
+   } else if (userExplicitFinish) {
+     // PROPOSE tail. 단, 모델 응답에 이미 wrap 제안 문장이 있으면 그 문장은 그대로 두고 [PROPOSE_FINISH] 토큰만 부착.
+   } else if (assistantSoFar + 1 > totalCap) {
+     READY tail (안전망).
+   } else if (willBeLastTurn) {
+     PROPOSE tail (단, 모델이 이미 만든 wrap 제안 문장과 중복되면 토큰만 부착).
+   }
+   ```
 
-### B. `functions/src/prompts-chat.ts`
+4) **중복 문장 제거 유틸**
+   ```ts
+   const WRAP_SENT_KO = /(네,?\s*)?(그럼 )?(지금까지 [^.\n]*?)?(앨범으로 )?(정리|마무리|완성)해 ?(드릴까요\??|드릴게요\.?)/g;
+   const WRAP_SENT_EN = /(shall i (put|wrap|finish)[^.\n]*?\.?|let me put[^.\n]*?\.?|putting it together now\.?)/gi;
+   ```
+   - tail을 붙이기 전에 모델 출력에서 위 정규식 매칭을 제거하고 trim. 그 다음 우리 표준 문장 + 토큰을 1회만 부착 → 중복 2줄 방지.
 
-`turnLimitClause`의 마무리 룰을 위 a/b/c와 동일한 문장으로 정리:
-- 사용자가 명시적 종료 요청을 하면 곧바로 `[READY_TO_FINISH]`를 붙이지 말고, 한 번 더 마무리 제안(`[PROPOSE_FINISH]`)으로 응답하라.
-- 이전 AI 응답이 `[PROPOSE_FINISH]`였고 사용자가 긍정이면 `[READY_TO_FINISH]`만 붙여라.
-- 그 외 케이스는 일반 인터뷰 진행.
+### B. `functions/src/prompts-chat.ts` — 프롬프트 보강
 
-서버 안전망(A) 덕분에 프롬프트 미스가 있어도 클라이언트 흐름은 깨지지 않음.
+- 마무리 규칙 1번에 `사용자가 부정적으로 응답하면(예: "아니", "잠깐만") 절대 [READY_TO_FINISH]를 붙이지 말고 일반 대화를 이어가라` 룰 추가.
+- 마무리 규칙 2번에 `wrap 제안 메시지에서는 "정리해드릴까요?" 같은 문장을 한 번만 사용하고, 같은 의미의 문장을 두 번 반복하지 말 것` 추가 (모델 측 중복 억제).
 
-### C. `src/routes/chat.tsx`
+### C. `src/routes/chat.tsx` — 클라이언트 finish 타이밍 통일
 
-1. **자동 finish 트리거 정리**: `shouldFinish` 조건을 다음으로 좁힌다.
-   - `aiNowReady = assistant.includes("[READY_TO_FINISH]")` 또는 `isFinishAcknowledgement(assistant)` (기존 KO/EN 패턴)
-   - `shouldFinish = aiNowReady`
-   - 즉, **`[READY_TO_FINISH]`가 떨어진 순간에만** `finish()` 호출.
-   - `isExplicitFinishRequest` 자체로 finish하지 않음 (서버가 한 번 더 제안하게 됨).
-   - `wrapProposed && userAgreed` 같은 클라이언트 단독 추정도 제거 — 서버가 `[READY_TO_FINISH]`를 붙여주는 단일 경로로 통일.
+1) READY 분기의 딜레이를 400ms → **2000ms**로 변경하여 마지막 "정리해드릴게요." 문구를 사용자가 읽을 수 있게 함.
+   ```tsx
+   if (aiReady && !finishingRef.current && !leavingRef.current && !streamError) {
+     finishingRef.current = true;
+     setTimeout(() => { void finish(finalMsgs); }, 2000);
+     return;
+   }
+   ```
+2) 하드캡 분기는 기존 2초 유지.
+3) (선택) 2초 동안 사용자가 보내기 버튼 누르지 못하도록 `setBusy(true)`를 유지하거나 `generating` 플래그를 미리 켜서 입력창을 잠가둠 — 안 그러면 그 사이 새 메시지가 들어와 race condition.
 
-2. **하드 캡 12메시지 강제 종료**:
-   - `send()`가 끝난 시점에 `finalMsgs.length >= 12` 이거나 assistant 메시지 수 ≥ 6이면 finishingRef 가드 후 다음을 수행:
-     - 화면에 "이제 앨범으로 정리해드릴게요." (또는 영어) assistant 메시지를 한 줄 추가.
-     - `setTimeout(() => finish(updatedMsgs), 2000)` 으로 2초 대기 후 자동 마무리.
-   - `[READY_TO_FINISH]`가 이미 와서 `shouldFinish`가 true인 경우엔 이 분기 무시(중복 방지).
+### D. 배포
 
-3. **토큰 렌더링 정리**:
-   - 표시용 텍스트에서 `[READY_TO_FINISH]`뿐 아니라 `[PROPOSE_FINISH]`도 정규식으로 제거(`replace(/\[(READY_TO_FINISH|PROPOSE_FINISH)\]/g, "")`).
-   - 스트리밍 중에도 메시지 컨텐츠에 토큰이 잠깐 보이지 않도록 동일 sanitize 적용.
-
-4. 진단용 console.log는 유지(원인 추적 용도).
-
----
-
-## 정규식 (KO 기준)
-
-- 긍정 응답: `/^(\s)*(네+|넵+|넹+|예+|응+|웅+|어+|ㅇㅇ+|ㅇㅋ+|오케이|콜|그래(요)?|좋아(요)?|해(줘|주세요)?|만들어(줘|주세요)?|정리해(줘|주세요)?|마무리해(줘|주세요)?)[!.~ㅋㅎ\s]*$/`
-- 명시적 종료: `/(마무리|정리|완성|마감|끝내|앨범\s*만들)\s*(해|해줘|해주세요|할래|할까|하자|부탁|좀)?/`
-
-서버/클라 양쪽에 동일 규칙을 박아 두 곳에서 동일한 의미로 판정한다.
+- 클라이언트 변경은 자동 반영.
+- 서버 변경은 `firebase deploy --only functions:chat` 필요.
 
 ---
 
 ## 검증 시나리오
 
-1. 1장 사진, AI 응답 1 → 사용자 "마무리해줘" → AI가 `정리해드릴까요? [PROPOSE_FINISH]` 응답 (앨범 생성 X) → 사용자 "응" → AI `[READY_TO_FINISH]` → 앨범 생성.
-2. 1장 사진, AI 응답 5번째에 자발적 `[PROPOSE_FINISH]` → 사용자 "ㄴㄴ 좀 더" → 6번째 응답이 자연스레 진행되다 12메시지 도달 시 강제 마무리.
-3. 멀티 사진, 정상 진행 중 12메시지 도달 → "이제 앨범으로 정리해드릴게요." 표시 후 2초 뒤 자동 finish.
-4. 사용자 "ㅇㅋ"만 단독 입력 시(직전이 PROPOSE_FINISH가 아닌 일반 질문일 때) → 일반 답변, 종료 X.
-
----
-
-## 배포
-
-- 클라 변경은 자동 반영.
-- 서버 변경은 `firebase deploy --only functions:chat` 필요(사용자 환경에서 수동 배포).
+1. "정리해줘" → AI: PROPOSE → "어 정리해줘" → AI: "네, 바로 정리해드릴게요. [READY]" → 2초 후 앨범 생성. (이슈 1)
+2. "정리해줘" → AI: PROPOSE → "아니 잠깐만" → AI: 일반 응답 (마무리 분기 발동 X). (이슈 2-a)
+3. 같은 흐름의 AI 응답이 "그럼 지금까지... / 그럼 지금까지..." 두 줄로 나오지 않음. (이슈 2-b)
+4. READY가 떨어진 뒤 "정리해드릴게요" 메시지가 화면에 보이고 정확히 2초 뒤 album 페이지로 이동. (이슈 3)
+5. 12 메시지 하드캡 도달 시 기존처럼 "이제 앨범으로 정리해드릴게요." 출력 후 2초 자동 마무리.
