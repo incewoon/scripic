@@ -203,18 +203,32 @@ export const chat = onCall(
     const EXPLICIT_FINISH_KO = /(마무리|정리|완성|마감|끝내|앨범\s*만들)\s*(해|해줘|해주세요|할래|할까|하자|부탁|좀)?/;
     const EXPLICIT_FINISH_EN =
       /\b(finish (it|this|the album)|wrap (it|this) up|wrap up|finalize|complete (it|the album)|put (it|this|them|these) together|create the album|make the album)\b/i;
+    // 공백·조사가 섞인 형태("어 정리해줘", "그래 만들어줘")도 잡도록 단어 경계 기반 매칭
     const POSITIVE_KO =
-      /^\s*(네+|넵+|넹+|예+|응+|웅+|어+|ㅇㅇ+|ㅇㅋ+|오케이|콜|그래(요)?|좋아(요)?|좋아요|좋습니다|좋지|해(줘|주세요)?|만들어(줘|주세요)?|정리해(줘|주세요)?|마무리해(줘|주세요)?)[!.~ㅋㅎ\s]*$/;
+      /(^|\s)(네+|넵+|넹+|예+|응+|웅+|어+|ㅇㅇ+|ㅇㅋ+|오케이|콜|그래(요)?|좋아(요)?|좋습니다|좋지|해(줘|주세요)?|만들어(줘|주세요)?|정리해(줘|주세요)?|마무리해(줘|주세요)?)(\s|[!.~ㅋㅎ]|$)/;
     const POSITIVE_EN =
-      /^\s*(yes|yeah|yep|yup|sure|ok|okay|okey|sounds good|go ahead|do it|please do|let'?s go)[!.~\s]*$/i;
+      /\b(yes|yeah|yep|yup|sure|ok|okay|okey|sounds good|go ahead|do it|please do|let'?s go)\b/i;
+    const NEGATIVE_KO =
+      /^\s*(아니(요|야)?|아냐|잠깐(만)?|잠시(만)?|기다려(줘)?|아직|싫어|싫|노노|ㄴㄴ|놉|안\s?돼|좀\s?더|더\s?(할래|하자|얘기)|계속)/;
+    const NEGATIVE_EN =
+      /^\s*(no|nope|nah|wait|hold on|not yet|later|continue|keep going|one more)\b/i;
     const WRAP_HINT_KO =
       /(앨범으로 (정리|마무리)|이대로 (정리|마무리)|정리할까요|마무리할까요|완성할까요|정리해 ?드릴까요|마무리해 ?드릴까요|완성해 ?드릴까요)/;
     const WRAP_HINT_EN =
       /(shall i (put|wrap|finish)|wrap (this|it) up|finish (the|your) album|put (this|these) together|create the album now)/i;
+    // 모델이 자체적으로 만든 마무리 제안/수락 문장 — 서버 tail과 중복 방지를 위해 제거
+    const WRAP_SENT_KO =
+      /(?:^|\n)[^\n]*?(?:정리|마무리|완성)\s?(?:해\s?)?(?:드릴까요\??|드릴게요\.?|할까요\??|할게요\.?)[^\n]*/g;
+    const WRAP_SENT_EN =
+      /(?:^|\n)[^\n]*?(?:shall i (?:put|wrap|finish)|let me put|putting (?:it|this|these) together|wrap (?:this|it) up)[^\n]*/gi;
 
     const userExplicitFinish = EXPLICIT_FINISH_KO.test(lastUserText) || EXPLICIT_FINISH_EN.test(lastUserText);
     const userPositive = POSITIVE_KO.test(lastUserText) || POSITIVE_EN.test(lastUserText);
-    const wrapProposedPrev = prevAssistantText.includes("[PROPOSE_FINISH]");
+    const userNegative = NEGATIVE_KO.test(lastUserText) || NEGATIVE_EN.test(lastUserText);
+    const wrapProposedPrev =
+      prevAssistantText.includes("[PROPOSE_FINISH]") ||
+      WRAP_HINT_KO.test(prevAssistantText) ||
+      WRAP_HINT_EN.test(prevAssistantText);
 
     let full = "";
     try {
@@ -231,40 +245,46 @@ export const chat = onCall(
 
     // AI 생성 토큰 제거 후 서버 로직으로만 주입
     full = full.replace(/\[(READY_TO_FINISH|PROPOSE_FINISH)\]/g, "").trimEnd();
-    const hasProposeToken = false;
-    const hasReadyToken = false;
+
+    const stripWrapSentences = (s: string) =>
+      s.replace(WRAP_SENT_KO, "").replace(WRAP_SENT_EN, "").replace(/\n{3,}/g, "\n\n").trim();
 
     // 우선순위:
-    //  1) 직전이 마무리 제안 + 사용자가 긍정 → READY (앨범 생성 트리거)
-    //  2) 사용자가 명시적 종료 요청 → PROPOSE (한 번 더 확인). READY를 임의 생성했으면 다운그레이드.
+    //  0) 사용자가 부정 응답 → 어떤 강제 토큰도 붙이지 않음 (캡 강제도 무시)
+    //  1) 직전이 마무리 제안 + (긍정 OR 명시적 종료) → READY (앨범 생성 트리거)
+    //  2) 사용자가 명시적 종료 요청 (처음) → PROPOSE (한 번 더 확인)
     //  3) 캡 초과 → READY (안전망)
     //  4) 마지막 허용 턴 → PROPOSE
-    if (wrapProposedPrev && userPositive) {
+    if (userNegative) {
+      // 일반 대화 진행 — 모델 응답 그대로 사용
+    } else if (wrapProposedPrev && (userPositive || userExplicitFinish)) {
+      full = stripWrapSentences(full);
       const tail =
         lang === "ko"
-          ? "\n네, 바로 정리해드릴게요.\n[READY_TO_FINISH]"
-          : "\nGot it, putting it together now.\n[READY_TO_FINISH]";
-      full += tail;
+          ? "네, 바로 정리해드릴게요.\n[READY_TO_FINISH]"
+          : "Got it, putting it together now.\n[READY_TO_FINISH]";
+      full = full ? `${full}\n\n${tail}` : tail;
     } else if (userExplicitFinish) {
-      if (!full.includes("[PROPOSE_FINISH]")) {
-        const tail =
-          lang === "ko"
-            ? "\n\n그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?\n[PROPOSE_FINISH]"
-            : "\n\nShall I put together the album based on what we've shared so far?\n[PROPOSE_FINISH]";
-        full += tail;
-      }
+      full = stripWrapSentences(full);
+      const tail =
+        lang === "ko"
+          ? "그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?\n[PROPOSE_FINISH]"
+          : "Shall I put together the album based on what we've shared so far?\n[PROPOSE_FINISH]";
+      full = full ? `${full}\n\n${tail}` : tail;
     } else if (assistantSoFar + 1 > totalCap) {
+      full = stripWrapSentences(full);
       const tail =
         lang === "ko"
-          ? "\n\n이제 앨범으로 정리해드릴게요.\n[READY_TO_FINISH]"
-          : "\n\nLet me put this together as your album now.\n[READY_TO_FINISH]";
-      full += tail;
+          ? "이제 앨범으로 정리해드릴게요.\n[READY_TO_FINISH]"
+          : "Let me put this together as your album now.\n[READY_TO_FINISH]";
+      full = full ? `${full}\n\n${tail}` : tail;
     } else if (willBeLastTurn) {
+      full = stripWrapSentences(full);
       const tail =
         lang === "ko"
-          ? "\n\n이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[PROPOSE_FINISH]"
-          : "\n\nI think we have enough now. Shall I put these together into your album?\n[PROPOSE_FINISH]";
-      full += tail;
+          ? "이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[PROPOSE_FINISH]"
+          : "I think we have enough now. Shall I put these together into your album?\n[PROPOSE_FINISH]";
+      full = full ? `${full}\n\n${tail}` : tail;
     }
 
     // 항상 한 번만 전송 (일반 턴 포함)

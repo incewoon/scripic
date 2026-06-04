@@ -297,9 +297,11 @@ function Chat() {
 
     if (aiReady && !finishingRef.current && !leavingRef.current && !streamError) {
       finishingRef.current = true;
+      // 사용자가 마지막 "정리해드릴게요" 문구를 읽을 시간을 준 뒤 앨범 생성으로 이동.
+      setBusy(true);
       setTimeout(() => {
         void finish(finalMsgs);
-      }, 400);
+      }, 2000);
       return;
     }
 

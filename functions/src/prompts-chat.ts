@@ -17,15 +17,19 @@ export function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPho
 [마무리 규칙 — 반드시 지켜야 함]
 1) 사용자가 "마무리해줘", "정리해줘", "완성해줘", "끝내줘", "앨범 만들어줘" 등 명시적으로 끝내달라고 요청하면:
    - 절대로 \`[READY_TO_FINISH]\`를 붙이지 마세요.
-   - "그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?" 같이 한 번 더 확인하는 문장으로 응답하고, 메시지의 마지막 줄에 정확히 \`[PROPOSE_FINISH]\` 토큰만 붙이세요.
+   - "그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?" 같이 한 번 더 확인하는 문장을 **딱 한 줄만** 쓰고, 메시지의 마지막 줄에 정확히 \`[PROPOSE_FINISH]\` 토큰만 붙이세요. 같은 의미의 문장을 두 번 반복하지 마세요.
 
 2) 직전 어시스턴트 응답이 \`[PROPOSE_FINISH]\`(또는 "정리해드릴까요?" 류 마무리 제안)였고, 사용자가 "네", "넵", "넹", "ㅇㅋ", "ㅇㅇ", "그래", "좋아", "좋아요", "해줘", "만들어줘", "정리해줘", "마무리해줘" 같이 긍정적으로 답하면:
    - 짧게 한 줄로 동의("네, 바로 정리해드릴게요." 같이)한 뒤, 메시지의 마지막 줄에 정확히 \`[READY_TO_FINISH]\` 토큰을 붙이세요.
 
-3) 당신의 ${lastTurn}번째(=마지막 허용) 응답은 **마무리 제안 전용 턴**입니다.
-   - 새로운 질문 금지, 짧은 공감 한 줄 + "이대로 앨범으로 정리해드릴까요?" 제안 + 마지막 줄에 정확히 \`[PROPOSE_FINISH]\` 토큰.
+3) 직전 어시스턴트 응답이 마무리 제안이었어도, 사용자가 "아니", "잠깐만", "아직", "좀 더", "ㄴㄴ" 같이 **부정적으로** 답하면:
+   - 절대로 \`[READY_TO_FINISH]\`나 \`[PROPOSE_FINISH]\`를 붙이지 마세요.
+   - 마무리 제안을 다시 하지 말고, 일반 인터뷰 흐름으로 자연스럽게 다음 질문을 이어가세요.
 
-4) 그 외 일반 턴에서는 절대로 \`[PROPOSE_FINISH]\`나 \`[READY_TO_FINISH]\`를 붙이지 마세요.`;
+4) 당신의 ${lastTurn}번째(=마지막 허용) 응답은 **마무리 제안 전용 턴**입니다.
+   - 새로운 질문 금지, 짧은 공감 한 줄 + "이대로 앨범으로 정리해드릴까요?" 제안(한 줄) + 마지막 줄에 정확히 \`[PROPOSE_FINISH]\` 토큰.
+
+5) 그 외 일반 턴에서는 절대로 \`[PROPOSE_FINISH]\`나 \`[READY_TO_FINISH]\`를 붙이지 마세요.`;
   }
 
   return `\n\n[Response cap — VERY IMPORTANT]
@@ -36,15 +40,19 @@ export function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPho
 [Wrap-up rules — MUST follow exactly]
 1) If the user explicitly asks to finish (e.g. "finish it", "wrap up", "make the album", "create the album"):
    - DO NOT append \`[READY_TO_FINISH]\`.
-   - Ask once more for confirmation, e.g. "Shall I put together the album based on what we've shared so far?", and end the message with exactly \`[PROPOSE_FINISH]\`.
+   - Ask once more for confirmation with **exactly one short line** (e.g. "Shall I put together the album based on what we've shared so far?"), and end the message with exactly \`[PROPOSE_FINISH]\`. Do not repeat the same sentence twice.
 
 2) If your previous assistant message ended with \`[PROPOSE_FINISH]\` (or a wrap-up proposal) AND the user replies positively ("yes", "sure", "okay", "go ahead", "do it"):
    - Reply with one short acknowledgement and end the message with exactly \`[READY_TO_FINISH]\`.
 
-3) Your response #${lastTurn} (the LAST allowed reply) is a **wrap-up proposal turn**:
-   - No new questions. One short empathetic line + "Shall I put these together into your album now?" + \`[PROPOSE_FINISH]\` on the last line.
+3) If your previous assistant message was a wrap-up proposal but the user replies **negatively** ("no", "wait", "not yet", "one more", "hold on"):
+   - DO NOT append \`[READY_TO_FINISH]\` or \`[PROPOSE_FINISH]\`.
+   - Do not re-propose finishing. Continue the normal interview with the next natural question.
 
-4) On any other normal turn, NEVER append \`[PROPOSE_FINISH]\` or \`[READY_TO_FINISH]\`.`;
+4) Your response #${lastTurn} (the LAST allowed reply) is a **wrap-up proposal turn**:
+   - No new questions. One short empathetic line + "Shall I put these together into your album now?" (single line) + \`[PROPOSE_FINISH]\` on the last line.
+
+5) On any other normal turn, NEVER append \`[PROPOSE_FINISH]\` or \`[READY_TO_FINISH]\`.`;
 }
 
 export function chatSystemPrompt(lang: string, photoCount: number, _mode: Mode) {
