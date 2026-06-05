@@ -82,7 +82,7 @@ export class GeminiUnavailableError extends GeminiRateLimitError {
 }
 
 function classifyStatus(status: number, txt: string): Error {
-  if (status === 429) return new GeminiQuotaError(status, `Gemini quota ${status}: ${txt}`);
+  if (status === 429) return new GeminiQuotaError(status, `Gemini rate limit ${status}: ${txt}`);
   if (status === 500 || status === 502 || status === 503 || status === 504) {
     return new GeminiUnavailableError(status, `Gemini unavailable ${status}: ${txt}`);
   }
