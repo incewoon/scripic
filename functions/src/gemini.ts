@@ -120,18 +120,29 @@ export async function geminiGenerate(body: any): Promise<any> {
 /** Stream text deltas from Gemini SSE. Yields plain text chunks. */
 export async function* geminiStreamText(body: any): AsyncGenerator<string> {
   const url = `${BASE}/${MODEL}:streamGenerateContent?alt=sse&key=${getKey()}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok || !res.body) {
-    const txt = await res.text().catch(() => "");
-    if (res.status === 429 || res.status === 503) {
-      throw new GeminiRateLimitError(res.status, `Gemini busy ${res.status}: ${txt}`);
+  const delays = [0, 500, 1200];
+  let res: Response | null = null;
+  let lastErr: unknown = null;
+  for (const d of delays) {
+    if (d) await sleep(d);
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (r.ok && r.body) {
+      res = r;
+      break;
     }
-    throw new Error(`Gemini stream error ${res.status}: ${txt}`);
+    const txt = await r.text().catch(() => "");
+    const err = classifyStatus(r.status, txt);
+    if (err instanceof GeminiUnavailableError) {
+      lastErr = err;
+      continue;
+    }
+    throw err;
   }
+  if (!res) throw lastErr ?? new Error("Gemini stream failed");
   const reader = (res.body as any).getReader();
   const decoder = new TextDecoder();
   let buf = "";
