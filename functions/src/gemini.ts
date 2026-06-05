@@ -104,7 +104,7 @@ export async function geminiGenerate(body: any): Promise<any> {
       body: JSON.stringify(body),
     });
     if (res.ok) return res.json();
-    const txt = await res.text();
+    const txt = await res.text().catch(() => "");
     console.error(`[Gemini] ${res.status} response:`, txt.slice(0, 500));
     const err = classifyStatus(res.status, txt);
     if (err instanceof GeminiUnavailableError) {
