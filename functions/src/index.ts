@@ -623,6 +623,27 @@ export const grantReviewReward = onCall(
 
     await grantDailyBonus(key, today);
 
+    // Persist the approved screenshot's pHash so future duplicates are rejected.
+    if (phash) {
+      try {
+        await hashesRef.set(
+          {
+            hashes: FieldValue.arrayUnion(phash),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+        // Trim the stored list if it grew unbounded.
+        const after = await hashesRef.get();
+        const arr: string[] = Array.isArray(after.data()?.hashes) ? (after.data()!.hashes as string[]) : [];
+        if (arr.length > PHASH_MAX_STORED) {
+          await hashesRef.update({ hashes: arr.slice(arr.length - PHASH_MAX_STORED) });
+        }
+      } catch (e: any) {
+        console.warn("[reviewReward] hash_store_failed:", e?.message);
+      }
+    }
+
     return {
       approved: true,
       reason: parsed.reason ?? "ok",
