@@ -227,6 +227,7 @@ const dict = {
     inputPlaceholder: "이야기를 들려주세요…",
     rateLimit: "요청이 너무 많아요. 잠시 후 다시 시도해주세요.",
     aiQuota: "AI 사용량이 한도에 도달했어요.",
+    aiBusy: "AI가 잠시 혼잡해요. 잠시 후 다시 시도해주세요.",
     connectionError: "연결에 문제가 생겼어요",
     edit: "편집",
     save: "저장",
