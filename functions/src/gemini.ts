@@ -1,8 +1,8 @@
 // Tiny Gemini REST client used by the Cloud Functions.
 // API key is read from process.env.GEMINI_API_KEY (Functions secret).
 
-//const MODEL = "gemini-2.5-flash-lite";
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-flash-lite";
+//const MODEL = "gemini-2.0-flash";
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export type OpenAIContent =
