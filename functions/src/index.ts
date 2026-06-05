@@ -513,6 +513,32 @@ export const grantReviewReward = onCall(
       };
     }
 
+    // --- Perceptual-hash duplicate check (persistent, not daily) ---
+    // Reject screenshots that look near-identical to one this device already
+    // used for a previous reward, regardless of date.
+    let phash: string | null = null;
+    try {
+      phash = await computePHash(imageDataUrl);
+    } catch (e: any) {
+      console.warn("[reviewReward] phash_failed:", e?.message);
+    }
+    const hashesRef = db.collection("review_hashes").doc(key);
+    if (phash) {
+      const snap = await hashesRef.get();
+      const stored: string[] = Array.isArray(snap.data()?.hashes) ? (snap.data()!.hashes as string[]) : [];
+      const dist = minHammingDistance(phash, stored);
+      if (dist < PHASH_DUP_DISTANCE) {
+        console.log("[reviewReward] duplicate screenshot, distance=", dist);
+        return {
+          approved: false,
+          reason: "이미 사용한 후기 이미지예요. 새로운 후기 스크린샷을 올려주세요.",
+          success_message: "",
+          daily_limit_info: "",
+        };
+      }
+    }
+
+
     // Verify the screenshot with Gemini Vision.
     const body = toGeminiRequest([
       { role: "system", content: REVIEW_SYSTEM_PROMPT },
