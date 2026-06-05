@@ -16,7 +16,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
 
-import { geminiGenerate, geminiStreamText, toGeminiRequest, GeminiRateLimitError, type OpenAIMessage } from "./gemini";
+import { geminiGenerate, geminiStreamText, toGeminiRequest, GeminiRateLimitError, GeminiQuotaError, GeminiUnavailableError, type OpenAIMessage } from "./gemini";
 import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
 import { albumSystem, albumUserPrompt, toneInstruction, type Mode as AlbumMode, type Tone } from "./prompts-album";
 
