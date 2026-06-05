@@ -547,7 +547,10 @@ export const grantReviewReward = onCall(
       }
     } catch (e: any) {
       console.error("[reviewReward] verification_failed:", e?.message, "raw:", rawText.slice(0, 500));
-      if (e instanceof GeminiRateLimitError) {
+      if (e instanceof GeminiUnavailableError) {
+        throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
+      }
+      if (e instanceof GeminiQuotaError || e instanceof GeminiRateLimitError) {
         throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status });
       }
       return {
