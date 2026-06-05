@@ -6,10 +6,7 @@ const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export type OpenAIContent =
   | string
-  | Array<
-      | { type: "text"; text: string }
-      | { type: "image_url"; image_url: { url: string } }
-    >;
+  | Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }>;
 
 export type OpenAIMessage = { role: "user" | "assistant" | "system"; content: OpenAIContent };
 
@@ -96,7 +93,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function geminiGenerate(body: any): Promise<any> {
   const url = `${BASE}/${MODEL}:generateContent?key=${getKey()}`;
-  const delays = [0, 500, 1200]; // up to 2 retries on 5xx
+  const delays = [0, 2000, 5000]; // up to 2 retries on 5xx
   let lastErr: unknown = null;
   for (const d of delays) {
     if (d) await sleep(d);
