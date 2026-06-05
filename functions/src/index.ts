@@ -16,7 +16,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
 
-import { geminiGenerate, geminiStreamText, toGeminiRequest, GeminiRateLimitError, type OpenAIMessage } from "./gemini";
+import { geminiGenerate, geminiStreamText, toGeminiRequest, GeminiRateLimitError, GeminiQuotaError, GeminiUnavailableError, type OpenAIMessage } from "./gemini";
 import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
 import { albumSystem, albumUserPrompt, toneInstruction, type Mode as AlbumMode, type Tone } from "./prompts-album";
 
@@ -237,7 +237,10 @@ export const chat = onCall(
         // 스트리밍 중에는 클라이언트로 전송 안 함
       }
     } catch (e: any) {
-      if (e instanceof GeminiRateLimitError) {
+      if (e instanceof GeminiUnavailableError) {
+        throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
+      }
+      if (e instanceof GeminiQuotaError || e instanceof GeminiRateLimitError) {
         throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status });
       }
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
@@ -405,7 +408,10 @@ export const generateAlbum = onCall(
       result = await geminiGenerate(body);
     } catch (e: any) {
       await rollbackDailyCount();
-      if (e instanceof GeminiRateLimitError) {
+      if (e instanceof GeminiUnavailableError) {
+        throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
+      }
+      if (e instanceof GeminiQuotaError || e instanceof GeminiRateLimitError) {
         throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status });
       }
       throw new HttpsError("internal", e?.message ?? "gemini failed");
@@ -541,7 +547,10 @@ export const grantReviewReward = onCall(
       }
     } catch (e: any) {
       console.error("[reviewReward] verification_failed:", e?.message, "raw:", rawText.slice(0, 500));
-      if (e instanceof GeminiRateLimitError) {
+      if (e instanceof GeminiUnavailableError) {
+        throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
+      }
+      if (e instanceof GeminiQuotaError || e instanceof GeminiRateLimitError) {
         throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status });
       }
       return {

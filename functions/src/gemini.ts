@@ -68,38 +68,81 @@ export class GeminiRateLimitError extends Error {
   }
 }
 
+/** 429 — real quota / per-minute rate limit. Do NOT auto-retry. */
+export class GeminiQuotaError extends GeminiRateLimitError {
+  constructor(status: number, msg: string) {
+    super(status, msg);
+    this.name = "GeminiQuotaError";
+  }
+}
+
+/** 500/502/503/504 — transient overload. Caller may retry; surface as "busy". */
+export class GeminiUnavailableError extends GeminiRateLimitError {
+  constructor(status: number, msg: string) {
+    super(status, msg);
+    this.name = "GeminiUnavailableError";
+  }
+}
+
+function classifyStatus(status: number, txt: string): Error {
+  if (status === 429) return new GeminiQuotaError(status, `Gemini quota ${status}: ${txt}`);
+  if (status === 500 || status === 502 || status === 503 || status === 504) {
+    return new GeminiUnavailableError(status, `Gemini unavailable ${status}: ${txt}`);
+  }
+  return new Error(`Gemini error ${status}: ${txt}`);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function geminiGenerate(body: any): Promise<any> {
   const url = `${BASE}/${MODEL}:generateContent?key=${getKey()}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
+  const delays = [0, 500, 1200]; // up to 2 retries on 5xx
+  let lastErr: unknown = null;
+  for (const d of delays) {
+    if (d) await sleep(d);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return res.json();
     const txt = await res.text();
-    if (res.status === 429 || res.status === 503) {
-      throw new GeminiRateLimitError(res.status, `Gemini busy ${res.status}: ${txt}`);
+    const err = classifyStatus(res.status, txt);
+    if (err instanceof GeminiUnavailableError) {
+      lastErr = err;
+      continue; // retry
     }
-    throw new Error(`Gemini error ${res.status}: ${txt}`);
+    throw err;
   }
-  return res.json();
+  throw lastErr ?? new Error("Gemini failed");
 }
 
 /** Stream text deltas from Gemini SSE. Yields plain text chunks. */
 export async function* geminiStreamText(body: any): AsyncGenerator<string> {
   const url = `${BASE}/${MODEL}:streamGenerateContent?alt=sse&key=${getKey()}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok || !res.body) {
-    const txt = await res.text().catch(() => "");
-    if (res.status === 429 || res.status === 503) {
-      throw new GeminiRateLimitError(res.status, `Gemini busy ${res.status}: ${txt}`);
+  const delays = [0, 500, 1200];
+  let res: Response | null = null;
+  let lastErr: unknown = null;
+  for (const d of delays) {
+    if (d) await sleep(d);
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (r.ok && r.body) {
+      res = r;
+      break;
     }
-    throw new Error(`Gemini stream error ${res.status}: ${txt}`);
+    const txt = await r.text().catch(() => "");
+    const err = classifyStatus(r.status, txt);
+    if (err instanceof GeminiUnavailableError) {
+      lastErr = err;
+      continue;
+    }
+    throw err;
   }
+  if (!res) throw lastErr ?? new Error("Gemini stream failed");
   const reader = (res.body as any).getReader();
   const decoder = new TextDecoder();
   let buf = "";
