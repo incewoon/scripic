@@ -14,7 +14,7 @@
   "dependencies": {
     "firebase-admin": "^13.10.0",
     "firebase-functions": "^7.2.5",
-    "sharp": "^0.34.5"
+    "jimp": "^0.22.12"
   },
   "devDependencies": {
     "typescript": "^5.6.0"
