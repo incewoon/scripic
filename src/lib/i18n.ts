@@ -50,6 +50,7 @@ const dict = {
     inputPlaceholder: "Share your story…",
     rateLimit: "Too many requests. Try again in a moment.",
     aiQuota: "AI usage limit reached.",
+    aiBusy: "The AI service is temporarily busy. Please try again in a moment.",
     connectionError: "Connection problem",
     edit: "Edit",
     save: "Save",
