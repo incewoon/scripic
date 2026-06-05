@@ -261,7 +261,8 @@ function Chat() {
       streamError = err;
       const code = err?.code ?? "";
       const kind = err?.details?.kind;
-      if (kind === "ai_quota") toast.error(t.aiQuota);
+      if (kind === "ai_unavailable" || code === "functions/unavailable") toast.error(t.aiBusy);
+      else if (kind === "ai_quota") toast.error(t.aiQuota);
       else if (kind === "daily_limit") toast.error(t.dailyLimitBody);
       else if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
       else if (code === "functions/unauthenticated" || code === "functions/permission-denied")
