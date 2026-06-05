@@ -134,6 +134,7 @@ export async function* geminiStreamText(body: any): AsyncGenerator<string> {
       break;
     }
     const txt = await r.text().catch(() => "");
+    console.error(`[GeminiStream] ${r.status} response:`, txt.slice(0, 500));
     const err = classifyStatus(r.status, txt);
     if (err instanceof GeminiUnavailableError) {
       lastErr = err;
