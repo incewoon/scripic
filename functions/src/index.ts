@@ -408,7 +408,10 @@ export const generateAlbum = onCall(
       result = await geminiGenerate(body);
     } catch (e: any) {
       await rollbackDailyCount();
-      if (e instanceof GeminiRateLimitError) {
+      if (e instanceof GeminiUnavailableError) {
+        throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
+      }
+      if (e instanceof GeminiQuotaError || e instanceof GeminiRateLimitError) {
         throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status });
       }
       throw new HttpsError("internal", e?.message ?? "gemini failed");
