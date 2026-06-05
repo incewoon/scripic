@@ -19,6 +19,11 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import { geminiGenerate, geminiStreamText, toGeminiRequest, GeminiRateLimitError, GeminiQuotaError, GeminiUnavailableError, type OpenAIMessage } from "./gemini";
 import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
 import { albumSystem, albumUserPrompt, toneInstruction, type Mode as AlbumMode, type Tone } from "./prompts-album";
+import { computePHash, minHammingDistance } from "./phash";
+
+// pHash duplicate detection thresholds for review screenshots.
+const PHASH_DUP_DISTANCE = 10;
+const PHASH_MAX_STORED = 200;
 
 initializeApp();
 const db = getFirestore();
