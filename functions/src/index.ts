@@ -22,8 +22,10 @@ import { albumSystem, albumUserPrompt, toneInstruction, type Mode as AlbumMode, 
 import { computePHash, minHammingDistance } from "./phash";
 
 // pHash duplicate detection thresholds for review screenshots.
-const PHASH_DUP_DISTANCE = 10;
+// 256-bit dHash: ~11% threshold. Legacy 64-bit hashes auto-skip via length mismatch.
+const PHASH_DUP_DISTANCE = 28;
 const PHASH_MAX_STORED = 200;
+const PHASH_VERSION = 2;
 
 initializeApp();
 const db = getFirestore();
@@ -629,6 +631,7 @@ export const grantReviewReward = onCall(
         await hashesRef.set(
           {
             hashes: FieldValue.arrayUnion(phash),
+            version: PHASH_VERSION,
             updatedAt: FieldValue.serverTimestamp(),
           },
           { merge: true },
