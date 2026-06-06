@@ -631,6 +631,7 @@ export const grantReviewReward = onCall(
         await hashesRef.set(
           {
             hashes: FieldValue.arrayUnion(phash),
+            version: PHASH_VERSION,
             updatedAt: FieldValue.serverTimestamp(),
           },
           { merge: true },
