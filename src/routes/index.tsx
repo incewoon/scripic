@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { getAlbums, subscribeAlbums, type Album } from "@/lib/storage";
-import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles } from "lucide-react";
+import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles, Search } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { canCreateAlbumToday, nextAvailableDateLabel, hasExtraUsedToday } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
@@ -56,6 +56,7 @@ function Home() {
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => { if (!hasSeenStorageNotice()) setNoticeOpen(true); }, []);
@@ -107,6 +108,22 @@ function Home() {
       })
     : null;
 
+  const trimmedQuery = query.trim().toLowerCase();
+  const tokens = trimmedQuery ? trimmedQuery.split(/\s+/) : [];
+  const visibleAlbums = sortedAlbums
+    ? tokens.length === 0
+      ? sortedAlbums
+      : sortedAlbums.filter((a) => {
+          const hay = [
+            a.title, a.subtitle, a.intro, a.closing,
+            a.period ?? "", a.location ?? "",
+            ...a.photos.map((p) => p.caption ?? ""),
+          ].join("\n").toLowerCase();
+          return tokens.every((tk) => hay.includes(tk));
+        })
+    : null;
+  const isSearching = tokens.length > 0;
+
   const onCreate = () => {
     if (!canCreateAlbumToday()) { setLimitOpen(true); return; }
     navigate({ to: "/create" });
@@ -127,11 +144,37 @@ function Home() {
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
       </header>
 
+      <div className="mb-3">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t.searchPlaceholder}
+            className="w-full h-10 rounded-full border border-border/60 bg-card/80 pl-9 pr-9 text-[13px] warm-text placeholder:warm-muted shadow-[var(--shadow-soft)] focus:outline-none focus:bg-card transition-colors"
+            aria-label={t.searchPlaceholder}
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full warm-muted hover:text-foreground transition-colors"
+              aria-label="Clear"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
           {albums !== null && (
-            <span className="font-display text-[14px] warm-text leading-none tabular-nums">{count}</span>
+            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
+              {isSearching ? `${visibleAlbums?.length ?? 0} / ${count}` : count}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
@@ -193,9 +236,14 @@ function Home() {
           <div className="text-sm warm-text mt-2">{t.firstMemoryTagline}</div>
           <div className="text-xs warm-muted mt-1.5">{t.firstMemoryHint}</div>
         </button>
+      ) : visibleAlbums && visibleAlbums.length === 0 ? (
+        <div className="rounded-2xl border border-border/60 bg-card/60 py-12 text-center">
+          <div className="text-3xl mb-2">🔎</div>
+          <div className="text-[13px] warm-muted">{t.searchNoResults}</div>
+        </div>
       ) : (
         <div className="space-y-5">
-          {(sortedAlbums ?? albums).map((a) => {
+          {(visibleAlbums ?? sortedAlbums ?? albums).map((a) => {
             const locale = lang === "ko" ? "ko-KR" : "en-US";
             const date = a.period || new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
             const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
