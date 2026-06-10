@@ -23,7 +23,32 @@ function parsePeriodDate(period?: string): number {
     const d = Number(m[3]);
     if (mo >= 0 && mo <= 11 && d >= 1 && d <= 31) {
       return Date.UTC(y, mo, d);
-    }
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function Hl({ text, tokens }: { text: string; tokens: string[] }) {
+  if (!text) return null;
+  if (!tokens.length) return <>{text}</>;
+  const pattern = new RegExp(`(${tokens.map(escapeRegExp).join("|")})`, "gi");
+  const parts = text.split(pattern);
+  const lower = tokens.map((t) => t.toLowerCase());
+  return (
+    <>
+      {parts.map((p, i) =>
+        lower.includes(p.toLowerCase()) ? (
+          <mark key={i} className="bg-primary/40 text-inherit rounded-sm px-0.5">
+            {p}
+          </mark>
+        ) : (
+          <span key={i}>{p}</span>
+        )
+      )}
+    </>
+  );
+}
   }
   const iso = period.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (iso) return Date.UTC(+iso[1], +iso[2] - 1, +iso[3]);
@@ -262,11 +287,11 @@ function Home() {
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                       <div className="text-[10px] uppercase tracking-[0.15em] opacity-80 mb-1 flex items-center gap-2">
-                        <span>{date}</span>
-                        {a.location && <span className="flex items-center gap-1"><MapPin size={9}/>{a.location}</span>}
+                        <span><Hl text={date} tokens={tokens} /></span>
+                        {a.location && <span className="flex items-center gap-1"><MapPin size={9}/><Hl text={a.location} tokens={tokens} /></span>}
                       </div>
-                      <div className="font-display text-[20px] leading-tight drop-shadow-sm">{a.title}</div>
-                      <div className="text-[12px] opacity-90 mt-1 italic font-display">{a.subtitle}</div>
+                      <div className="font-display text-[20px] leading-tight drop-shadow-sm"><Hl text={a.title} tokens={tokens} /></div>
+                      <div className="text-[12px] opacity-90 mt-1 italic font-display"><Hl text={a.subtitle} tokens={tokens} /></div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
