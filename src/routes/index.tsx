@@ -236,9 +236,14 @@ function Home() {
           <div className="text-sm warm-text mt-2">{t.firstMemoryTagline}</div>
           <div className="text-xs warm-muted mt-1.5">{t.firstMemoryHint}</div>
         </button>
+      ) : visibleAlbums && visibleAlbums.length === 0 ? (
+        <div className="rounded-2xl border border-border/60 bg-card/60 py-12 text-center">
+          <div className="text-3xl mb-2">🔎</div>
+          <div className="text-[13px] warm-muted">{t.searchNoResults}</div>
+        </div>
       ) : (
         <div className="space-y-5">
-          {(sortedAlbums ?? albums).map((a) => {
+          {(visibleAlbums ?? sortedAlbums ?? albums).map((a) => {
             const locale = lang === "ko" ? "ko-KR" : "en-US";
             const date = a.period || new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
             const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
