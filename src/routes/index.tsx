@@ -108,6 +108,22 @@ function Home() {
       })
     : null;
 
+  const trimmedQuery = query.trim().toLowerCase();
+  const tokens = trimmedQuery ? trimmedQuery.split(/\s+/) : [];
+  const visibleAlbums = sortedAlbums
+    ? tokens.length === 0
+      ? sortedAlbums
+      : sortedAlbums.filter((a) => {
+          const hay = [
+            a.title, a.subtitle, a.intro, a.closing,
+            a.period ?? "", a.location ?? "",
+            ...a.photos.map((p) => p.caption ?? ""),
+          ].join("\n").toLowerCase();
+          return tokens.every((tk) => hay.includes(tk));
+        })
+    : null;
+  const isSearching = tokens.length > 0;
+
   const onCreate = () => {
     if (!canCreateAlbumToday()) { setLimitOpen(true); return; }
     navigate({ to: "/create" });
