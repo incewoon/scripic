@@ -144,11 +144,37 @@ function Home() {
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
       </header>
 
+      <div className="mb-3">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t.searchPlaceholder}
+            className="w-full h-10 rounded-full border border-border/60 bg-card/80 pl-9 pr-9 text-[13px] warm-text placeholder:warm-muted shadow-[var(--shadow-soft)] focus:outline-none focus:bg-card transition-colors"
+            aria-label={t.searchPlaceholder}
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full warm-muted hover:text-foreground transition-colors"
+              aria-label="Clear"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
           {albums !== null && (
-            <span className="font-display text-[14px] warm-text leading-none tabular-nums">{count}</span>
+            <span className="font-display text-[14px] warm-text leading-none tabular-nums">
+              {isSearching ? `${visibleAlbums?.length ?? 0} / ${count}` : count}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
