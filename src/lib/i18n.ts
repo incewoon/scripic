@@ -153,6 +153,8 @@ const dict = {
     sortPhotoDate: "Photo date",
     sortDesc: "Newest first",
     sortAsc: "Oldest first",
+    searchPlaceholder: "Search albums...",
+    searchNoResults: "No albums match your search",
     // Daily limit
     dailyLimitTitle: "One album per day",
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
