@@ -56,6 +56,7 @@ function Home() {
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => { if (!hasSeenStorageNotice()) setNoticeOpen(true); }, []);
