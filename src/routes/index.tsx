@@ -23,7 +23,31 @@ function parsePeriodDate(period?: string): number {
     const d = Number(m[3]);
     if (mo >= 0 && mo <= 11 && d >= 1 && d <= 31) {
       return Date.UTC(y, mo, d);
-    }
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
+  if (!text) return null;
+  if (!tokens.length) return <>{text}</>;
+  const pattern = new RegExp(`(${tokens.map(escapeRegExp).join("|")})`, "gi");
+  const parts = text.split(pattern);
+  return (
+    <>
+      {parts.map((p, i) =>
+        pattern.test(p) ? (
+          <mark key={i} className="bg-primary/40 text-inherit rounded-sm px-0.5">
+            {p}
+          </mark>
+        ) : (
+          <span key={i}>{p}</span>
+        )
+      )}
+    </>
+  );
+}
   }
   const iso = period.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (iso) return Date.UTC(+iso[1], +iso[2] - 1, +iso[3]);
