@@ -34,10 +34,11 @@ function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
   if (!tokens.length) return <>{text}</>;
   const pattern = new RegExp(`(${tokens.map(escapeRegExp).join("|")})`, "gi");
   const parts = text.split(pattern);
+  const lower = tokens.map((t) => t.toLowerCase());
   return (
     <>
       {parts.map((p, i) =>
-        pattern.test(p) ? (
+        lower.includes(p.toLowerCase()) ? (
           <mark key={i} className="bg-primary/40 text-inherit rounded-sm px-0.5">
             {p}
           </mark>
