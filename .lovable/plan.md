@@ -1,46 +1,46 @@
-## 진단
+# 앨범 검색 기능
 
-현재 `functions/src/phash.ts`는 **8x8 aHash(64bit, 평균값 기반)** 이고 `PHASH_DUP_DISTANCE = 10`임. 두 첨부 스크린샷은:
-- 네이버 블로그 상단 헤더 / Scripic 로고 / "내 앨범 N" UI 등 **전체 레이아웃의 70%가 동일**
-- 중앙 앨범 사진만 다름 (산행 셀카 vs 식장산 정상 인물)
+홈 화면(`src/routes/index.tsx`)에 키워드 검색바를 추가해서, 디바이스(IndexedDB)에 저장된 앨범을 실시간으로 필터링합니다.
 
-8x8 aHash는 이미지를 **단 64픽셀**로 압축하기 때문에 중앙의 작은 영역 변화는 해시상 1~5비트밖에 차이 나지 않음 → 거리 10 미만으로 들어가서 "같은 이미지"로 오판. 임계값을 단순히 낮추면(예: 6) 같은 화면의 조명/JPEG 압축 차이까지 다른 것으로 인식해 **재사용 차단이 풀려버리는 정반대 문제**가 생김. 해상도 자체를 올리는 게 정답.
+## 검색 대상 필드
+`Album` 타입(`src/lib/storage.ts`)의 텍스트 필드 전부:
+- `title`, `subtitle`, `intro`, `closing`
+- `period`, `location`
+- `photos[].caption`
 
-## 권장: 알고리즘 업그레이드 (해상도 ↑) + 임계값 동시 조정
+대소문자 무시, 한글/영문 부분일치(`String.includes`). 공백으로 구분된 여러 단어는 AND 매칭(모든 토큰이 어디든 등장해야 일치).
 
-aHash → **dHash 16x16 (256bit)** 로 교체. 이유:
-- **dHash(차이 해시)**: 인접 픽셀의 밝기 차이를 비트로 인코딩 → 평균값 기반 aHash보다 작은 영역 변화에 민감하고, 노이즈/리사이즈/압축에는 여전히 강함.
-- **16x16 = 256bit**: 64bit 대비 4배 해상도 → 중앙 앨범 사진 영역만 달라도 수십 비트가 바뀜.
-- 같은 알고리즘(jimp 기반, pure JS) — Cloudflare Workers / Cloud Functions Node 런타임에서 안전, 의존성 추가 없음.
+## UI
 
-## 변경 내용
+정렬 컨트롤(`ArrowUpDown`, 방향 토글) 줄 **위쪽**에, `Search` 아이콘이 들어간 입력창을 한 줄로 배치:
 
-### 1. `functions/src/phash.ts`
-- `computePHash(dataUrl)`: 8x8 aHash → **17x16 그레이스케일 dHash** (가로 17px → 인접 비교로 16x16=256 비트 생성), 64자리 hex 반환.
-- `hammingDistance` / `minHammingDistance`: hex 길이 의존이므로 그대로 동작 (16자 → 64자).
-- 함수 시그니처/이름은 유지 → 호출부 변경 없음.
+```text
+[🔍  앨범 검색...                              ✕]
+[정렬: 만든 날짜 ▾]  [↓]  [⚙]
+```
 
-### 2. `functions/src/index.ts`
-- `PHASH_DUP_DISTANCE`: `10` → **`28`** (256bit 기준 약 11%; aHash 10/64 ≈ 15% 보다 더 엄격하게 잡되 압축/리사이즈 변동은 흡수).
-- `PHASH_MAX_STORED`: 200 유지.
-- 기존 저장 형식 호환성: 16자 짜리 옛 해시와 64자 신규 해시가 한 배열에 섞이면 `hammingDistance`가 `MAX_SAFE_INTEGER`를 반환 → 옛 해시는 자동으로 비교에서 제외(차단 풀림). 신규 사용자/신규 제출부터 새 기준 적용. 옛 해시는 시간이 지나면서 자연 만료(200개 cap). **별도 마이그레이션 불필요**.
+- placeholder: i18n 키 `searchPlaceholder` ("앨범 검색..." / "Search albums...")
+- 입력값이 있을 때만 우측에 `X` 클리어 버튼 노출
+- 입력값은 컴포넌트 state만 사용(세션/로컬 저장 안 함 — 새로 들어올 때 빈 상태가 자연스러움)
+- 스타일은 기존 `border-border/60 bg-card/80 shadow-[var(--shadow-soft)]` 톤에 맞춤, 둥근 pill 형태
 
-### 3. (선택, 동봉) 해시 버전 필드
-`review_hashes/{deviceKey}` 문서에 `version: 2` 필드 추가 — 다음에 다시 알고리즘을 바꿀 때를 위해. 기존 데이터는 `version` 없음 = v1로 간주.
+## 동작
 
-## 왜 "임계값만 낮추기"가 아닌지
+1. 기존 정렬 로직 적용한 `sortedAlbums`에 검색 필터를 추가 적용 → `visibleAlbums`.
+2. 검색어가 비어있으면 필터 패스(현재 동작 그대로).
+3. 검색 결과 0건일 때: 빈 상태 폴라로이드(첫 앨범 만들기 카드) 대신, "검색 결과가 없어요 / No results" 라는 가벼운 placeholder 카드를 보여주고 + 버튼은 그대로 유지.
+4. 헤더의 앨범 개수 카운트는 **필터된 개수 / 전체 개수** 형태(예: `3 / 12`)로 표시해, 검색 중임을 알 수 있게 함. 검색어 없으면 기존처럼 전체 개수만.
 
-| 옵션 | 결과 |
-|---|---|
-| 임계값 10 → 6 (aHash 유지) | 같은 스크린샷도 압축률/캡처 시각 따라 다른 것으로 통과될 위험 ↑ |
-| 알고리즘만 교체, 임계값 그대로 | 256bit에서 거리 10은 너무 엄격 → 같은 이미지 재캡처도 통과해버림 |
-| **dHash 256bit + 거리 28 (권장)** | 비슷한 레이아웃 + 내용 다름 → 거리 30~60대 (다른 이미지로 판정), 같은 이미지 재캡처 → 거리 0~15 (중복 차단). 두 케이스 분리됨. |
+## i18n
+`src/lib/i18n.ts`에 키 두 개 추가:
+- `searchPlaceholder`: "앨범 검색..." / "Search albums..."
+- `searchNoResults`: "검색 결과가 없어요" / "No albums match your search"
 
-## 배포
+## 변경 파일
+- `src/routes/index.tsx` — 검색 state, 입력 UI, 필터 로직, 결과 0건 처리, 카운트 표시.
+- `src/lib/i18n.ts` — 신규 문구 2개(ko/en).
 
-`firebase deploy --only functions:grantReviewReward`
-
-클라이언트 변경 없음.
-
-## 영향 없음
-- Gemini Vision 검토 프롬프트, Scripic/스크립픽 브랜드 검증, 일일 한도 로직, daily_limits, App Check.
+## 변경하지 않는 것
+- `Album` 데이터 모델, 저장소(IndexedDB) 스키마
+- 정렬 로직, 일일 제한, 후기 보상 등 다른 기능
+- 다른 라우트(앨범 상세, 채팅 등)
