@@ -23,6 +23,11 @@ function parsePeriodDate(period?: string): number {
     const d = Number(m[3]);
     if (mo >= 0 && mo <= 11 && d >= 1 && d <= 31) {
       return Date.UTC(y, mo, d);
+    }
+  }
+  const iso = period.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return Date.UTC(+iso[1], +iso[2] - 1, +iso[3]);
+  return 0;
 }
 
 function escapeRegExp(s: string) {
@@ -49,11 +54,7 @@ function Hl({ text, tokens }: { text: string; tokens: string[] }) {
     </>
   );
 }
-  }
-  const iso = period.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (iso) return Date.UTC(+iso[1], +iso[2] - 1, +iso[3]);
-  return 0;
-}
+
 
 export const Route = createFileRoute("/")({
   component: Home,
