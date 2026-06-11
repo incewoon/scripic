@@ -255,7 +255,7 @@ function Home() {
             const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
             return (
               <div key={a.id} className="album-card group relative">
-                <Link to="/album/$id" params={{ id: a.id }} className="block">
+                <Link to="/album/$id" params={{ id: a.id }} search={{ q: query }} className="block">
                   <div className="aspect-[5/4] bg-muted relative overflow-hidden">
                     <img src={a.photos[0]?.dataUrl} alt={a.title} className="w-full h-full object-cover" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
@@ -268,11 +268,11 @@ function Home() {
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                       <div className="text-[10px] uppercase tracking-[0.15em] opacity-80 mb-1 flex items-center gap-2">
-                        <span><Hl text={date} tokens={tokens} /></span>
-                        {a.location && <span className="flex items-center gap-1"><MapPin size={9}/><Hl text={a.location} tokens={tokens} /></span>}
+                        <span><Hl text={date} query={query} /></span>
+                        {a.location && <span className="flex items-center gap-1"><MapPin size={9}/><Hl text={a.location} query={query} /></span>}
                       </div>
-                      <div className="font-display text-[20px] leading-tight drop-shadow-sm"><Hl text={a.title} tokens={tokens} /></div>
-                      <div className="text-[12px] opacity-90 mt-1 italic font-display"><Hl text={a.subtitle} tokens={tokens} /></div>
+                      <div className="font-display text-[20px] leading-tight drop-shadow-sm"><Hl text={a.title} query={query} /></div>
+                      <div className="text-[12px] opacity-90 mt-1 italic font-display"><Hl text={a.subtitle} query={query} /></div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
