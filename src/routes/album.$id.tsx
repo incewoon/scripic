@@ -177,6 +177,7 @@ function AlbumView() {
             onSave={(v) => patch({ title: v })}
             className="font-display text-3xl text-foreground mb-2 text-center"
             placeholder={t.title}
+            highlightQuery={q}
           />
           <EditableText
             editKey="subtitle" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
@@ -184,16 +185,17 @@ function AlbumView() {
             onSave={(v) => patch({ subtitle: v })}
             className="text-sm warm-muted italic text-center"
             placeholder={t.subtitle}
+            highlightQuery={q}
           />
 
           <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
             <div className="flex items-center gap-1.5">
               <Calendar size={12}/>
-              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" />
+              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" highlightQuery={q} />
             </div>
             <div className="flex items-center gap-1.5">
               <MapPin size={12}/>
-              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" />
+              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" highlightQuery={q} />
             </div>
           </div>
         </div>
@@ -206,6 +208,7 @@ function AlbumView() {
             multiline
             className="text-[15px] leading-relaxed text-foreground/85 font-display"
             placeholder={t.intro}
+            highlightQuery={q}
           />
         </div>
 
@@ -221,6 +224,7 @@ function AlbumView() {
                   multiline
                   className="text-center font-display text-[15px]"
                   placeholder={t.caption}
+                  highlightQuery={q}
                 />
               </figcaption>
             </figure>
@@ -235,6 +239,7 @@ function AlbumView() {
             multiline
             className="text-[15px] leading-relaxed text-foreground/85 font-display italic text-center"
             placeholder={t.closing}
+            highlightQuery={q}
           />
           <p className="text-[10px] warm-muted mt-8">
             {new Date(album.createdAt).toLocaleDateString()} · {t.onlyOnDevice}
