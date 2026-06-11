@@ -115,8 +115,7 @@ function Home() {
       })
     : null;
 
-  const trimmedQuery = query.trim().toLowerCase();
-  const tokens = trimmedQuery ? trimmedQuery.split(/\s+/) : [];
+  const tokens = tokenize(query);
   const visibleAlbums = sortedAlbums
     ? tokens.length === 0
       ? sortedAlbums
