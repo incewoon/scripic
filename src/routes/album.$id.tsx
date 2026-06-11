@@ -17,13 +17,14 @@ export const Route = createFileRoute("/album/$id")({
 
 function EditableText({
   editKey, activeKey, setActiveKey, editingMode,
-  value, onSave, multiline = false, className = "", placeholder = "",
+  value, onSave, multiline = false, className = "", placeholder = "", highlightQuery = "",
 }: {
   editKey: string;
   activeKey: string | null;
   setActiveKey: (k: string | null) => void;
   editingMode: boolean;
   value: string; onSave: (v: string) => void; multiline?: boolean; className?: string; placeholder?: string;
+  highlightQuery?: string;
 }) {
   const { t } = useT();
   const editing = editingMode && activeKey === editKey;
@@ -34,7 +35,7 @@ function EditableText({
   if (!editingMode) {
     return (
       <div className={className}>
-        {value || <span className="warm-muted italic">{placeholder || "—"}</span>}
+        {value ? <Hl text={value} query={highlightQuery} /> : <span className="warm-muted italic">{placeholder || "—"}</span>}
       </div>
     );
   }
