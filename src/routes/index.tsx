@@ -35,6 +35,9 @@ function parsePeriodDate(period?: string): number {
 
 export const Route = createFileRoute("/")({
   component: Home,
+  validateSearch: (s: Record<string, unknown>) => ({
+    q: typeof s.q === "string" ? s.q : "",
+  }),
   head: () => ({
     meta: [
       { title: "Scripic — Capture the moments you never want to forget" },
