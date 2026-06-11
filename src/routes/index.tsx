@@ -6,6 +6,7 @@ import { useT } from "@/lib/i18n";
 import { canCreateAlbumToday, nextAvailableDateLabel, hasExtraUsedToday } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
 import { ReviewRewardDialog } from "@/components/ReviewRewardDialog";
+import { Hl, tokenize } from "@/lib/highlight";
 
 const SORT_KEY = "moara_album_sort_v1";
 const SORT_DIR_KEY = "moara_album_sort_dir_v1";
