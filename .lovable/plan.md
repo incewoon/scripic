@@ -1,46 +1,38 @@
-# 앨범 검색 기능
+# 검색어 유지 + 앨범 상세 하이라이트
 
-홈 화면(`src/routes/index.tsx`)에 키워드 검색바를 추가해서, 디바이스(IndexedDB)에 저장된 앨범을 실시간으로 필터링합니다.
+현재 `Hl` 컴포넌트는 홈 카드에만 적용되어 있고, 검색어는 컴포넌트 state라 앨범을 열고 뒤로 가면 사라집니다. URL 쿼리 파라미터(`?q=...`)로 옮겨서 두 라우트가 공유하고, 브라우저 뒤로 가기에도 자연스럽게 남도록 합니다.
 
-## 검색 대상 필드
-`Album` 타입(`src/lib/storage.ts`)의 텍스트 필드 전부:
-- `title`, `subtitle`, `intro`, `closing`
-- `period`, `location`
-- `photos[].caption`
+## 동작 흐름
 
-대소문자 무시, 한글/영문 부분일치(`String.includes`). 공백으로 구분된 여러 단어는 AND 매칭(모든 토큰이 어디든 등장해야 일치).
-
-## UI
-
-정렬 컨트롤(`ArrowUpDown`, 방향 토글) 줄 **위쪽**에, `Search` 아이콘이 들어간 입력창을 한 줄로 배치:
-
-```text
-[🔍  앨범 검색...                              ✕]
-[정렬: 만든 날짜 ▾]  [↓]  [⚙]
-```
-
-- placeholder: i18n 키 `searchPlaceholder` ("앨범 검색..." / "Search albums...")
-- 입력값이 있을 때만 우측에 `X` 클리어 버튼 노출
-- 입력값은 컴포넌트 state만 사용(세션/로컬 저장 안 함 — 새로 들어올 때 빈 상태가 자연스러움)
-- 스타일은 기존 `border-border/60 bg-card/80 shadow-[var(--shadow-soft)]` 톤에 맞춤, 둥근 pill 형태
-
-## 동작
-
-1. 기존 정렬 로직 적용한 `sortedAlbums`에 검색 필터를 추가 적용 → `visibleAlbums`.
-2. 검색어가 비어있으면 필터 패스(현재 동작 그대로).
-3. 검색 결과 0건일 때: 빈 상태 폴라로이드(첫 앨범 만들기 카드) 대신, "검색 결과가 없어요 / No results" 라는 가벼운 placeholder 카드를 보여주고 + 버튼은 그대로 유지.
-4. 헤더의 앨범 개수 카운트는 **필터된 개수 / 전체 개수** 형태(예: `3 / 12`)로 표시해, 검색 중임을 알 수 있게 함. 검색어 없으면 기존처럼 전체 개수만.
-
-## i18n
-`src/lib/i18n.ts`에 키 두 개 추가:
-- `searchPlaceholder`: "앨범 검색..." / "Search albums..."
-- `searchNoResults`: "검색 결과가 없어요" / "No albums match your search"
+1. 홈에서 검색 → URL이 `/?q=여행` 으로 갱신 (입력 시 `navigate({ search })` replace).
+2. 카드를 탭하면 `Link`가 `to="/album/$id" search={{ q }}` 로 이동 → `/album/abc?q=여행`.
+3. 앨범 상세에서 `q` 를 읽어, 제목/부제/기간/장소/intro/closing/각 캡션 텍스트에 동일한 `<Hl>` 마크 적용.
+4. 뒤로 가기 시 URL이 `/?q=여행` 으로 복원되므로 홈의 검색 입력값도 다시 채워져 필터링 상태 유지. 다음 앨범을 순차적으로 열어볼 수 있음.
 
 ## 변경 파일
-- `src/routes/index.tsx` — 검색 state, 입력 UI, 필터 로직, 결과 0건 처리, 카운트 표시.
-- `src/lib/i18n.ts` — 신규 문구 2개(ko/en).
+
+### `src/routes/index.tsx`
+- `Route` 에 `validateSearch: (s) => ({ q: typeof s.q === 'string' ? s.q : '' })` 추가.
+- `query` state 대신 `Route.useSearch().q` 를 사용하고, 입력 onChange 에서 `navigate({ search: { q: v }, replace: true })`.
+- 카드 `<Link to="/album/$id" params={{ id: a.id }} search={{ q }}>` 로 변경 (현재 q를 넘김).
+- `Hl` 컴포넌트를 공용 모듈로 분리(아래 참고).
+
+### `src/lib/highlight.tsx` (신규)
+- `escapeRegExp`, `Hl({ text, query })` 를 export. `query` 문자열을 받아 내부에서 토큰화. index/album 양쪽에서 import.
+
+### `src/routes/album.$id.tsx`
+- `Route` 에 동일한 `validateSearch` 추가.
+- `const { q } = Route.useSearch()` 로 검색어 획득.
+- 읽기 모드(`!editingMode`)일 때 `EditableText` 가 텍스트 대신 `<Hl text={value} query={q} />` 를 렌더하도록 `query` prop 추가, 또는 더 간단히 표시 부분을 `<Hl>` 로 감싸기.
+  - 편집 모드일 때는 입력 충돌 방지 위해 하이라이트 미적용.
+- 헤더 뒤로가기 `<Link to="/">` 에는 별도 search 전달 불필요 — 브라우저 history 가 이전 URL(`/?q=...`)을 그대로 복원.
 
 ## 변경하지 않는 것
-- `Album` 데이터 모델, 저장소(IndexedDB) 스키마
-- 정렬 로직, 일일 제한, 후기 보상 등 다른 기능
-- 다른 라우트(앨범 상세, 채팅 등)
+- 저장소(IndexedDB), 정렬, 일일 제한, i18n 키.
+- 검색 필터 로직 자체(홈의 `visibleAlbums` 계산).
+- 앨범 데이터 모델.
+
+## 기술 메모
+- TanStack Router 의 `validateSearch` 로 타입 안전한 `?q=` 처리. `replace: true` 로 매 키 입력마다 history 가 쌓이지 않게 함.
+- `Hl` 은 편집 input 안에서는 사용 안 함 (textarea/input 내부 마크업 불가).
+- 빈 `q` 일 때 `Hl` 은 원문 그대로 반환 — 기존 표시와 동일.

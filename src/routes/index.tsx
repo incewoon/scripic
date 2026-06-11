@@ -6,6 +6,7 @@ import { useT } from "@/lib/i18n";
 import { canCreateAlbumToday, nextAvailableDateLabel, hasExtraUsedToday } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
 import { ReviewRewardDialog } from "@/components/ReviewRewardDialog";
+import { Hl, tokenize } from "@/lib/highlight";
 
 const SORT_KEY = "moara_album_sort_v1";
 const SORT_DIR_KEY = "moara_album_sort_dir_v1";
@@ -30,34 +31,13 @@ function parsePeriodDate(period?: string): number {
   return 0;
 }
 
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function Hl({ text, tokens }: { text: string; tokens: string[] }) {
-  if (!text) return null;
-  if (!tokens.length) return <>{text}</>;
-  const pattern = new RegExp(`(${tokens.map(escapeRegExp).join("|")})`, "gi");
-  const parts = text.split(pattern);
-  const lower = tokens.map((t) => t.toLowerCase());
-  return (
-    <>
-      {parts.map((p, i) =>
-        lower.includes(p.toLowerCase()) ? (
-          <mark key={i} className="bg-primary/40 text-inherit rounded-sm px-0.5">
-            {p}
-          </mark>
-        ) : (
-          <span key={i}>{p}</span>
-        )
-      )}
-    </>
-  );
-}
 
 
 export const Route = createFileRoute("/")({
   component: Home,
+  validateSearch: (s: Record<string, unknown>) => ({
+    q: typeof s.q === "string" ? s.q : "",
+  }),
   head: () => ({
     meta: [
       { title: "Scripic — Capture the moments you never want to forget" },
@@ -82,8 +62,9 @@ function Home() {
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const { q: query } = Route.useSearch();
   const navigate = useNavigate();
+  const setQuery = (v: string) => navigate({ to: "/", search: { q: v }, replace: true });
 
   useEffect(() => { if (!hasSeenStorageNotice()) setNoticeOpen(true); }, []);
 
@@ -134,8 +115,7 @@ function Home() {
       })
     : null;
 
-  const trimmedQuery = query.trim().toLowerCase();
-  const tokens = trimmedQuery ? trimmedQuery.split(/\s+/) : [];
+  const tokens = tokenize(query);
   const visibleAlbums = sortedAlbums
     ? tokens.length === 0
       ? sortedAlbums
@@ -275,7 +255,7 @@ function Home() {
             const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
             return (
               <div key={a.id} className="album-card group relative">
-                <Link to="/album/$id" params={{ id: a.id }} className="block">
+                <Link to="/album/$id" params={{ id: a.id }} search={{ q: query }} className="block">
                   <div className="aspect-[5/4] bg-muted relative overflow-hidden">
                     <img src={a.photos[0]?.dataUrl} alt={a.title} className="w-full h-full object-cover" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
@@ -288,11 +268,11 @@ function Home() {
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                       <div className="text-[10px] uppercase tracking-[0.15em] opacity-80 mb-1 flex items-center gap-2">
-                        <span><Hl text={date} tokens={tokens} /></span>
-                        {a.location && <span className="flex items-center gap-1"><MapPin size={9}/><Hl text={a.location} tokens={tokens} /></span>}
+                        <span><Hl text={date} query={query} /></span>
+                        {a.location && <span className="flex items-center gap-1"><MapPin size={9}/><Hl text={a.location} query={query} /></span>}
                       </div>
-                      <div className="font-display text-[20px] leading-tight drop-shadow-sm"><Hl text={a.title} tokens={tokens} /></div>
-                      <div className="text-[12px] opacity-90 mt-1 italic font-display"><Hl text={a.subtitle} tokens={tokens} /></div>
+                      <div className="font-display text-[20px] leading-tight drop-shadow-sm"><Hl text={a.title} query={query} /></div>
+                      <div className="text-[12px] opacity-90 mt-1 italic font-display"><Hl text={a.subtitle} query={query} /></div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">

@@ -5,21 +5,26 @@ import { toPng } from "html-to-image";
 import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
+import { Hl } from "@/lib/highlight";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
   ssr: false,
+  validateSearch: (s: Record<string, unknown>) => ({
+    q: typeof s.q === "string" ? s.q : "",
+  }),
 });
 
 function EditableText({
   editKey, activeKey, setActiveKey, editingMode,
-  value, onSave, multiline = false, className = "", placeholder = "",
+  value, onSave, multiline = false, className = "", placeholder = "", highlightQuery = "",
 }: {
   editKey: string;
   activeKey: string | null;
   setActiveKey: (k: string | null) => void;
   editingMode: boolean;
   value: string; onSave: (v: string) => void; multiline?: boolean; className?: string; placeholder?: string;
+  highlightQuery?: string;
 }) {
   const { t } = useT();
   const editing = editingMode && activeKey === editKey;
@@ -30,7 +35,7 @@ function EditableText({
   if (!editingMode) {
     return (
       <div className={className}>
-        {value || <span className="warm-muted italic">{placeholder || "—"}</span>}
+        {value ? <Hl text={value} query={highlightQuery} /> : <span className="warm-muted italic">{placeholder || "—"}</span>}
       </div>
     );
   }
@@ -68,6 +73,7 @@ function EditableText({
 
 function AlbumView() {
   const { id } = Route.useParams();
+  const { q } = Route.useSearch();
   const { t } = useT();
   const [album, setAlbum] = useState<Album | null | undefined>(undefined);
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -135,7 +141,7 @@ function AlbumView() {
   return (
     <div className="mx-auto max-w-md min-h-screen pb-20">
       <header className="sticky top-0 z-10 glass flex items-center justify-between px-5 py-3 border-b border-border/40">
-        <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
+        <Link to="/" search={{ q }} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -171,6 +177,7 @@ function AlbumView() {
             onSave={(v) => patch({ title: v })}
             className="font-display text-3xl text-foreground mb-2 text-center"
             placeholder={t.title}
+            highlightQuery={q}
           />
           <EditableText
             editKey="subtitle" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
@@ -178,16 +185,17 @@ function AlbumView() {
             onSave={(v) => patch({ subtitle: v })}
             className="text-sm warm-muted italic text-center"
             placeholder={t.subtitle}
+            highlightQuery={q}
           />
 
           <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
             <div className="flex items-center gap-1.5">
               <Calendar size={12}/>
-              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" />
+              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" highlightQuery={q} />
             </div>
             <div className="flex items-center gap-1.5">
               <MapPin size={12}/>
-              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" />
+              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" highlightQuery={q} />
             </div>
           </div>
         </div>
@@ -200,6 +208,7 @@ function AlbumView() {
             multiline
             className="text-[15px] leading-relaxed text-foreground/85 font-display"
             placeholder={t.intro}
+            highlightQuery={q}
           />
         </div>
 
@@ -215,6 +224,7 @@ function AlbumView() {
                   multiline
                   className="text-center font-display text-[15px]"
                   placeholder={t.caption}
+                  highlightQuery={q}
                 />
               </figcaption>
             </figure>
@@ -229,6 +239,7 @@ function AlbumView() {
             multiline
             className="text-[15px] leading-relaxed text-foreground/85 font-display italic text-center"
             placeholder={t.closing}
+            highlightQuery={q}
           />
           <p className="text-[10px] warm-muted mt-8">
             {new Date(album.createdAt).toLocaleDateString()} · {t.onlyOnDevice}
