@@ -5,10 +5,14 @@ import { toPng } from "html-to-image";
 import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
+import { Hl } from "@/lib/highlight";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
   ssr: false,
+  validateSearch: (s: Record<string, unknown>) => ({
+    q: typeof s.q === "string" ? s.q : "",
+  }),
 });
 
 function EditableText({
