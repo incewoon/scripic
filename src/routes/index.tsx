@@ -31,30 +31,6 @@ function parsePeriodDate(period?: string): number {
   return 0;
 }
 
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function Hl({ text, tokens }: { text: string; tokens: string[] }) {
-  if (!text) return null;
-  if (!tokens.length) return <>{text}</>;
-  const pattern = new RegExp(`(${tokens.map(escapeRegExp).join("|")})`, "gi");
-  const parts = text.split(pattern);
-  const lower = tokens.map((t) => t.toLowerCase());
-  return (
-    <>
-      {parts.map((p, i) =>
-        lower.includes(p.toLowerCase()) ? (
-          <mark key={i} className="bg-primary/40 text-inherit rounded-sm px-0.5">
-            {p}
-          </mark>
-        ) : (
-          <span key={i}>{p}</span>
-        )
-      )}
-    </>
-  );
-}
 
 
 export const Route = createFileRoute("/")({
