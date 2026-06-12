@@ -309,46 +309,43 @@ function Create() {
         <div className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-1">{t.tagsLabel}</div>
           <div className="text-[11px] warm-muted mb-2 leading-relaxed">{t.tagsHint}</div>
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {([
+          {(() => {
+            const presets: string[] = [
               t.tagPresetTravel, t.tagPresetFamily, t.tagPresetDaily,
               t.tagPresetFriends, t.tagPresetFood, t.tagPresetSpecial,
-            ] as const).map((p) => {
-              const active = tags.includes(p);
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => {
-                    setTags((prev) => {
-                      if (prev.includes(p)) return prev.filter((x) => x !== p);
-                      if (prev.length >= 5) { toast(t.tagsLabel); return prev; }
-                      return [...prev, p];
-                    });
-                  }}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all active:scale-[0.97] ${
-                    active
-                      ? "text-primary-foreground shadow-[var(--shadow-warm)]"
-                      : "border border-border/60 warm-text bg-card/50"
-                  }`}
-                  style={active ? { background: "var(--gradient-warm)" } : undefined}
-                >
-                  #{p}
-                </button>
-              );
-            })}
-          </div>
-          {tags.filter((tg) => ![
-            t.tagPresetTravel, t.tagPresetFamily, t.tagPresetDaily,
-            t.tagPresetFriends, t.tagPresetFood, t.tagPresetSpecial,
-          ].includes(tg as string)).length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {tags
-                .filter((tg) => ![
-                  t.tagPresetTravel, t.tagPresetFamily, t.tagPresetDaily,
-                  t.tagPresetFriends, t.tagPresetFood, t.tagPresetSpecial,
-                ].includes(tg as string))
-                .map((tg) => (
+            ];
+            const customTags = tags.filter((tg) => !presets.includes(tg));
+            return (
+              <>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {presets.map((p) => {
+                    const active = tags.includes(p);
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => {
+                          setTags((prev) => {
+                            if (prev.includes(p)) return prev.filter((x) => x !== p);
+                            if (prev.length >= 5) return prev;
+                            return [...prev, p];
+                          });
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all active:scale-[0.97] ${
+                          active
+                            ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                            : "border border-border/60 warm-text bg-card/50"
+                        }`}
+                        style={active ? { background: "var(--gradient-warm)" } : undefined}
+                      >
+                        #{p}
+                      </button>
+                    );
+                  })}
+                </div>
+                {customTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {customTags.map((tg) => (
                   <span
                     key={tg}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-medium text-primary-foreground shadow-[var(--shadow-warm)]"
