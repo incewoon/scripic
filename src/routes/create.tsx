@@ -105,6 +105,8 @@ function Create() {
   const { t } = useT();
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagDraft, setTagDraft] = useState("");
   const [mode, setModeState] = useState<ChatMode>(() => loadDefault(MODE_KEY, VALID_MODES, "creative"));
   const [tone, setToneState] = useState<ChatTone>(() => loadDefault(TONE_KEY, VALID_TONES, "politely"));
 
