@@ -240,6 +240,43 @@ function Home() {
         </div>
       </div>
 
+      {allTags.length > 0 && (
+        <div className="mb-4 -mx-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-1 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none]">
+            {selectedTags.length > 0 && (
+              <button
+                type="button"
+                onClick={clearTags}
+                className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-border/60 bg-card/80 text-[11px] warm-muted active:scale-[0.97]"
+                aria-label={t.clearTags}
+              >
+                <X size={11} /> {t.clearTags}
+              </button>
+            )}
+            {allTags.map((tg) => {
+              const active = selectedTags.includes(tg);
+              return (
+                <button
+                  key={tg}
+                  type="button"
+                  onClick={() => toggleTag(tg)}
+                  className={`shrink-0 h-7 px-3 rounded-full text-[11.5px] font-medium transition-all active:scale-[0.97] ${
+                    active
+                      ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                      : "border border-border/60 warm-text bg-card/70"
+                  }`}
+                  style={active ? { background: "var(--gradient-warm)" } : undefined}
+                >
+                  #{tg}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+
+
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <h2 className="text-[13px] font-medium warm-muted">{t.myAlbums}</h2>
