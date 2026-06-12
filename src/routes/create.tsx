@@ -306,6 +306,109 @@ function Create() {
           </div>
         </div>
 
+        <div className="mb-5">
+          <div className="text-[12px] font-medium warm-muted mb-1">{t.tagsLabel}</div>
+          <div className="text-[11px] warm-muted mb-2 leading-relaxed">{t.tagsHint}</div>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {([
+              t.tagPresetTravel, t.tagPresetFamily, t.tagPresetDaily,
+              t.tagPresetFriends, t.tagPresetFood, t.tagPresetSpecial,
+            ] as const).map((p) => {
+              const active = tags.includes(p);
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    setTags((prev) => {
+                      if (prev.includes(p)) return prev.filter((x) => x !== p);
+                      if (prev.length >= 5) { toast(t.tagsLabel); return prev; }
+                      return [...prev, p];
+                    });
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all active:scale-[0.97] ${
+                    active
+                      ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                      : "border border-border/60 warm-text bg-card/50"
+                  }`}
+                  style={active ? { background: "var(--gradient-warm)" } : undefined}
+                >
+                  #{p}
+                </button>
+              );
+            })}
+          </div>
+          {tags.filter((tg) => ![
+            t.tagPresetTravel, t.tagPresetFamily, t.tagPresetDaily,
+            t.tagPresetFriends, t.tagPresetFood, t.tagPresetSpecial,
+          ].includes(tg as string)).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {tags
+                .filter((tg) => ![
+                  t.tagPresetTravel, t.tagPresetFamily, t.tagPresetDaily,
+                  t.tagPresetFriends, t.tagPresetFood, t.tagPresetSpecial,
+                ].includes(tg as string))
+                .map((tg) => (
+                  <span
+                    key={tg}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-medium text-primary-foreground shadow-[var(--shadow-warm)]"
+                    style={{ background: "var(--gradient-warm)" }}
+                  >
+                    #{tg}
+                    <button
+                      type="button"
+                      onClick={() => setTags((prev) => prev.filter((x) => x !== tg))}
+                      aria-label="remove"
+                      className="opacity-90"
+                    >
+                      <X size={11} strokeWidth={2.5} />
+                    </button>
+                  </span>
+                ))}
+            </div>
+          )}
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              value={tagDraft}
+              onChange={(e) => setTagDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  const v = tagDraft.trim().replace(/^#/, "").slice(0, 20);
+                  if (!v) return;
+                  setTags((prev) => {
+                    if (prev.some((x) => x.toLowerCase() === v.toLowerCase())) return prev;
+                    if (prev.length >= 5) return prev;
+                    return [...prev, v];
+                  });
+                  setTagDraft("");
+                }
+              }}
+              placeholder={t.tagAddPlaceholder}
+              maxLength={20}
+              className="flex-1 h-9 rounded-full border border-border/60 bg-card/80 px-3.5 text-[12.5px] warm-text placeholder:warm-muted focus:outline-none focus:bg-card"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const v = tagDraft.trim().replace(/^#/, "").slice(0, 20);
+                if (!v) return;
+                setTags((prev) => {
+                  if (prev.some((x) => x.toLowerCase() === v.toLowerCase())) return prev;
+                  if (prev.length >= 5) return prev;
+                  return [...prev, v];
+                });
+                setTagDraft("");
+              }}
+              className="h-9 px-3.5 rounded-full text-[12.5px] font-medium border border-border/60 warm-text bg-card/50 active:scale-[0.97]"
+            >
+              {t.tagAdd}
+            </button>
+          </div>
+        </div>
+
+
         <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-5">
           <div
             className="h-full transition-all duration-500 rounded-full"
