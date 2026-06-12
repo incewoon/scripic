@@ -362,9 +362,13 @@ function Create() {
                     </button>
                   </span>
                 ))}
-            </div>
-          )}
+                  </div>
+                )}
+              </>
+            );
+          })()}
           <div className="flex gap-1.5">
+
             <input
               type="text"
               value={tagDraft}
