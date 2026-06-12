@@ -12,6 +12,11 @@ export const Route = createFileRoute("/album/$id")({
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
     q: typeof s.q === "string" ? s.q : "",
+    tags: Array.isArray(s.tags)
+      ? (s.tags as unknown[]).filter((x): x is string => typeof x === "string")
+      : typeof s.tags === "string" && s.tags
+        ? [s.tags]
+        : [],
   }),
 });
 
@@ -73,7 +78,7 @@ function EditableText({
 
 function AlbumView() {
   const { id } = Route.useParams();
-  const { q } = Route.useSearch();
+  const { q, tags: searchTags } = Route.useSearch();
   const { t } = useT();
   const [album, setAlbum] = useState<Album | null | undefined>(undefined);
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -141,7 +146,7 @@ function AlbumView() {
   return (
     <div className="mx-auto max-w-md min-h-screen pb-20">
       <header className="sticky top-0 z-10 glass flex items-center justify-between px-5 py-3 border-b border-border/40">
-        <Link to="/" search={{ q }} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
+        <Link to="/" search={{ q, tags: searchTags }} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
         <div className="flex items-center gap-1">
           <button
             type="button"

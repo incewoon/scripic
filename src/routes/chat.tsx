@@ -120,6 +120,14 @@ function Chat() {
     const t = sessionStorage.getItem("memori_tone");
     return t === "friendly" || t === "short" ? t : "politely";
   });
+  const [tags] = useState<string[]>(() => {
+    if (typeof sessionStorage === "undefined") return [];
+    try {
+      const raw = sessionStorage.getItem("memori_tags");
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
+    } catch { return []; }
+  });
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -371,6 +379,7 @@ function Chat() {
         closing: album.closing,
         period: meta.period || album.period,
         location: album.location || meta.location,
+        tags,
         photos: photos.map((dataUrl, i) => ({ dataUrl, caption: album.captions?.[i] ?? "" })),
         createdAt: Date.now(),
       });
@@ -379,6 +388,7 @@ function Chat() {
       sessionStorage.removeItem("memori_photo_metas");
       sessionStorage.removeItem("memori_mode");
       sessionStorage.removeItem("memori_tone");
+      sessionStorage.removeItem("memori_tags");
       setMessages([]);
       toast.success(t.completed);
       leavingRef.current = true;

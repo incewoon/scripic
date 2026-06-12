@@ -37,6 +37,11 @@ export const Route = createFileRoute("/")({
   component: Home,
   validateSearch: (s: Record<string, unknown>) => ({
     q: typeof s.q === "string" ? s.q : "",
+    tags: Array.isArray(s.tags)
+      ? (s.tags as unknown[]).filter((x): x is string => typeof x === "string")
+      : typeof s.tags === "string" && s.tags
+        ? [s.tags]
+        : [],
   }),
   head: () => ({
     meta: [
@@ -62,7 +67,7 @@ function Home() {
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
-  const { q: query } = Route.useSearch();
+  const { q: query, tags: selectedTags } = Route.useSearch();
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState(query);
   const isComposingRef = useRef(false);
@@ -71,14 +76,25 @@ function Home() {
   const syncToUrl = (v: string) => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
-      navigate({ to: "/", search: { q: v }, replace: true });
+      navigate({ to: "/", search: { q: v, tags: selectedTags }, replace: true });
     }, 150);
   };
 
   const setQuery = (v: string) => {
     setInputValue(v);
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    navigate({ to: "/", search: { q: v }, replace: true });
+    navigate({ to: "/", search: { q: v, tags: selectedTags }, replace: true });
+  };
+
+  const toggleTag = (tg: string) => {
+    const next = selectedTags.includes(tg)
+      ? selectedTags.filter((x: string) => x !== tg)
+      : [...selectedTags, tg];
+    navigate({ to: "/", search: { q: query, tags: next }, replace: true });
+  };
+
+  const clearTags = () => {
+    navigate({ to: "/", search: { q: query, tags: [] }, replace: true });
   };
 
   // Sync external q changes (e.g. back navigation) into local input
@@ -144,18 +160,32 @@ function Home() {
 
   const tokens = tokenize(query);
   const visibleAlbums = sortedAlbums
-    ? tokens.length === 0
-      ? sortedAlbums
-      : sortedAlbums.filter((a) => {
+    ? sortedAlbums.filter((a) => {
+        if (tokens.length > 0) {
           const hay = [
             a.title, a.subtitle, a.intro, a.closing,
             a.period ?? "", a.location ?? "",
+            ...(a.tags ?? []),
             ...a.photos.map((p) => p.caption ?? ""),
           ].join("\n").toLowerCase();
-          return tokens.every((tk) => hay.includes(tk));
-        })
+          if (!tokens.every((tk) => hay.includes(tk))) return false;
+        }
+        if (selectedTags.length > 0) {
+          const at = a.tags ?? [];
+          if (!at.some((tg) => selectedTags.includes(tg))) return false;
+        }
+        return true;
+      })
     : null;
-  const isSearching = tokens.length > 0;
+  const isSearching = tokens.length > 0 || selectedTags.length > 0;
+
+  // All tags used across albums, ordered by frequency (desc)
+  const allTags: string[] = (() => {
+    if (!albums) return [];
+    const counts = new Map<string, number>();
+    for (const a of albums) for (const tg of a.tags ?? []) counts.set(tg, (counts.get(tg) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) => tg);
+  })();
 
   const onCreate = () => {
     if (!canCreateAlbumToday()) { setLimitOpen(true); return; }
@@ -209,6 +239,43 @@ function Home() {
           )}
         </div>
       </div>
+
+      {allTags.length > 0 && (
+        <div className="mb-4 -mx-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-1 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none]">
+            {selectedTags.length > 0 && (
+              <button
+                type="button"
+                onClick={clearTags}
+                className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-border/60 bg-card/80 text-[11px] warm-muted active:scale-[0.97]"
+                aria-label={t.clearTags}
+              >
+                <X size={11} /> {t.clearTags}
+              </button>
+            )}
+            {allTags.map((tg) => {
+              const active = selectedTags.includes(tg);
+              return (
+                <button
+                  key={tg}
+                  type="button"
+                  onClick={() => toggleTag(tg)}
+                  className={`shrink-0 h-7 px-3 rounded-full text-[11.5px] font-medium transition-all active:scale-[0.97] ${
+                    active
+                      ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                      : "border border-border/60 warm-text bg-card/70"
+                  }`}
+                  style={active ? { background: "var(--gradient-warm)" } : undefined}
+                >
+                  #{tg}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+
 
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -291,7 +358,7 @@ function Home() {
             const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
             return (
               <div key={a.id} className="album-card group relative">
-                <Link to="/album/$id" params={{ id: a.id }} search={{ q: query }} className="block">
+                <Link to="/album/$id" params={{ id: a.id }} search={{ q: query, tags: selectedTags }} className="block">
                   <div className="aspect-[5/4] bg-muted relative overflow-hidden">
                     <img src={a.photos[0]?.dataUrl} alt={a.title} className="w-full h-full object-cover" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
