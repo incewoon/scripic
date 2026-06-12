@@ -37,6 +37,11 @@ export const Route = createFileRoute("/")({
   component: Home,
   validateSearch: (s: Record<string, unknown>) => ({
     q: typeof s.q === "string" ? s.q : "",
+    tags: Array.isArray(s.tags)
+      ? (s.tags as unknown[]).filter((x): x is string => typeof x === "string")
+      : typeof s.tags === "string" && s.tags
+        ? [s.tags]
+        : [],
   }),
   head: () => ({
     meta: [
