@@ -1,65 +1,55 @@
-# 한글 검색 입력 IME 버그 수정
+## 목표
+앨범에 사용자 태그(여행, 가족, 일상…)를 붙이고, 메인화면에서 태그 칩으로 OR 필터링.
 
-## 원인
-현재 `src/routes/index.tsx`의 검색 input이 매 `onChange`마다 `navigate()`를 호출 → URL 변경 → 라우트 컴포넌트 리렌더 → input value가 외부에서 교체되면서 한글 자모 조합(composition) 상태가 파괴됨. 결과적으로 "안녕"을 치면 "ㅇㅏㄴㄴㅕㅇ"처럼 분리되어 입력됨.
+## 변경 사항
 
-## 수정 방안
+### 1. `src/lib/storage.ts`
+- `Album` 타입에 `tags?: string[]` 추가 (옵션, 기존 앨범 호환).
+- 별도 마이그레이션 불필요 (IndexedDB, 옵셔널 필드).
 
-**`src/routes/index.tsx`**
-1. `q`(URL search param)와 별도로 로컬 `inputValue` state 추가
-   - input의 `value`는 `inputValue` 사용
-   - URL의 `q`는 필터링/하이라이트의 source of truth로 유지
-2. `onCompositionStart` / `onCompositionEnd` 핸들러 추가
-   - 조합 중(`isComposing` ref) 에는 URL 갱신을 보류
-   - 조합 종료 시점에 URL 동기화
-3. `onChange`에서 `inputValue`는 즉시 업데이트하되, URL `q` 동기화는 150~200ms debounce + 조합 중이 아닐 때만 실행
-4. URL `q`가 외부에서 바뀐 경우(뒤로가기 등) → `useEffect`로 `inputValue`와 동기화 (단, 조합 중이면 스킵)
+### 2. `src/lib/i18n.ts`
+- 프리셋 태그 5–6개 i18n 키 추가: 여행/가족/일상/친구/음식/특별한날 (Travel/Family/Daily/Friends/Food/Special).
+- 라벨: `tagsLabel`, `tagsHint`, `tagAddPlaceholder`, `filterByTag` 등.
 
-핵심 코드 골격:
-```tsx
-const { q } = Route.useSearch();
-const [inputValue, setInputValue] = useState(q);
-const isComposing = useRef(false);
-const debounceRef = useRef<number | null>(null);
+### 3. `src/routes/create.tsx` (사진 선택 단계에서 입력)
+- 새 상태: `tags: string[]`.
+- 프리셋 칩 (토글) + 자유 입력 input (Enter/콤마로 추가, X로 삭제, 최대 5개 정도).
+- 위치: 모드/톤 섹션 아래, 진행바 위.
+- `sessionStorage.setItem("memori_tags", JSON.stringify(tags))` 저장.
 
-const syncToUrl = (v: string) => {
-  if (debounceRef.current) window.clearTimeout(debounceRef.current);
-  debounceRef.current = window.setTimeout(() => {
-    navigate({ search: { q: v }, replace: true });
-  }, 150);
-};
+### 4. `src/routes/chat.tsx`
+- 시작 시 `sessionStorage`에서 tags 읽어 상태로 보관.
+- `saveAlbum({ ..., tags })`로 함께 저장.
 
-<input
-  value={inputValue}
-  onChange={(e) => {
-    setInputValue(e.target.value);
-    if (!isComposing.current) syncToUrl(e.target.value);
-  }}
-  onCompositionStart={() => { isComposing.current = true; }}
-  onCompositionEnd={(e) => {
-    isComposing.current = false;
-    syncToUrl((e.target as HTMLInputElement).value);
-  }}
-/>
-```
+### 5. `src/routes/index.tsx` (필터 UI + 로직)
+- URL search 스키마에 `tags: string[]` 추가 (`validateSearch`).
+- 모든 앨범에서 사용된 태그 목록 집계 (정렬: 빈도수 내림차순).
+- 검색창 바로 아래 가로 스크롤 칩 영역:
+  - 각 칩 탭 → URL `tags` 토글 (replace navigate).
+  - 선택된 칩 강조 (gradient-warm 배경).
+  - 1개 이상 선택 시 "모두 지우기" X 표시.
+- `visibleAlbums` 필터링: 기존 `tokens` 매칭 + `tags.length === 0 || a.tags?.some(t => selectedTags.includes(t))` (OR).
+- 앨범 카드 `<Link>`의 `search`에 `tags`도 함께 전달해 album 페이지 이동 후 복귀 시 필터 유지.
+- 카운트 표시도 태그 필터 적용분 반영.
 
-5. 외부 q 변경 반영:
-```tsx
-useEffect(() => {
-  if (!isComposing.current && q !== inputValue) setInputValue(q);
-}, [q]);
-```
+### 6. `src/routes/album.$id.tsx`
+- `validateSearch`에 `tags: string[]` 추가, 뒤로가기 `<Link to="/" search={{ q, tags }}>` 로 보존.
+- (선택) 상세 헤더에 앨범 태그 배지 표시 — 읽기 전용. 작은 추가만.
 
-## 네이티브 앱 빌드 호환성
+## 기술 세부
 
-Capacitor/Tauri 등으로 래핑해도 문제없음:
-- TanStack Router는 브라우저 History API를 사용하지만, WebView 환경에서도 동일하게 동작
-- URL은 내부적으로만 사용되고 사용자에게 노출되지 않음
-- `?q=` 검색 상태도 정상 작동, 뒤로가기 제스처도 History 스택으로 처리됨
-- 단, deep link(앱 외부에서 특정 URL로 진입)를 쓸 경우 Capacitor의 `App.addListener('appUrlOpen')` 같은 설정이 필요하지만 이는 검색 기능과 무관
+### 태그 정규화
+- 입력값: trim, 길이 1–20, 중복 제거(대소문자 무시 기준 케이스 보존). 빈 문자열·공백만은 무시.
+- 정렬: 사용자 추가 순서 유지.
 
-따라서 URL 기반 검색 상태 유지 방식은 그대로 두는 게 좋습니다 — 뒤로가기로 검색어가 유지되는 UX 이점이 네이티브에서도 동일하게 작동합니다.
+### URL 직렬화
+- TanStack Router 기본 직렬화가 배열을 지원 — `tags=여행&tags=가족` 형태.
+- `validateSearch`에서 `Array.isArray(s.tags) ? s.tags.filter(t => typeof t === 'string') : []`.
 
-## 변경 범위
-- `src/routes/index.tsx`만 수정
-- `src/routes/album.$id.tsx`, `src/lib/highlight.tsx`는 변경 없음
+### 네이티브 호환
+- Capacitor WebView도 동일한 URL 검색 파라미터 작동, 별도 처리 불필요.
+
+## 비변경 영역
+- 백엔드/DB 스키마 변경 없음 (로컬 IndexedDB).
+- 검색 한글 IME 처리 로직(기존 inputValue/composition) 그대로.
+- 디자인 토큰(컬러/그라데이션) 기존 변수 재사용.
