@@ -358,7 +358,7 @@ function Home() {
             const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
             return (
               <div key={a.id} className="album-card group relative">
-                <Link to="/album/$id" params={{ id: a.id }} search={{ q: query }} className="block">
+                <Link to="/album/$id" params={{ id: a.id }} search={{ q: query, tags: selectedTags }} className="block">
                   <div className="aspect-[5/4] bg-muted relative overflow-hidden">
                     <img src={a.photos[0]?.dataUrl} alt={a.title} className="w-full h-full object-cover" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
