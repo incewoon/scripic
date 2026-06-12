@@ -222,6 +222,7 @@ function Create() {
       }));
       sessionStorage.setItem("memori_mode", mode);
       sessionStorage.setItem("memori_tone", tone);
+      sessionStorage.setItem("memori_tags", JSON.stringify(tags));
       navigate({ to: "/chat" });
     } finally {
       setBusy(false);
