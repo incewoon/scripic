@@ -120,6 +120,14 @@ function Chat() {
     const t = sessionStorage.getItem("memori_tone");
     return t === "friendly" || t === "short" ? t : "politely";
   });
+  const [tags] = useState<string[]>(() => {
+    if (typeof sessionStorage === "undefined") return [];
+    try {
+      const raw = sessionStorage.getItem("memori_tags");
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
+    } catch { return []; }
+  });
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
