@@ -8,6 +8,7 @@ export type Album = {
   closing: string;
   period?: string;
   location?: string;
+  tags?: string[];
   photos: { dataUrl: string; caption: string }[];
   createdAt: number;
 };
