@@ -78,7 +78,7 @@ function EditableText({
 
 function AlbumView() {
   const { id } = Route.useParams();
-  const { q } = Route.useSearch();
+  const { q, tags: searchTags } = Route.useSearch();
   const { t } = useT();
   const [album, setAlbum] = useState<Album | null | undefined>(undefined);
   const [activeKey, setActiveKey] = useState<string | null>(null);
