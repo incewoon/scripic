@@ -182,8 +182,17 @@ function Home() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none" />
           <input
             type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={inputValue}
+            onChange={(e) => {
+              const v = e.target.value;
+              setInputValue(v);
+              if (!isComposingRef.current) syncToUrl(v);
+            }}
+            onCompositionStart={() => { isComposingRef.current = true; }}
+            onCompositionEnd={(e) => {
+              isComposingRef.current = false;
+              syncToUrl((e.target as HTMLInputElement).value);
+            }}
             placeholder={t.searchPlaceholder}
             className="w-full h-10 rounded-full border border-border/60 bg-card/80 pl-9 pr-9 text-[13px] warm-text placeholder:warm-muted shadow-[var(--shadow-soft)] focus:outline-none focus:bg-card transition-colors"
             aria-label={t.searchPlaceholder}
