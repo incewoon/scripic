@@ -379,6 +379,7 @@ function Chat() {
         closing: album.closing,
         period: meta.period || album.period,
         location: album.location || meta.location,
+        tags,
         photos: photos.map((dataUrl, i) => ({ dataUrl, caption: album.captions?.[i] ?? "" })),
         createdAt: Date.now(),
       });
@@ -387,6 +388,7 @@ function Chat() {
       sessionStorage.removeItem("memori_photo_metas");
       sessionStorage.removeItem("memori_mode");
       sessionStorage.removeItem("memori_tone");
+      sessionStorage.removeItem("memori_tags");
       setMessages([]);
       toast.success(t.completed);
       leavingRef.current = true;
