@@ -160,18 +160,32 @@ function Home() {
 
   const tokens = tokenize(query);
   const visibleAlbums = sortedAlbums
-    ? tokens.length === 0
-      ? sortedAlbums
-      : sortedAlbums.filter((a) => {
+    ? sortedAlbums.filter((a) => {
+        if (tokens.length > 0) {
           const hay = [
             a.title, a.subtitle, a.intro, a.closing,
             a.period ?? "", a.location ?? "",
+            ...(a.tags ?? []),
             ...a.photos.map((p) => p.caption ?? ""),
           ].join("\n").toLowerCase();
-          return tokens.every((tk) => hay.includes(tk));
-        })
+          if (!tokens.every((tk) => hay.includes(tk))) return false;
+        }
+        if (selectedTags.length > 0) {
+          const at = a.tags ?? [];
+          if (!at.some((tg) => selectedTags.includes(tg))) return false;
+        }
+        return true;
+      })
     : null;
-  const isSearching = tokens.length > 0;
+  const isSearching = tokens.length > 0 || selectedTags.length > 0;
+
+  // All tags used across albums, ordered by frequency (desc)
+  const allTags: string[] = (() => {
+    if (!albums) return [];
+    const counts = new Map<string, number>();
+    for (const a of albums) for (const tg of a.tags ?? []) counts.set(tg, (counts.get(tg) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) => tg);
+  })();
 
   const onCreate = () => {
     if (!canCreateAlbumToday()) { setLimitOpen(true); return; }
