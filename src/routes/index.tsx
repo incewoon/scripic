@@ -88,7 +88,7 @@ function Home() {
 
   const toggleTag = (tg: string) => {
     const next = selectedTags.includes(tg)
-      ? selectedTags.filter((x) => x !== tg)
+      ? selectedTags.filter((x: string) => x !== tg)
       : [...selectedTags, tg];
     navigate({ to: "/", search: { q: query, tags: next }, replace: true });
   };
