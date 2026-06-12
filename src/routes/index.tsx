@@ -64,7 +64,34 @@ function Home() {
   const [sortOpen, setSortOpen] = useState(false);
   const { q: query } = Route.useSearch();
   const navigate = useNavigate();
-  const setQuery = (v: string) => navigate({ to: "/", search: { q: v }, replace: true });
+  const [inputValue, setInputValue] = useState(query);
+  const isComposingRef = useRef(false);
+  const debounceRef = useRef<number | null>(null);
+
+  const syncToUrl = (v: string) => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      navigate({ to: "/", search: { q: v }, replace: true });
+    }, 150);
+  };
+
+  const setQuery = (v: string) => {
+    setInputValue(v);
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    navigate({ to: "/", search: { q: v }, replace: true });
+  };
+
+  // Sync external q changes (e.g. back navigation) into local input
+  useEffect(() => {
+    if (!isComposingRef.current && query !== inputValue) {
+      setInputValue(query);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  useEffect(() => () => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+  }, []);
 
   useEffect(() => { if (!hasSeenStorageNotice()) setNoticeOpen(true); }, []);
 
