@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAlbums, subscribeAlbums, type Album } from "@/lib/storage";
 import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles, Search } from "lucide-react";
 import { useT } from "@/lib/i18n";
@@ -64,7 +64,34 @@ function Home() {
   const [sortOpen, setSortOpen] = useState(false);
   const { q: query } = Route.useSearch();
   const navigate = useNavigate();
-  const setQuery = (v: string) => navigate({ to: "/", search: { q: v }, replace: true });
+  const [inputValue, setInputValue] = useState(query);
+  const isComposingRef = useRef(false);
+  const debounceRef = useRef<number | null>(null);
+
+  const syncToUrl = (v: string) => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      navigate({ to: "/", search: { q: v }, replace: true });
+    }, 150);
+  };
+
+  const setQuery = (v: string) => {
+    setInputValue(v);
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    navigate({ to: "/", search: { q: v }, replace: true });
+  };
+
+  // Sync external q changes (e.g. back navigation) into local input
+  useEffect(() => {
+    if (!isComposingRef.current && query !== inputValue) {
+      setInputValue(query);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  useEffect(() => () => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+  }, []);
 
   useEffect(() => { if (!hasSeenStorageNotice()) setNoticeOpen(true); }, []);
 
@@ -155,8 +182,17 @@ function Home() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none" />
           <input
             type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={inputValue}
+            onChange={(e) => {
+              const v = e.target.value;
+              setInputValue(v);
+              if (!isComposingRef.current) syncToUrl(v);
+            }}
+            onCompositionStart={() => { isComposingRef.current = true; }}
+            onCompositionEnd={(e) => {
+              isComposingRef.current = false;
+              syncToUrl((e.target as HTMLInputElement).value);
+            }}
             placeholder={t.searchPlaceholder}
             className="w-full h-10 rounded-full border border-border/60 bg-card/80 pl-9 pr-9 text-[13px] warm-text placeholder:warm-muted shadow-[var(--shadow-soft)] focus:outline-none focus:bg-card transition-colors"
             aria-label={t.searchPlaceholder}
