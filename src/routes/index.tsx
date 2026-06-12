@@ -67,7 +67,7 @@ function Home() {
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
-  const { q: query } = Route.useSearch();
+  const { q: query, tags: selectedTags } = Route.useSearch();
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState(query);
   const isComposingRef = useRef(false);
@@ -76,14 +76,25 @@ function Home() {
   const syncToUrl = (v: string) => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
-      navigate({ to: "/", search: { q: v }, replace: true });
+      navigate({ to: "/", search: { q: v, tags: selectedTags }, replace: true });
     }, 150);
   };
 
   const setQuery = (v: string) => {
     setInputValue(v);
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    navigate({ to: "/", search: { q: v }, replace: true });
+    navigate({ to: "/", search: { q: v, tags: selectedTags }, replace: true });
+  };
+
+  const toggleTag = (tg: string) => {
+    const next = selectedTags.includes(tg)
+      ? selectedTags.filter((x) => x !== tg)
+      : [...selectedTags, tg];
+    navigate({ to: "/", search: { q: query, tags: next }, replace: true });
+  };
+
+  const clearTags = () => {
+    navigate({ to: "/", search: { q: query, tags: [] }, replace: true });
   };
 
   // Sync external q changes (e.g. back navigation) into local input
