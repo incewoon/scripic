@@ -146,6 +146,9 @@ function Home() {
 
   const sortedAlbums = albums
     ? [...albums].sort((a, b) => {
+        const fa = a.favorite ? 1 : 0;
+        const fb = b.favorite ? 1 : 0;
+        if (fa !== fb) return fb - fa;
         let diff: number;
         if (sortMode === "photo") {
           const ad = parsePeriodDate(a.period) || a.createdAt;
