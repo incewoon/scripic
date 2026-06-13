@@ -167,6 +167,8 @@ const dict = {
     tagPresetSpecial: "Special",
     filterByTag: "Filter by tag",
     clearTags: "Clear",
+    favorite: "Add to favorites",
+    unfavorite: "Remove from favorites",
     // Daily limit
     dailyLimitTitle: "One album per day",
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
