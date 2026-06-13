@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { getAlbums, subscribeAlbums, type Album } from "@/lib/storage";
-import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles, Search } from "lucide-react";
+import { getAlbums, subscribeAlbums, updateAlbum, type Album } from "@/lib/storage";
+import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles, Search, Star } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { canCreateAlbumToday, nextAvailableDateLabel, hasExtraUsedToday } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
@@ -146,6 +146,9 @@ function Home() {
 
   const sortedAlbums = albums
     ? [...albums].sort((a, b) => {
+        const fa = a.favorite ? 1 : 0;
+        const fb = b.favorite ? 1 : 0;
+        if (fa !== fb) return fb - fa;
         let diff: number;
         if (sortMode === "photo") {
           const ad = parsePeriodDate(a.period) || a.createdAt;
@@ -358,6 +361,23 @@ function Home() {
             const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
             return (
               <div key={a.id} className="album-card group relative">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    updateAlbum(a.id, { favorite: !a.favorite });
+                  }}
+                  aria-pressed={!!a.favorite}
+                  aria-label={a.favorite ? t.unfavorite : t.favorite}
+                  className={`absolute top-3 left-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm shadow-md transition-all active:scale-90 ${
+                    a.favorite
+                      ? "bg-white/95 text-amber-400"
+                      : "bg-black/35 text-white/90 hover:bg-black/50"
+                  }`}
+                >
+                  <Star size={16} fill={a.favorite ? "currentColor" : "none"} strokeWidth={2} />
+                </button>
                 <Link to="/album/$id" params={{ id: a.id }} search={{ q: query, tags: selectedTags }} className="block">
                   <div className="aspect-[5/4] bg-muted relative overflow-hidden">
                     <img src={a.photos[0]?.dataUrl} alt={a.title} className="w-full h-full object-cover" loading="lazy" />

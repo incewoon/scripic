@@ -1,55 +1,56 @@
-## 목표
-앨범에 사용자 태그(여행, 가족, 일상…)를 붙이고, 메인화면에서 태그 칩으로 OR 필터링.
+# 즐겨찾기 (Favorite) 기능 추가
 
-## 변경 사항
+메인 화면의 각 앨범 카드 좌측 상단에 별표 버튼을 두고, 활성화한 앨범은 항상 리스트 상단에 고정합니다.
 
-### 1. `src/lib/storage.ts`
-- `Album` 타입에 `tags?: string[]` 추가 (옵션, 기존 앨범 호환).
-- 별도 마이그레이션 불필요 (IndexedDB, 옵셔널 필드).
+## 1. 데이터 모델
 
-### 2. `src/lib/i18n.ts`
-- 프리셋 태그 5–6개 i18n 키 추가: 여행/가족/일상/친구/음식/특별한날 (Travel/Family/Daily/Friends/Food/Special).
-- 라벨: `tagsLabel`, `tagsHint`, `tagAddPlaceholder`, `filterByTag` 등.
+**`src/lib/storage.ts`**
+- `Album` 타입에 `favorite?: boolean` 추가 (선택 필드, 기존 데이터 마이그레이션 불필요 — undefined는 false 취급).
+- 기존 `updateAlbum(id, patch)` 함수를 그대로 사용해 토글 저장.
 
-### 3. `src/routes/create.tsx` (사진 선택 단계에서 입력)
-- 새 상태: `tags: string[]`.
-- 프리셋 칩 (토글) + 자유 입력 input (Enter/콤마로 추가, X로 삭제, 최대 5개 정도).
-- 위치: 모드/톤 섹션 아래, 진행바 위.
-- `sessionStorage.setItem("memori_tags", JSON.stringify(tags))` 저장.
+## 2. 메인 화면 (`src/routes/index.tsx`)
 
-### 4. `src/routes/chat.tsx`
-- 시작 시 `sessionStorage`에서 tags 읽어 상태로 보관.
-- `saveAlbum({ ..., tags })`로 함께 저장.
+### 별표 토글 버튼
+각 앨범 카드 좌측 상단(현재 우측 상단에는 추가 사진 썸네일이 있음)에 절대 위치로 별 아이콘 버튼 배치:
+- `lucide-react`의 `Star` 아이콘 사용.
+- 활성: `fill="currentColor"` + 따뜻한 강조색(예: `text-yellow-300` 또는 디자인 토큰 기반 amber 톤) + soft shadow.
+- 비활성: 흰색 외곽선, 반투명 배경 (`bg-black/30 backdrop-blur-sm`)으로 사진 위에서도 보이게.
+- 크기: `h-8 w-8 rounded-full`, 아이콘 `size={16}`.
+- `onClick`에서 `e.preventDefault()` + `e.stopPropagation()`으로 `<Link>` 네비게이션 방지.
+- 핸들러: `await updateAlbum(a.id, { favorite: !a.favorite })` — `notifyAlbums()`가 자동 호출되어 리스트 즉시 갱신.
+- 접근성: `aria-pressed={!!a.favorite}`, `aria-label={t.favorite}` / `t.unfavorite`.
 
-### 5. `src/routes/index.tsx` (필터 UI + 로직)
-- URL search 스키마에 `tags: string[]` 추가 (`validateSearch`).
-- 모든 앨범에서 사용된 태그 목록 집계 (정렬: 빈도수 내림차순).
-- 검색창 바로 아래 가로 스크롤 칩 영역:
-  - 각 칩 탭 → URL `tags` 토글 (replace navigate).
-  - 선택된 칩 강조 (gradient-warm 배경).
-  - 1개 이상 선택 시 "모두 지우기" X 표시.
-- `visibleAlbums` 필터링: 기존 `tokens` 매칭 + `tags.length === 0 || a.tags?.some(t => selectedTags.includes(t))` (OR).
-- 앨범 카드 `<Link>`의 `search`에 `tags`도 함께 전달해 album 페이지 이동 후 복귀 시 필터 유지.
-- 카운트 표시도 태그 필터 적용분 반영.
+### 정렬 로직 수정
+현재 `sortedAlbums` 계산식은 그대로 두고, 그 위에 **즐겨찾기 우선 분리**를 한 단계 더 적용:
 
-### 6. `src/routes/album.$id.tsx`
-- `validateSearch`에 `tags: string[]` 추가, 뒤로가기 `<Link to="/" search={{ q, tags }}>` 로 보존.
-- (선택) 상세 헤더에 앨범 태그 배지 표시 — 읽기 전용. 작은 추가만.
+```ts
+const sortedAlbums = albums
+  ? [...albums].sort((a, b) => {
+      // 1순위: favorite 여부 (true가 위로)
+      const fa = a.favorite ? 1 : 0;
+      const fb = b.favorite ? 1 : 0;
+      if (fa !== fb) return fb - fa;
+      // 2순위: 기존 sortMode/sortDir 로직
+      let diff = sortMode === "photo"
+        ? (parsePeriodDate(b.period) || b.createdAt) - (parsePeriodDate(a.period) || a.createdAt)
+        : b.createdAt - a.createdAt;
+      return sortDir === "desc" ? diff : -diff;
+    })
+  : null;
+```
+- 검색/태그 필터(`visibleAlbums`) 로직은 변경 없음 — 필터링 후에도 즐겨찾기가 상단에 유지됨.
 
-## 기술 세부
+## 3. i18n (`src/lib/i18n.ts`)
 
-### 태그 정규화
-- 입력값: trim, 길이 1–20, 중복 제거(대소문자 무시 기준 케이스 보존). 빈 문자열·공백만은 무시.
-- 정렬: 사용자 추가 순서 유지.
+추가 키:
+- `favorite`: "즐겨찾기 추가" / "Add to favorites"
+- `unfavorite`: "즐겨찾기 해제" / "Remove from favorites"
 
-### URL 직렬화
-- TanStack Router 기본 직렬화가 배열을 지원 — `tags=여행&tags=가족` 형태.
-- `validateSearch`에서 `Array.isArray(s.tags) ? s.tags.filter(t => typeof t === 'string') : []`.
+## 변경 없음
+- 앨범 상세 페이지, 생성 플로우, 백엔드/DB, 디자인 토큰, 정렬 드롭다운 UI.
+- 즐겨찾기는 정렬 모드(`created`/`photo`)와 독립적으로 동작 — 즐겨찾기 그룹 내부에서 현재 정렬 모드가 적용됨.
 
-### 네이티브 호환
-- Capacitor WebView도 동일한 URL 검색 파라미터 작동, 별도 처리 불필요.
-
-## 비변경 영역
-- 백엔드/DB 스키마 변경 없음 (로컬 IndexedDB).
-- 검색 한글 IME 처리 로직(기존 inputValue/composition) 그대로.
-- 디자인 토큰(컬러/그라데이션) 기존 변수 재사용.
+## 검증
+- TypeScript 컴파일 통과.
+- 별표 클릭 시 카드가 즉시 상단으로 이동하는지 프리뷰에서 확인.
+- 별표 클릭이 앨범 상세로의 네비게이션을 트리거하지 않는지 확인.
