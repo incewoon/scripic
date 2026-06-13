@@ -370,10 +370,10 @@ function Home() {
                   }}
                   aria-pressed={!!a.favorite}
                   aria-label={a.favorite ? t.unfavorite : t.favorite}
-                  className={`absolute top-3 left-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm shadow-md transition-all active:scale-90 ${
+                  className={`absolute top-3 left-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-all active:scale-90 ${
                     a.favorite
-                      ? "bg-white/95 text-amber-400"
-                      : "bg-black/35 text-white/90 hover:bg-black/50"
+                      ? "bg-white/95 text-amber-400 shadow-md"
+                      : "bg-black/10 text-white/40 hover:bg-black/25 hover:text-white/70"
                   }`}
                 >
                   <Star size={16} fill={a.favorite ? "currentColor" : "none"} strokeWidth={2} />
@@ -409,7 +409,7 @@ function Home() {
         </div>
       )}
 
-      <div className="fixed bottom-6 left-0 right-0 px-5 mx-auto max-w-md">
+      <div className="fixed bottom-6 left-0 right-0 px-5 mx-auto max-w-md z-30">
         <button
           onClick={onCreate}
           className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
