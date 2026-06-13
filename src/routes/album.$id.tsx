@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download, Tag } from "lucide-react";
 import { toPng } from "html-to-image";
 import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
@@ -203,6 +203,22 @@ function AlbumView() {
               <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" highlightQuery={q} />
             </div>
           </div>
+          {album.tags && album.tags.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              {album.tags.map((tag) => (
+                <Link
+                  key={tag}
+                  to="/"
+                  search={{ q, tags: [tag] }}
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] text-primary-foreground shadow-sm transition-transform active:scale-95"
+                  style={{ background: "var(--gradient-warm)" }}
+                >
+                  <Tag size={10} />
+                  {tag}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="px-6 mb-8">
