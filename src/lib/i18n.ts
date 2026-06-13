@@ -360,6 +360,8 @@ const dict = {
     tagPresetSpecial: "특별한 날",
     filterByTag: "태그 필터",
     clearTags: "지우기",
+    favorite: "즐겨찾기 추가",
+    unfavorite: "즐겨찾기 해제",
     // Daily limit
     dailyLimitTitle: "하루에 한 개만 만들 수 있어요",
     dailyLimitBody: "오늘은 이미 추억을 하나 엮었어요. 내일 다시 새로운 앨범을 만들 수 있어요.",
