@@ -361,6 +361,23 @@ function Home() {
             const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
             return (
               <div key={a.id} className="album-card group relative">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    updateAlbum(a.id, { favorite: !a.favorite });
+                  }}
+                  aria-pressed={!!a.favorite}
+                  aria-label={a.favorite ? t.unfavorite : t.favorite}
+                  className={`absolute top-3 left-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm shadow-md transition-all active:scale-90 ${
+                    a.favorite
+                      ? "bg-white/95 text-amber-400"
+                      : "bg-black/35 text-white/90 hover:bg-black/50"
+                  }`}
+                >
+                  <Star size={16} fill={a.favorite ? "currentColor" : "none"} strokeWidth={2} />
+                </button>
                 <Link to="/album/$id" params={{ id: a.id }} search={{ q: query, tags: selectedTags }} className="block">
                   <div className="aspect-[5/4] bg-muted relative overflow-hidden">
                     <img src={a.photos[0]?.dataUrl} alt={a.title} className="w-full h-full object-cover" loading="lazy" />
