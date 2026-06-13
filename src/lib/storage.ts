@@ -9,6 +9,7 @@ export type Album = {
   period?: string;
   location?: string;
   tags?: string[];
+  favorite?: boolean;
   photos: { dataUrl: string; caption: string }[];
   createdAt: number;
 };
