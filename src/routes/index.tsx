@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { getAlbums, subscribeAlbums, type Album } from "@/lib/storage";
-import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles, Search } from "lucide-react";
+import { getAlbums, subscribeAlbums, updateAlbum, type Album } from "@/lib/storage";
+import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles, Search, Star } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { canCreateAlbumToday, nextAvailableDateLabel, hasExtraUsedToday } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
