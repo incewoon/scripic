@@ -6,6 +6,7 @@ import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, type Album } from
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Hl } from "@/lib/highlight";
+import { MapDialog } from "@/components/MapDialog";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
@@ -84,6 +85,7 @@ function AlbumView() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -198,10 +200,22 @@ function AlbumView() {
               <Calendar size={12}/>
               <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" highlightQuery={q} />
             </div>
-            <div className="flex items-center gap-1.5">
-              <MapPin size={12}/>
-              <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" highlightQuery={q} />
-            </div>
+            {!editMode && album.location ? (
+              <button
+                type="button"
+                onClick={() => setMapOpen(true)}
+                className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
+                aria-label={t.openGoogleMaps}
+              >
+                <MapPin size={12}/>
+                <Hl text={album.location} query={q} />
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <MapPin size={12}/>
+                <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" highlightQuery={q} />
+              </div>
+            )}
           </div>
           {album.tags && album.tags.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
@@ -285,6 +299,14 @@ function AlbumView() {
           <Download size={16}/> {downloading ? t.preparing : t.download}
         </button>
       </div>
+
+      {album.location && (
+        <MapDialog
+          open={mapOpen}
+          onOpenChange={setMapOpen}
+          location={album.location}
+        />
+      )}
     </div>
   );
 }
