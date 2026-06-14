@@ -85,6 +85,7 @@ function AlbumView() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
