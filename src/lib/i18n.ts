@@ -169,6 +169,11 @@ const dict = {
     clearTags: "Clear",
     favorite: "Add to favorites",
     unfavorite: "Remove from favorites",
+    openGoogleMaps: "Open in Google Maps",
+    tapMapToOpen: "Tap the map to open in Google Maps",
+    mapUnavailable: "We couldn't find this place on the map",
+    saveToGoogleMapsTitle: "Save this place to Google Maps",
+    saveToGoogleMapsBody: "Google Maps will open. To save the place:\n1) Tap the pin\n2) Tap 'Save'\n3) Pick a list (Want to go, Favorites, etc.)",
     // Daily limit
     dailyLimitTitle: "One album per day",
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
