@@ -6,6 +6,7 @@ import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, type Album } from
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Hl } from "@/lib/highlight";
+import { MapDialog } from "@/components/MapDialog";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
