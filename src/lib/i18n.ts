@@ -367,6 +367,11 @@ const dict = {
     clearTags: "지우기",
     favorite: "즐겨찾기 추가",
     unfavorite: "즐겨찾기 해제",
+    openGoogleMaps: "구글맵으로 이동",
+    tapMapToOpen: "지도를 누르면 구글맵에서 열려요",
+    mapUnavailable: "지도에서 위치를 찾지 못했어요",
+    saveToGoogleMapsTitle: "구글맵에 저장할 수 있어요",
+    saveToGoogleMapsBody: "구글맵 앱이 열리면 이렇게 저장하세요:\n1) 핀을 한 번 누르세요\n2) '저장' 버튼을 누르세요\n3) 가고 싶은 곳, 즐겨찾는 장소 등 원하는 목록을 선택하세요",
     // Daily limit
     dailyLimitTitle: "하루에 한 개만 만들 수 있어요",
     dailyLimitBody: "오늘은 이미 추억을 하나 엮었어요. 내일 다시 새로운 앨범을 만들 수 있어요.",
