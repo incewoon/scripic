@@ -299,6 +299,14 @@ function AlbumView() {
           <Download size={16}/> {downloading ? t.preparing : t.download}
         </button>
       </div>
+
+      {album.location && (
+        <MapDialog
+          open={mapOpen}
+          onOpenChange={setMapOpen}
+          location={album.location}
+        />
+      )}
     </div>
   );
 }
