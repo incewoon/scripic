@@ -200,7 +200,7 @@ function AlbumView() {
               <Calendar size={12}/>
               <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" highlightQuery={q} />
             </div>
-            {!editMode && album.location ? (
+            {!editMode && (album.location || (album.lat != null && album.lng != null)) ? (
               <button
                 type="button"
                 onClick={() => setMapOpen(true)}
@@ -208,7 +208,7 @@ function AlbumView() {
                 aria-label={t.openGoogleMaps}
               >
                 <MapPin size={12}/>
-                <Hl text={album.location} query={q} />
+                {album.location ? <Hl text={album.location} query={q} /> : <span>{t.openGoogleMaps}</span>}
               </button>
             ) : (
               <div className="flex items-center gap-1.5">
