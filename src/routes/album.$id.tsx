@@ -300,11 +300,11 @@ function AlbumView() {
         </button>
       </div>
 
-      {album.location && (
+      {(album.location || (album.lat != null && album.lng != null)) && (
         <MapDialog
           open={mapOpen}
           onOpenChange={setMapOpen}
-          location={album.location}
+          location={album.location || ""}
           initialCoords={
             album.lat != null && album.lng != null
               ? { lat: album.lat, lng: album.lng }
