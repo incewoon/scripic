@@ -305,6 +305,12 @@ function AlbumView() {
           open={mapOpen}
           onOpenChange={setMapOpen}
           location={album.location}
+          initialCoords={
+            album.lat != null && album.lng != null
+              ? { lat: album.lat, lng: album.lng }
+              : undefined
+          }
+          onCoordsResolved={(c) => patch({ lat: c.lat, lng: c.lng })}
         />
       )}
     </div>

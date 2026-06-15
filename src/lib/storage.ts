@@ -8,6 +8,8 @@ export type Album = {
   closing: string;
   period?: string;
   location?: string;
+  lat?: number;
+  lng?: number;
   tags?: string[];
   favorite?: boolean;
   photos: { dataUrl: string; caption: string }[];

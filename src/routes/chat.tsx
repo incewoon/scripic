@@ -379,6 +379,8 @@ function Chat() {
         closing: album.closing,
         period: meta.period || album.period,
         location: album.location || meta.location,
+        lat: photoMetas[0]?.lat,
+        lng: photoMetas[0]?.lng,
         tags,
         photos: photos.map((dataUrl, i) => ({ dataUrl, caption: album.captions?.[i] ?? "" })),
         createdAt: Date.now(),
