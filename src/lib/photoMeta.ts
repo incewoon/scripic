@@ -28,14 +28,11 @@ export async function reverseGeocode(lat: number, lng: number, lang: string): Pr
   const key = `${lat.toFixed(2)},${lng.toFixed(2)}|${lang}`;
   if (cityCache.has(key)) return cityCache.get(key);
   try {
-    const r = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&accept-language=${lang}`,
-      { headers: { Accept: "application/json" } },
-    );
-    if (!r.ok) return undefined;
-    const j = await r.json();
-    const a = j.address || {};
-    const city = a.city || a.town || a.village || a.county || a.state || a.country;
+    // Use Google Maps via the gateway-backed server function — more reliable than Nominatim,
+    // especially in Korea where OSM city names are sparse / requests are sometimes blocked.
+    const { reverseGeocodeCoords } = await import("@/lib/geocode.functions");
+    const r = await reverseGeocodeCoords({ data: { lat, lng, lang } });
+    const city = r?.city;
     if (city) cityCache.set(key, city);
     return city;
   } catch {
