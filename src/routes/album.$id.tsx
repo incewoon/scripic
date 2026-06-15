@@ -99,6 +99,26 @@ function AlbumView() {
     return () => { cancelled = true; unsub(); };
   }, [id]);
 
+  // Backfill location text from coords when missing (older albums, or when EXIF
+  // had coords but reverse-geocoding failed at create time).
+  const backfilledRef = useRef(false);
+  useEffect(() => {
+    if (!album || backfilledRef.current) return;
+    if (album.location) return;
+    if (album.lat == null || album.lng == null) return;
+    backfilledRef.current = true;
+    (async () => {
+      try {
+        const { reverseGeocode } = await import("@/lib/photoMeta");
+        const lang = typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
+        const city = await reverseGeocode(album.lat!, album.lng!, lang);
+        if (city) await updateAlbum(album.id, { location: city });
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [album]);
+
   async function patch(p: Partial<Album>) {
     if (!album) return;
     const next = { ...album, ...p };
