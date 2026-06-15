@@ -99,6 +99,26 @@ function AlbumView() {
     return () => { cancelled = true; unsub(); };
   }, [id]);
 
+  // Backfill location text from coords when missing (older albums, or when EXIF
+  // had coords but reverse-geocoding failed at create time).
+  const backfilledRef = useRef(false);
+  useEffect(() => {
+    if (!album || backfilledRef.current) return;
+    if (album.location) return;
+    if (album.lat == null || album.lng == null) return;
+    backfilledRef.current = true;
+    (async () => {
+      try {
+        const { reverseGeocode } = await import("@/lib/photoMeta");
+        const lang = typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
+        const city = await reverseGeocode(album.lat!, album.lng!, lang);
+        if (city) await updateAlbum(album.id, { location: city });
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [album]);
+
   async function patch(p: Partial<Album>) {
     if (!album) return;
     const next = { ...album, ...p };
@@ -200,7 +220,7 @@ function AlbumView() {
               <Calendar size={12}/>
               <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" highlightQuery={q} />
             </div>
-            {!editMode && album.location ? (
+            {!editMode && (album.location || (album.lat != null && album.lng != null)) ? (
               <button
                 type="button"
                 onClick={() => setMapOpen(true)}
@@ -208,7 +228,7 @@ function AlbumView() {
                 aria-label={t.openGoogleMaps}
               >
                 <MapPin size={12}/>
-                <Hl text={album.location} query={q} />
+                {album.location ? <Hl text={album.location} query={q} /> : <span>{t.openGoogleMaps}</span>}
               </button>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -300,11 +320,11 @@ function AlbumView() {
         </button>
       </div>
 
-      {album.location && (
+      {(album.location || (album.lat != null && album.lng != null)) && (
         <MapDialog
           open={mapOpen}
           onOpenChange={setMapOpen}
-          location={album.location}
+          location={album.location || ""}
           initialCoords={
             album.lat != null && album.lng != null
               ? { lat: album.lat, lng: album.lng }
