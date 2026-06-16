@@ -77,10 +77,8 @@ function fmtTakenAt(iso: string | undefined, lang: string) {
   }
 }
 
-function albumSafeLocation(metas: PhotoMeta[]): string | undefined {
-  const cities = Array.from(new Set(metas.map((m) => m?.city).filter(Boolean) as string[]));
-  return cities.length ? cities.slice(0, 3).join(", ") : undefined;
-}
+// Location is no longer derived from photo EXIF at creation time — user
+// picks it on the album detail screen after creation.
 
 // Smaller, lower-quality variant for the AI payload. Display + saved album
 // keep the original 1280px versions. Cuts the first-turn upload by ~50-60%.
@@ -362,16 +360,7 @@ function Chat() {
   async function finish(messagesOverride?: Msg[]) {
     const msgs = messagesOverride ?? messages;
     const activePhotos = photosRef.current.length ? photosRef.current : photos;
-    const activePhotoMetas = photoMetasRef.current.length ? photoMetasRef.current : photoMetas;
     const activeMeta = Object.keys(metaRef.current).length ? metaRef.current : meta;
-    const firstLocatedMeta = activePhotoMetas.find((m) => m?.lat != null && m?.lng != null);
-    const storedLocation = activeMeta.location || albumSafeLocation(activePhotoMetas);
-    console.log("[Chat] finish() called", {
-      override: !!messagesOverride,
-      messageCount: msgs.length,
-      generating,
-      busy,
-    });
     if (msgs.length < 2) {
       toast.error(t.talkMore);
       finishingRef.current = false;
@@ -379,25 +368,18 @@ function Chat() {
     }
     setGenerating(true);
     try {
-      console.log("[Chat] calling aiGenerateAlbum", { messageCount: msgs.length, photoCount: activePhotos.length });
       const album = await aiGenerateAlbum({
         messages: msgs,
         photoCount: activePhotos.length,
         lang: getLang(),
         period: activeMeta.period,
-        location: storedLocation,
+        // Location is selected by the user on the album detail screen.
+        location: undefined,
         mode,
         tone,
       });
       const id = crypto.randomUUID();
       markAlbumCreatedToday();
-
-      console.log("--- [chat.tsx] saveAlbum 직전 데이터 확인 ---");
-      console.log({
-        lat: activePhotoMetas[0]?.lat,
-        lng: activePhotoMetas[0]?.lng,
-        location: storedLocation,
-      });
 
       await saveAlbum({
         id,
@@ -406,9 +388,10 @@ function Chat() {
         intro: album.intro,
         closing: album.closing,
         period: activeMeta.period || album.period,
-        location: storedLocation || album.location,
-        lat: firstLocatedMeta?.lat,
-        lng: firstLocatedMeta?.lng,
+        // Default location to undefined; user adds it manually after creation.
+        location: undefined,
+        lat: undefined,
+        lng: undefined,
         tags,
         photos: activePhotos.map((dataUrl, i) => ({ dataUrl, caption: album.captions?.[i] ?? "" })),
         createdAt: Date.now(),
@@ -419,6 +402,9 @@ function Chat() {
       sessionStorage.removeItem("memori_mode");
       sessionStorage.removeItem("memori_tone");
       sessionStorage.removeItem("memori_tags");
+      // Mark this album as just-created so the detail screen shows the
+      // first-time edit coachmark exactly once.
+      try { sessionStorage.setItem("scripic:justCreated", id); } catch {}
       setMessages([]);
       toast.success(t.completed);
       leavingRef.current = true;

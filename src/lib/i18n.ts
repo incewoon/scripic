@@ -208,6 +208,15 @@ const dict = {
     privacyAgreeContinue: "Agree & continue",
     privacyPolicySection: "Privacy",
     privacyPolicyLink: "Privacy Policy",
+    // Map picker
+    pickLocationTitle: "Pick a location on the map",
+    pickLocationHint: "Tap the map to drop a pin, then save.",
+    saveLocation: "Save this location",
+    addLocation: "Add location",
+    // Edit coachmark
+    editCoachTitle: "Polish this album anytime",
+    editCoachBody: "Tap the pencil to edit, or add a location from the map.",
+    editCoachOk: "Got it",
   },
   ko: {
 
@@ -406,6 +415,15 @@ const dict = {
     privacyAgreeContinue: "동의하고 계속하기",
     privacyPolicySection: "개인정보",
     privacyPolicyLink: "개인정보처리방침",
+    // Map picker
+    pickLocationTitle: "지도에서 장소를 선택해주세요",
+    pickLocationHint: "지도를 탭하면 핀이 찍혀요. 위치를 저장해주세요.",
+    saveLocation: "이 위치로 저장",
+    addLocation: "장소 추가",
+    // Edit coachmark
+    editCoachTitle: "이 앨범을 다듬어보세요",
+    editCoachBody: "연필 버튼으로 내용을 수정하거나, 지도에서 장소를 추가할 수 있어요.",
+    editCoachOk: "확인",
   },
 } as const;
 

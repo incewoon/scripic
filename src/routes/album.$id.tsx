@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download, Tag } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download, Tag, Plus } from "lucide-react";
 import { toPng } from "html-to-image";
 import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Hl } from "@/lib/highlight";
 import { MapDialog } from "@/components/MapDialog";
+import { EditCoachmark } from "@/components/EditCoachmark";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
@@ -86,6 +87,7 @@ function AlbumView() {
   const [editMode, setEditMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
+  const [mapMode, setMapMode] = useState<"view" | "pick">("view");
   const shareRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -99,24 +101,19 @@ function AlbumView() {
     return () => { cancelled = true; unsub(); };
   }, [id]);
 
-  // Backfill location text from coords when missing (older albums, or when EXIF
-  // had coords but reverse-geocoding failed at create time).
-  const backfilledRef = useRef(false);
+  // First-time edit coachmark: shown once right after album creation.
+  const [coachOpen, setCoachOpen] = useState(false);
+  const pencilBtnRef = useRef<HTMLButtonElement>(null);
+  const locationChipRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (!album || backfilledRef.current) return;
-    if (album.location) return;
-    if (album.lat == null || album.lng == null) return;
-    backfilledRef.current = true;
-    (async () => {
-      try {
-        const { reverseGeocode } = await import("@/lib/photoMeta");
-        const lang = typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
-        const city = await reverseGeocode(album.lat!, album.lng!, lang);
-        if (city) await updateAlbum(album.id, { location: city });
-      } catch {
-        /* ignore */
-      }
-    })();
+    if (!album) return;
+    let justCreatedId: string | null = null;
+    try { justCreatedId = sessionStorage.getItem("scripic:justCreated"); } catch {}
+    if (justCreatedId !== album.id) return;
+    try { sessionStorage.removeItem("scripic:justCreated"); } catch {}
+    // Wait a tick for targets to mount + render.
+    const tm = window.setTimeout(() => setCoachOpen(true), 350);
+    return () => window.clearTimeout(tm);
   }, [album]);
 
   async function patch(p: Partial<Album>) {
@@ -171,6 +168,7 @@ function AlbumView() {
         <Link to="/" search={{ q, tags: searchTags }} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
         <div className="flex items-center gap-1">
           <button
+            ref={pencilBtnRef}
             type="button"
             onClick={() => {
               const next = !editMode;
@@ -220,10 +218,14 @@ function AlbumView() {
               <Calendar size={12}/>
               <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" highlightQuery={q} />
             </div>
-            {!editMode && (album.location || (album.lat != null && album.lng != null)) ? (
+            {album.location || (album.lat != null && album.lng != null) ? (
               <button
+                ref={locationChipRef}
                 type="button"
-                onClick={() => setMapOpen(true)}
+                onClick={() => {
+                  setMapMode(editMode ? "pick" : "view");
+                  setMapOpen(true);
+                }}
                 className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
                 aria-label={t.openGoogleMaps}
               >
@@ -231,10 +233,19 @@ function AlbumView() {
                 {album.location ? <Hl text={album.location} query={q} /> : <span>{t.openGoogleMaps}</span>}
               </button>
             ) : (
-              <div className="flex items-center gap-1.5">
-                <MapPin size={12}/>
-                <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" highlightQuery={q} />
-              </div>
+              <button
+                ref={locationChipRef}
+                type="button"
+                onClick={() => {
+                  setMapMode("pick");
+                  setMapOpen(true);
+                }}
+                className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
+                aria-label={t.addLocation}
+              >
+                <Plus size={12}/>
+                <span>{t.addLocation}</span>
+              </button>
             )}
           </div>
           {album.tags && album.tags.length > 0 && (
@@ -320,19 +331,28 @@ function AlbumView() {
         </button>
       </div>
 
-      {(album.location || (album.lat != null && album.lng != null)) && (
-        <MapDialog
-          open={mapOpen}
-          onOpenChange={setMapOpen}
-          location={album.location || ""}
-          initialCoords={
-            album.lat != null && album.lng != null
-              ? { lat: album.lat, lng: album.lng }
-              : undefined
-          }
-          onCoordsResolved={(c) => patch({ lat: c.lat, lng: c.lng })}
-        />
-      )}
+      <MapDialog
+        open={mapOpen}
+        onOpenChange={setMapOpen}
+        mode={mapMode}
+        location={album.location || ""}
+        initialCoords={
+          album.lat != null && album.lng != null
+            ? { lat: album.lat, lng: album.lng }
+            : undefined
+        }
+        onCoordsResolved={(c) => patch({ lat: c.lat, lng: c.lng })}
+        onPick={({ lat, lng, label }) => {
+          void patch({ lat, lng, location: label });
+          toast.success(t.saved);
+        }}
+      />
+
+      <EditCoachmark
+        open={coachOpen}
+        onClose={() => setCoachOpen(false)}
+        targets={[pencilBtnRef, locationChipRef]}
+      />
     </div>
   );
 }

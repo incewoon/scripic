@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, ExternalLink, Loader2 } from "lucide-react";
+import { MapPin, ExternalLink, Loader2, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useT } from "@/lib/i18n";
 import { useServerFn } from "@tanstack/react-start";
-import { geocodeLocation } from "@/lib/geocode.functions";
+import { geocodeLocation, reverseGeocodeCoords } from "@/lib/geocode.functions";
 
 declare global {
   interface Window {
@@ -51,19 +51,36 @@ export function MapDialog({
   location,
   initialCoords,
   onCoordsResolved,
+  mode = "view",
+  onPick,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   location: string;
   initialCoords?: { lat: number; lng: number };
   onCoordsResolved?: (c: { lat: number; lng: number }) => void;
+  mode?: "view" | "pick";
+  /** Called when user confirms a picked location with the resolved short label. */
+  onPick?: (p: { lat: number; lng: number; label: string }) => void;
 }) {
   const { t } = useT();
   const mapRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | undefined>(initialCoords);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "nocoords" | "error">("idle");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const markerRef = useRef<any>(null);
   const geocode = useServerFn(geocodeLocation);
+  const revGeocode = useServerFn(reverseGeocodeCoords);
+
+  // Reset picker state whenever the dialog opens.
+  useEffect(() => {
+    if (open) {
+      setPicked(null);
+      setSaving(false);
+    }
+  }, [open]);
 
   // Resolve coords + load map when opened
   useEffect(() => {
@@ -72,35 +89,79 @@ export function MapDialog({
     setStatus("loading");
     (async () => {
       let c = coords;
-      if (!c) {
-        try {
-          const r = await geocode({ data: { query: location } });
-          if (cancelled) return;
-          if (r) {
-            c = r;
-            setCoords(r);
-            onCoordsResolved?.(r);
-          } else {
-            setStatus("nocoords");
+      if (mode === "view") {
+        if (!c) {
+          try {
+            const r = await geocode({ data: { query: location } });
+            if (cancelled) return;
+            if (r) {
+              c = r;
+              setCoords(r);
+              onCoordsResolved?.(r);
+            } else {
+              setStatus("nocoords");
+              return;
+            }
+          } catch {
+            if (!cancelled) setStatus("nocoords");
             return;
           }
-        } catch {
-          if (!cancelled) setStatus("nocoords");
-          return;
+        }
+      } else {
+        // pick mode — try geolocation if no initialCoords
+        if (!c && typeof navigator !== "undefined" && navigator.geolocation) {
+          await new Promise<void>((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                if (!cancelled) {
+                  c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                  setCoords(c);
+                }
+                resolve();
+              },
+              () => resolve(),
+              { timeout: 4000 },
+            );
+          });
         }
       }
       try {
         await loadGoogleMaps();
-        if (cancelled || !mapRef.current || !c) return;
+        if (cancelled || !mapRef.current) return;
+        const center = c ?? { lat: 20, lng: 0 };
         const map = new window.google.maps.Map(mapRef.current, {
-          center: c,
-          zoom: 14,
+          center,
+          zoom: c ? 14 : 2,
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: "cooperative",
           clickableIcons: false,
         });
-        new window.google.maps.Marker({ position: c, map });
+        const marker = new window.google.maps.Marker({
+          position: c ?? center,
+          map,
+          draggable: mode === "pick",
+          visible: !!c || mode === "view" ? !!c : false,
+        });
+        markerRef.current = marker;
+
+        if (mode === "pick") {
+          if (c) {
+            marker.setVisible(true);
+            setPicked(c);
+          }
+          map.addListener("click", (e: any) => {
+            const lat = e.latLng.lat();
+            const lng = e.latLng.lng();
+            marker.setPosition({ lat, lng });
+            marker.setVisible(true);
+            setPicked({ lat, lng });
+          });
+          marker.addListener("dragend", () => {
+            const p = marker.getPosition();
+            if (p) setPicked({ lat: p.lat(), lng: p.lng() });
+          });
+        }
         setStatus("ready");
       } catch {
         if (!cancelled) setStatus("error");
@@ -110,13 +171,32 @@ export function MapDialog({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, location]);
+  }, [open, location, mode]);
 
   const openGoogleMaps = () => {
     const q = coords ? `${coords.lat},${coords.lng}` : location;
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
+
+  async function confirmPick() {
+    if (!picked || saving) return;
+    setSaving(true);
+    const lang =
+      typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
+    let label = `${picked.lat.toFixed(3)}, ${picked.lng.toFixed(3)}`;
+    try {
+      const r = await revGeocode({ data: { lat: picked.lat, lng: picked.lng, lang } });
+      if (r?.label) label = r.label;
+    } catch {
+      /* keep coord fallback */
+    }
+    onPick?.({ lat: picked.lat, lng: picked.lng, label });
+    setSaving(false);
+    onOpenChange(false);
+  }
+
+  const isPick = mode === "pick";
 
   return (
     <>
@@ -125,42 +205,70 @@ export function MapDialog({
           <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="flex items-center gap-2 text-base">
               <MapPin size={16} className="text-primary" />
-              {location}
+              {isPick ? t.pickLocationTitle : location}
             </DialogTitle>
-            <DialogDescription className="text-xs">{t.tapMapToOpen}</DialogDescription>
+            <DialogDescription className="text-xs">
+              {isPick ? t.pickLocationHint : t.tapMapToOpen}
+            </DialogDescription>
           </DialogHeader>
 
-          <button
-            type="button"
-            onClick={() => coords && setConfirmOpen(true)}
-            className="relative block w-full aspect-square bg-muted focus:outline-none"
-            aria-label={t.openGoogleMaps}
-          >
-            <div ref={mapRef} className="absolute inset-0" />
-            {status !== "ready" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/80 text-sm warm-muted">
-                {status === "loading" && <Loader2 size={20} className="animate-spin" />}
-                {status === "loading" && <span>{t.loading}</span>}
-                {status === "nocoords" && <span className="px-6 text-center">{t.mapUnavailable}</span>}
-                {status === "error" && <span className="px-6 text-center">{t.failed}</span>}
-              </div>
-            )}
-            {status === "ready" && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-4 py-3 text-left">
-                <span className="text-[12px] text-white/95 font-medium">{t.tapMapToOpen}</span>
-              </div>
-            )}
-          </button>
-
-          <div className="px-5 py-3">
+          {isPick ? (
+            <div className="relative block w-full aspect-square bg-muted">
+              <div ref={mapRef} className="absolute inset-0" />
+              {status !== "ready" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/80 text-sm warm-muted">
+                  {status === "loading" && <Loader2 size={20} className="animate-spin" />}
+                  {status === "loading" && <span>{t.loading}</span>}
+                  {status === "error" && <span className="px-6 text-center">{t.failed}</span>}
+                </div>
+              )}
+            </div>
+          ) : (
             <button
               type="button"
-              onClick={() => (coords ? setConfirmOpen(true) : openGoogleMaps())}
-              className="w-full flex items-center justify-center gap-2 rounded-full py-2.5 text-[13px] text-primary-foreground active:scale-[0.98] transition-transform"
-              style={{ background: "var(--gradient-warm)" }}
+              onClick={() => coords && setConfirmOpen(true)}
+              className="relative block w-full aspect-square bg-muted focus:outline-none"
+              aria-label={t.openGoogleMaps}
             >
-              <ExternalLink size={14} /> {t.openGoogleMaps}
+              <div ref={mapRef} className="absolute inset-0" />
+              {status !== "ready" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/80 text-sm warm-muted">
+                  {status === "loading" && <Loader2 size={20} className="animate-spin" />}
+                  {status === "loading" && <span>{t.loading}</span>}
+                  {status === "nocoords" && <span className="px-6 text-center">{t.mapUnavailable}</span>}
+                  {status === "error" && <span className="px-6 text-center">{t.failed}</span>}
+                </div>
+              )}
+              {status === "ready" && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-4 py-3 text-left">
+                  <span className="text-[12px] text-white/95 font-medium">{t.tapMapToOpen}</span>
+                </div>
+              )}
             </button>
+          )}
+
+          <div className="px-5 py-3">
+            {isPick ? (
+              <button
+                type="button"
+                onClick={confirmPick}
+                disabled={!picked || saving}
+                className="w-full flex items-center justify-center gap-2 rounded-full py-2.5 text-[13px] text-primary-foreground active:scale-[0.98] transition-transform disabled:opacity-50"
+                style={{ background: "var(--gradient-warm)" }}
+              >
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                {t.saveLocation}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => (coords ? setConfirmOpen(true) : openGoogleMaps())}
+                className="w-full flex items-center justify-center gap-2 rounded-full py-2.5 text-[13px] text-primary-foreground active:scale-[0.98] transition-transform"
+                style={{ background: "var(--gradient-warm)" }}
+              >
+                <ExternalLink size={14} /> {t.openGoogleMaps}
+              </button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
