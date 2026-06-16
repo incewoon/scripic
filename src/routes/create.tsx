@@ -11,12 +11,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
+import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type PhotoMeta } from "@/lib/photoMeta";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
@@ -46,7 +41,8 @@ async function fileToDataUrl(file: File, maxDim = 1280): Promise<string> {
   const w = Math.round(img.width * scale);
   const h = Math.round(img.height * scale);
   const canvas = document.createElement("canvas");
-  canvas.width = w; canvas.height = h;
+  canvas.width = w;
+  canvas.height = h;
   canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
   return canvas.toDataURL("image/jpeg", 0.82);
 }
@@ -75,10 +71,16 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
       </div>
       <button
         onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRemove();
+        }}
         className="absolute top-1.5 right-1.5 bg-background/90 rounded-full p-1.5 shadow-sm"
         aria-label="remove"
-      ><X size={12} strokeWidth={2.5} /></button>
+      >
+        <X size={12} strokeWidth={2.5} />
+      </button>
       <div className="absolute bottom-1.5 right-1.5 bg-background/70 backdrop-blur rounded-md p-0.5 text-foreground/60">
         <GripVertical size={12} />
       </div>
@@ -112,11 +114,19 @@ function Create() {
 
   const setMode = (m: ChatMode) => {
     setModeState(m);
-    try { window.localStorage.setItem(MODE_KEY, m); } catch { /* ignore */ }
+    try {
+      window.localStorage.setItem(MODE_KEY, m);
+    } catch {
+      /* ignore */
+    }
   };
   const setTone = (tn: ChatTone) => {
     setToneState(tn);
-    try { window.localStorage.setItem(TONE_KEY, tn); } catch { /* ignore */ }
+    try {
+      window.localStorage.setItem(TONE_KEY, tn);
+    } catch {
+      /* ignore */
+    }
   };
   const [limitReason, setLimitReason] = useState<"type" | "size" | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
@@ -142,7 +152,9 @@ function Create() {
   // photos. By the time they tap "AI와 대화하기" the first /chat call doesn't
   // pay for sign-in or token issuance.
   useEffect(() => {
-    void ensureFirebaseUser().catch(() => { /* retried at call time */ });
+    void ensureFirebaseUser().catch(() => {
+      /* retried at call time */
+    });
   }, []);
 
   useEffect(() => {
@@ -161,7 +173,10 @@ function Create() {
   );
 
   const tryOpenPicker = () => {
-    if (items.length >= PHOTO_MAX) { toast(t.photoMax3); return; }
+    if (items.length >= PHOTO_MAX) {
+      toast(t.photoMax3);
+      return;
+    }
     inputRef.current?.click();
   };
 
@@ -173,8 +188,14 @@ function Create() {
     // Validate file types and sizes BEFORE processing.
     for (const f of files) {
       const isImage = f.type.startsWith("image/") || ALLOWED_EXT.test(f.name);
-      if (!isImage) { setLimitReason("type"); return; }
-      if (f.size > MAX_FILE_BYTES) { setLimitReason("size"); return; }
+      if (!isImage) {
+        setLimitReason("type");
+        return;
+      }
+      if (f.size > MAX_FILE_BYTES) {
+        setLimitReason("size");
+        return;
+      }
     }
 
     setBusy(true);
@@ -182,11 +203,13 @@ function Create() {
       const remaining = PHOTO_MAX - items.length;
       if (files.length > remaining) toast(t.photoMax3);
       const slice = files.slice(0, Math.max(0, remaining));
-      const processed = await Promise.all(slice.map(async f => {
-        const [url, meta] = await Promise.all([fileToDataUrl(f), extractMeta(f)]);
-        return { id: crypto.randomUUID(), url, meta };
-      }));
-      if (processed.length) setItems(p => [...p, ...processed]);
+      const processed = await Promise.all(
+        slice.map(async (f) => {
+          const [url, meta] = await Promise.all([fileToDataUrl(f), extractMeta(f)]);
+          return { id: crypto.randomUUID(), url, meta };
+        }),
+      );
+      if (processed.length) setItems((p) => [...p, ...processed]);
     } finally {
       setBusy(false);
     }
@@ -195,31 +218,43 @@ function Create() {
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    setItems(prev => {
-      const oldIndex = prev.findIndex(i => i.id === active.id);
-      const newIndex = prev.findIndex(i => i.id === over.id);
+    setItems((prev) => {
+      const oldIndex = prev.findIndex((i) => i.id === active.id);
+      const newIndex = prev.findIndex((i) => i.id === over.id);
       return arrayMove(prev, oldIndex, newIndex);
     });
   };
 
   const next = async () => {
-    if (items.length < 1) { toast.error(t.pickAtLeastOne); return; }
+    if (items.length < 1) {
+      toast.error(t.pickAtLeastOne);
+      return;
+    }
     setBusy(true);
     try {
       const lang = getLang();
-      const metas = await Promise.all(items.map(async i => {
-        if (i.meta.lat != null && i.meta.lng != null && !i.meta.city) {
-          const city = await reverseGeocode(i.meta.lat, i.meta.lng, lang);
-          return { ...i.meta, city };
-        }
-        return i.meta;
-      }));
-      sessionStorage.setItem("memori_photos", JSON.stringify(items.map(i => i.url)));
+      const metas = await Promise.all(
+        items.map(async (i) => {
+          if (i.meta.lat != null && i.meta.lng != null && !i.meta.city) {
+            const city = await reverseGeocode(i.meta.lat, i.meta.lng, lang);
+            return { ...i.meta, city };
+          }
+          return i.meta;
+        }),
+      );
+
+      console.log("--- [create.tsx] metas 전체 데이터 확인 ---");
+      console.log(JSON.stringify(metas, null, 2));
+
+      sessionStorage.setItem("memori_photos", JSON.stringify(items.map((i) => i.url)));
       sessionStorage.setItem("memori_photo_metas", JSON.stringify(metas));
-      sessionStorage.setItem("memori_meta", JSON.stringify({
-        period: summarizePeriod(metas, lang),
-        location: summarizeLocations(metas),
-      }));
+      sessionStorage.setItem(
+        "memori_meta",
+        JSON.stringify({
+          period: summarizePeriod(metas, lang),
+          location: summarizeLocations(metas),
+        }),
+      );
       sessionStorage.setItem("memori_mode", mode);
       sessionStorage.setItem("memori_tone", tone);
       sessionStorage.setItem("memori_tags", JSON.stringify(tags));
@@ -236,8 +271,12 @@ function Create() {
     <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-6 pb-4">
         <header className="flex items-center justify-between mb-6">
-          <Link to="/" className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
-          <span className="text-xs warm-muted">{count} / {PHOTO_MAX}</span>
+          <Link to="/" className="p-2 -ml-2 text-foreground/70">
+            <ArrowLeft size={20} />
+          </Link>
+          <span className="text-xs warm-muted">
+            {count} / {PHOTO_MAX}
+          </span>
         </header>
 
         <h1 className="font-display text-[28px] leading-tight warm-text mb-2">{t.pickPhotos}</h1>
@@ -251,11 +290,10 @@ function Create() {
           </div>
         </div>
 
-
         <div className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">{t.chatMode}</div>
           <div className="flex gap-1.5 mb-2">
-            {(["creative", "fact", "brief"] as ChatMode[]).map(m => {
+            {(["creative", "fact", "brief"] as ChatMode[]).map((m) => {
               const label = m === "creative" ? t.modeCreative : m === "fact" ? t.modeFact : t.modeBrief;
               const active = mode === m;
               return (
@@ -282,7 +320,7 @@ function Create() {
         <div className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">{t.toneSection}</div>
           <div className="flex gap-1.5 mb-2">
-            {(["politely", "friendly", "short"] as ChatTone[]).map(tn => {
+            {(["politely", "friendly", "short"] as ChatTone[]).map((tn) => {
               const label = tn === "politely" ? t.tonePolitely : tn === "friendly" ? t.toneFriendly : t.toneShort;
               const active = tone === tn;
               return (
@@ -311,8 +349,12 @@ function Create() {
           <div className="text-[11px] warm-muted mb-2 leading-relaxed">{t.tagsHint}</div>
           {(() => {
             const presets: string[] = [
-              t.tagPresetTravel, t.tagPresetFamily, t.tagPresetDaily,
-              t.tagPresetFriends, t.tagPresetFood, t.tagPresetSpecial,
+              t.tagPresetTravel,
+              t.tagPresetFamily,
+              t.tagPresetDaily,
+              t.tagPresetFriends,
+              t.tagPresetFood,
+              t.tagPresetSpecial,
             ];
             const customTags = tags.filter((tg) => !presets.includes(tg));
             return (
@@ -346,29 +388,28 @@ function Create() {
                 {customTags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {customTags.map((tg) => (
-                  <span
-                    key={tg}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-medium text-primary-foreground shadow-[var(--shadow-warm)]"
-                    style={{ background: "var(--gradient-warm)" }}
-                  >
-                    #{tg}
-                    <button
-                      type="button"
-                      onClick={() => setTags((prev) => prev.filter((x) => x !== tg))}
-                      aria-label="remove"
-                      className="opacity-90"
-                    >
-                      <X size={11} strokeWidth={2.5} />
-                    </button>
-                  </span>
-                ))}
+                      <span
+                        key={tg}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-medium text-primary-foreground shadow-[var(--shadow-warm)]"
+                        style={{ background: "var(--gradient-warm)" }}
+                      >
+                        #{tg}
+                        <button
+                          type="button"
+                          onClick={() => setTags((prev) => prev.filter((x) => x !== tg))}
+                          aria-label="remove"
+                          className="opacity-90"
+                        >
+                          <X size={11} strokeWidth={2.5} />
+                        </button>
+                      </span>
+                    ))}
                   </div>
                 )}
               </>
             );
           })()}
           <div className="flex gap-1.5">
-
             <input
               type="text"
               value={tagDraft}
@@ -409,7 +450,6 @@ function Create() {
           </div>
         </div>
 
-
         <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-5">
           <div
             className="h-full transition-all duration-500 rounded-full"
@@ -418,14 +458,14 @@ function Create() {
         </div>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={items.map(i => i.id)} strategy={rectSortingStrategy}>
+          <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-3 gap-2.5">
               {items.map((it, i) => (
                 <SortablePhoto
                   key={it.id}
                   item={it}
                   index={i}
-                  onRemove={() => setItems(ps => ps.filter(x => x.id !== it.id))}
+                  onRemove={() => setItems((ps) => ps.filter((x) => x.id !== it.id))}
                 />
               ))}
               {items.length === 0 && (
@@ -434,7 +474,7 @@ function Create() {
                   disabled={busy}
                   className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
                 >
-                  <ImagePlus size={26} strokeWidth={1.6}/>
+                  <ImagePlus size={26} strokeWidth={1.6} />
                   <span className="text-[11px] mt-1.5 warm-muted font-medium">{busy ? t.processing : t.addPhoto}</span>
                 </button>
               )}
@@ -455,7 +495,7 @@ function Create() {
             disabled={busy}
             className="w-full rounded-full py-3 text-[14px] font-medium flex items-center justify-center gap-2 border-2 border-dashed border-primary/40 text-primary bg-card/50 active:scale-[0.98] transition-transform disabled:opacity-50"
           >
-            <ImagePlus size={18} strokeWidth={1.8}/>
+            <ImagePlus size={18} strokeWidth={1.8} />
             {busy ? t.processing : t.addPhoto}
           </button>
         )}
@@ -464,11 +504,14 @@ function Create() {
           disabled={items.length < 1 || busy}
           className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
         >
-          {items.length < 1
-            ? t.pickAtLeastOne
-            : <>{t.chatWithAi} <ArrowRight size={18}/></>}
+          {items.length < 1 ? (
+            t.pickAtLeastOne
+          ) : (
+            <>
+              {t.chatWithAi} <ArrowRight size={18} />
+            </>
+          )}
         </button>
-
       </div>
     </div>
   );
