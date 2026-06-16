@@ -87,6 +87,7 @@ function AlbumView() {
   const [editMode, setEditMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
+  const [mapMode, setMapMode] = useState<"view" | "pick">("view");
   const shareRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -167,6 +168,7 @@ function AlbumView() {
         <Link to="/" search={{ q, tags: searchTags }} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
         <div className="flex items-center gap-1">
           <button
+            ref={pencilBtnRef}
             type="button"
             onClick={() => {
               const next = !editMode;
@@ -216,10 +218,14 @@ function AlbumView() {
               <Calendar size={12}/>
               <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" highlightQuery={q} />
             </div>
-            {!editMode && (album.location || (album.lat != null && album.lng != null)) ? (
+            {album.location || (album.lat != null && album.lng != null) ? (
               <button
+                ref={locationChipRef}
                 type="button"
-                onClick={() => setMapOpen(true)}
+                onClick={() => {
+                  setMapMode(editMode ? "pick" : "view");
+                  setMapOpen(true);
+                }}
                 className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
                 aria-label={t.openGoogleMaps}
               >
@@ -227,10 +233,19 @@ function AlbumView() {
                 {album.location ? <Hl text={album.location} query={q} /> : <span>{t.openGoogleMaps}</span>}
               </button>
             ) : (
-              <div className="flex items-center gap-1.5">
-                <MapPin size={12}/>
-                <EditableText editKey="location" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.location || ""} onSave={(v) => patch({ location: v })} placeholder={t.place} className="text-[12px]" highlightQuery={q} />
-              </div>
+              <button
+                ref={locationChipRef}
+                type="button"
+                onClick={() => {
+                  setMapMode("pick");
+                  setMapOpen(true);
+                }}
+                className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
+                aria-label={t.addLocation}
+              >
+                <Plus size={12}/>
+                <span>{t.addLocation}</span>
+              </button>
             )}
           </div>
           {album.tags && album.tags.length > 0 && (
@@ -316,19 +331,28 @@ function AlbumView() {
         </button>
       </div>
 
-      {(album.location || (album.lat != null && album.lng != null)) && (
-        <MapDialog
-          open={mapOpen}
-          onOpenChange={setMapOpen}
-          location={album.location || ""}
-          initialCoords={
-            album.lat != null && album.lng != null
-              ? { lat: album.lat, lng: album.lng }
-              : undefined
-          }
-          onCoordsResolved={(c) => patch({ lat: c.lat, lng: c.lng })}
-        />
-      )}
+      <MapDialog
+        open={mapOpen}
+        onOpenChange={setMapOpen}
+        mode={mapMode}
+        location={album.location || ""}
+        initialCoords={
+          album.lat != null && album.lng != null
+            ? { lat: album.lat, lng: album.lng }
+            : undefined
+        }
+        onCoordsResolved={(c) => patch({ lat: c.lat, lng: c.lng })}
+        onPick={({ lat, lng, label }) => {
+          void patch({ lat, lng, location: label });
+          toast.success(t.saved);
+        }}
+      />
+
+      <EditCoachmark
+        open={coachOpen}
+        onClose={() => setCoachOpen(false)}
+        targets={[pencilBtnRef, locationChipRef]}
+      />
     </div>
   );
 }
