@@ -77,6 +77,11 @@ function fmtTakenAt(iso: string | undefined, lang: string) {
   }
 }
 
+function albumSafeLocation(metas: PhotoMeta[]): string | undefined {
+  const cities = Array.from(new Set(metas.map((m) => m?.city).filter(Boolean) as string[]));
+  return cities.length ? cities.slice(0, 3).join(", ") : undefined;
+}
+
 // Smaller, lower-quality variant for the AI payload. Display + saved album
 // keep the original 1280px versions. Cuts the first-turn upload by ~50-60%.
 async function downscaleForAi(dataUrl: string, maxDim = 896, q = 0.75): Promise<string> {
