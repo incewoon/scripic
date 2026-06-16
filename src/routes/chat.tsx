@@ -354,6 +354,11 @@ function Chat() {
 
   async function finish(messagesOverride?: Msg[]) {
     const msgs = messagesOverride ?? messages;
+    const activePhotos = photosRef.current.length ? photosRef.current : photos;
+    const activePhotoMetas = photoMetasRef.current.length ? photoMetasRef.current : photoMetas;
+    const activeMeta = Object.keys(metaRef.current).length ? metaRef.current : meta;
+    const firstLocatedMeta = activePhotoMetas.find((m) => m?.lat != null && m?.lng != null);
+    const storedLocation = activeMeta.location || albumSafeLocation(activePhotoMetas);
     console.log("[Chat] finish() called", {
       override: !!messagesOverride,
       messageCount: msgs.length,
@@ -370,10 +375,10 @@ function Chat() {
       console.log("[Chat] calling aiGenerateAlbum", { messageCount: msgs.length, photoCount: photos.length });
       const album = await aiGenerateAlbum({
         messages: msgs,
-        photoCount: photos.length,
+        photoCount: activePhotos.length,
         lang: getLang(),
-        period: meta.period,
-        location: meta.location,
+        period: activeMeta.period,
+        location: storedLocation,
         mode,
         tone,
       });
@@ -385,12 +390,12 @@ function Chat() {
         subtitle: album.subtitle,
         intro: album.intro,
         closing: album.closing,
-        period: meta.period || album.period,
-        location: album.location || meta.location,
-        lat: photoMetas[0]?.lat,
-        lng: photoMetas[0]?.lng,
+        period: activeMeta.period || album.period,
+        location: storedLocation || album.location,
+        lat: firstLocatedMeta?.lat,
+        lng: firstLocatedMeta?.lng,
         tags,
-        photos: photos.map((dataUrl, i) => ({ dataUrl, caption: album.captions?.[i] ?? "" })),
+        photos: activePhotos.map((dataUrl, i) => ({ dataUrl, caption: album.captions?.[i] ?? "" })),
         createdAt: Date.now(),
       });
       sessionStorage.removeItem("memori_photos");
