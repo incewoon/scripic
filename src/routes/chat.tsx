@@ -134,7 +134,9 @@ function Chat() {
       const raw = sessionStorage.getItem("memori_tags");
       const arr = raw ? JSON.parse(raw) : [];
       return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   });
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -389,6 +391,14 @@ function Chat() {
       });
       const id = crypto.randomUUID();
       markAlbumCreatedToday();
+
+      console.log("--- [chat.tsx] saveAlbum 직전 데이터 확인 ---");
+      console.log({
+        lat: activePhotoMetas[0]?.lat,
+        lng: activePhotoMetas[0]?.lng,
+        location: storedLocation,
+      });
+
       await saveAlbum({
         id,
         title: album.title,
