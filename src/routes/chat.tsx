@@ -110,6 +110,9 @@ function Chat() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoMetas, setPhotoMetas] = useState<PhotoMeta[]>([]);
   const [meta, setMeta] = useState<{ period?: string; location?: string }>({});
+  const photosRef = useRef<string[]>([]);
+  const photoMetasRef = useRef<PhotoMeta[]>([]);
+  const metaRef = useRef<{ period?: string; location?: string }>({});
   const [mode] = useState<ChatMode>(() => {
     if (typeof sessionStorage === "undefined") return "creative";
     const m = sessionStorage.getItem("memori_mode");
@@ -164,12 +167,17 @@ function Chat() {
       return;
     }
     const ph: string[] = JSON.parse(raw);
+    photosRef.current = ph;
     setPhotos(ph);
     try {
-      setMeta(JSON.parse(sessionStorage.getItem("memori_meta") || "{}"));
+      const storedMeta = JSON.parse(sessionStorage.getItem("memori_meta") || "{}");
+      metaRef.current = storedMeta;
+      setMeta(storedMeta);
     } catch {}
     try {
-      setPhotoMetas(JSON.parse(sessionStorage.getItem("memori_photo_metas") || "[]"));
+      const storedPhotoMetas = JSON.parse(sessionStorage.getItem("memori_photo_metas") || "[]");
+      photoMetasRef.current = Array.isArray(storedPhotoMetas) ? storedPhotoMetas : [];
+      setPhotoMetas(photoMetasRef.current);
     } catch {}
     const opener = getLang() === "ko" ? "이 사진들 좀 봐줘." : "Take a look at these photos with me.";
     // Build smaller AI-payload variants in parallel; first send uses them.
