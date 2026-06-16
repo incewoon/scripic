@@ -377,7 +377,7 @@ function Chat() {
     }
     setGenerating(true);
     try {
-      console.log("[Chat] calling aiGenerateAlbum", { messageCount: msgs.length, photoCount: photos.length });
+      console.log("[Chat] calling aiGenerateAlbum", { messageCount: msgs.length, photoCount: activePhotos.length });
       const album = await aiGenerateAlbum({
         messages: msgs,
         photoCount: activePhotos.length,
