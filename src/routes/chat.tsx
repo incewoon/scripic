@@ -77,6 +77,11 @@ function fmtTakenAt(iso: string | undefined, lang: string) {
   }
 }
 
+function albumSafeLocation(metas: PhotoMeta[]): string | undefined {
+  const cities = Array.from(new Set(metas.map((m) => m?.city).filter(Boolean) as string[]));
+  return cities.length ? cities.slice(0, 3).join(", ") : undefined;
+}
+
 // Smaller, lower-quality variant for the AI payload. Display + saved album
 // keep the original 1280px versions. Cuts the first-turn upload by ~50-60%.
 async function downscaleForAi(dataUrl: string, maxDim = 896, q = 0.75): Promise<string> {
@@ -110,6 +115,9 @@ function Chat() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoMetas, setPhotoMetas] = useState<PhotoMeta[]>([]);
   const [meta, setMeta] = useState<{ period?: string; location?: string }>({});
+  const photosRef = useRef<string[]>([]);
+  const photoMetasRef = useRef<PhotoMeta[]>([]);
+  const metaRef = useRef<{ period?: string; location?: string }>({});
   const [mode] = useState<ChatMode>(() => {
     if (typeof sessionStorage === "undefined") return "creative";
     const m = sessionStorage.getItem("memori_mode");
@@ -164,12 +172,17 @@ function Chat() {
       return;
     }
     const ph: string[] = JSON.parse(raw);
+    photosRef.current = ph;
     setPhotos(ph);
     try {
-      setMeta(JSON.parse(sessionStorage.getItem("memori_meta") || "{}"));
+      const storedMeta = JSON.parse(sessionStorage.getItem("memori_meta") || "{}");
+      metaRef.current = storedMeta;
+      setMeta(storedMeta);
     } catch {}
     try {
-      setPhotoMetas(JSON.parse(sessionStorage.getItem("memori_photo_metas") || "[]"));
+      const storedPhotoMetas = JSON.parse(sessionStorage.getItem("memori_photo_metas") || "[]");
+      photoMetasRef.current = Array.isArray(storedPhotoMetas) ? storedPhotoMetas : [];
+      setPhotoMetas(photoMetasRef.current);
     } catch {}
     const opener = getLang() === "ko" ? "이 사진들 좀 봐줘." : "Take a look at these photos with me.";
     // Build smaller AI-payload variants in parallel; first send uses them.
@@ -346,6 +359,11 @@ function Chat() {
 
   async function finish(messagesOverride?: Msg[]) {
     const msgs = messagesOverride ?? messages;
+    const activePhotos = photosRef.current.length ? photosRef.current : photos;
+    const activePhotoMetas = photoMetasRef.current.length ? photoMetasRef.current : photoMetas;
+    const activeMeta = Object.keys(metaRef.current).length ? metaRef.current : meta;
+    const firstLocatedMeta = activePhotoMetas.find((m) => m?.lat != null && m?.lng != null);
+    const storedLocation = activeMeta.location || albumSafeLocation(activePhotoMetas);
     console.log("[Chat] finish() called", {
       override: !!messagesOverride,
       messageCount: msgs.length,
@@ -359,13 +377,13 @@ function Chat() {
     }
     setGenerating(true);
     try {
-      console.log("[Chat] calling aiGenerateAlbum", { messageCount: msgs.length, photoCount: photos.length });
+      console.log("[Chat] calling aiGenerateAlbum", { messageCount: msgs.length, photoCount: activePhotos.length });
       const album = await aiGenerateAlbum({
         messages: msgs,
-        photoCount: photos.length,
+        photoCount: activePhotos.length,
         lang: getLang(),
-        period: meta.period,
-        location: meta.location,
+        period: activeMeta.period,
+        location: storedLocation,
         mode,
         tone,
       });
@@ -377,12 +395,12 @@ function Chat() {
         subtitle: album.subtitle,
         intro: album.intro,
         closing: album.closing,
-        period: meta.period || album.period,
-        location: album.location || meta.location,
-        lat: photoMetas[0]?.lat,
-        lng: photoMetas[0]?.lng,
+        period: activeMeta.period || album.period,
+        location: storedLocation || album.location,
+        lat: firstLocatedMeta?.lat,
+        lng: firstLocatedMeta?.lng,
         tags,
-        photos: photos.map((dataUrl, i) => ({ dataUrl, caption: album.captions?.[i] ?? "" })),
+        photos: activePhotos.map((dataUrl, i) => ({ dataUrl, caption: album.captions?.[i] ?? "" })),
         createdAt: Date.now(),
       });
       sessionStorage.removeItem("memori_photos");
