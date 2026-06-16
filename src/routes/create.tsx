@@ -13,7 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { extractMeta, reverseGeocode, summarizePeriod, summarizeLocations, type PhotoMeta } from "@/lib/photoMeta";
+import { extractMeta, summarizePeriod, type PhotoMeta } from "@/lib/photoMeta";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import { canCreateAlbumToday } from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
@@ -233,18 +233,9 @@ function Create() {
     setBusy(true);
     try {
       const lang = getLang();
-      const metas = await Promise.all(
-        items.map(async (i) => {
-          if (i.meta.lat != null && i.meta.lng != null && !i.meta.city) {
-            const city = await reverseGeocode(i.meta.lat, i.meta.lng, lang);
-            return { ...i.meta, city };
-          }
-          return i.meta;
-        }),
-      );
-
-      console.log("--- [create.tsx] metas 전체 데이터 확인 ---");
-      console.log(JSON.stringify(metas, null, 2));
+      // Location intentionally omitted — user picks it manually on the album
+      // detail screen after creation. Only `takenAt`-derived period is kept.
+      const metas: PhotoMeta[] = items.map((i) => ({ takenAt: i.meta.takenAt }));
 
       sessionStorage.setItem("memori_photos", JSON.stringify(items.map((i) => i.url)));
       sessionStorage.setItem("memori_photo_metas", JSON.stringify(metas));
@@ -252,7 +243,6 @@ function Create() {
         "memori_meta",
         JSON.stringify({
           period: summarizePeriod(metas, lang),
-          location: summarizeLocations(metas),
         }),
       );
       sessionStorage.setItem("memori_mode", mode);
