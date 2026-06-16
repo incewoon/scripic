@@ -1,4 +1,5 @@
 import exifr from "exifr";
+import { reverseGeocodeCoords } from "@/lib/geocode.functions";
 
 export type PhotoMeta = {
   takenAt?: string; // ISO date
@@ -28,9 +29,6 @@ export async function reverseGeocode(lat: number, lng: number, lang: string): Pr
   const key = `${lat.toFixed(2)},${lng.toFixed(2)}|${lang}`;
   if (cityCache.has(key)) return cityCache.get(key);
   try {
-    // Use Google Maps via the gateway-backed server function — more reliable than Nominatim,
-    // especially in Korea where OSM city names are sparse / requests are sometimes blocked.
-    const { reverseGeocodeCoords } = await import("@/lib/geocode.functions");
     const r = await reverseGeocodeCoords({ data: { lat, lng, lang } });
     const city = r?.city;
     if (city) cityCache.set(key, city);
