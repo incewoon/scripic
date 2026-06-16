@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download, Tag } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download, Tag, Plus } from "lucide-react";
 import { toPng } from "html-to-image";
 import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Hl } from "@/lib/highlight";
 import { MapDialog } from "@/components/MapDialog";
+import { EditCoachmark } from "@/components/EditCoachmark";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
