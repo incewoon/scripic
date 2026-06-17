@@ -98,28 +98,29 @@ export function MapDialog({
     let cancelled = false;
     setStatus("loading");
     (async () => {
-      let c = coords;
-      if (mode === "view") {
-        if (!c) {
-          try {
-            const r = await geocode({ data: { query: location } });
-            if (cancelled) return;
-            if (r) {
-              c = r;
-              setCoords(r);
-              onCoordsResolved?.(r);
-            } else {
-              setStatus("nocoords");
-              return;
-            }
-          } catch {
-            if (!cancelled) setStatus("nocoords");
+      // Use the prop, not `coords` state — state updates from setCoords in the
+      // open-sync effect haven't flushed yet on this render, so reading state
+      // here would re-geocode the label and overwrite the user's picked coords
+      // via onCoordsResolved on the very next view-mode open.
+      let c: { lat: number; lng: number } | undefined = initialCoords;
+      if (mode === "view" && !c) {
+        try {
+          const r = await geocode({ data: { query: location } });
+          if (cancelled) return;
+          if (r) {
+            c = r;
+            setCoords(r);
+            onCoordsResolved?.(r);
+          } else {
+            setStatus("nocoords");
             return;
           }
+        } catch {
+          if (!cancelled) setStatus("nocoords");
+          return;
         }
-      } else {
-        // pick mode — never request geolocation; rely on initialCoords/fallback only.
       }
+      // pick mode — never request geolocation; rely on initialCoords/fallback only.
       try {
         await loadGoogleMaps();
         if (cancelled || !mapRef.current) return;
