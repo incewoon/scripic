@@ -77,12 +77,19 @@ export function MapDialog({
   const geocode = useServerFn(geocodeLocation);
   const revGeocode = useServerFn(reverseGeocodeCoords);
 
-  // Reset picker state whenever the dialog opens.
+  // Sync state with the latest props every time the dialog opens.
+  // The dialog stays mounted between opens, so without this the `coords`
+  // state stays frozen at its first-render value and a second edit pass
+  // would open the map without the previously-saved marker — forcing the
+  // user to re-click and producing a slightly different coordinate +
+  // label than what was originally saved.
   useEffect(() => {
     if (open) {
-      setPicked(null);
+      setCoords(initialCoords);
+      setPicked(mode === "pick" ? (initialCoords ?? null) : null);
       setSaving(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Resolve coords + load map when opened
