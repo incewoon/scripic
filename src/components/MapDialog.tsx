@@ -53,6 +53,7 @@ export function MapDialog({
   onCoordsResolved,
   mode = "view",
   onPick,
+  fallbackCenter,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -62,6 +63,8 @@ export function MapDialog({
   mode?: "view" | "pick";
   /** Called when user confirms a picked location with the resolved short label. */
   onPick?: (p: { lat: number; lng: number; label: string }) => void;
+  /** Default center used in pick mode when no initialCoords are available. */
+  fallbackCenter?: { lat: number; lng: number };
 }) {
   const { t } = useT();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -108,30 +111,17 @@ export function MapDialog({
           }
         }
       } else {
-        // pick mode — try geolocation if no initialCoords
-        if (!c && typeof navigator !== "undefined" && navigator.geolocation) {
-          await new Promise<void>((resolve) => {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                if (!cancelled) {
-                  c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                  setCoords(c);
-                }
-                resolve();
-              },
-              () => resolve(),
-              { timeout: 4000 },
-            );
-          });
-        }
+        // pick mode — never request geolocation; rely on initialCoords/fallback only.
       }
       try {
         await loadGoogleMaps();
         if (cancelled || !mapRef.current) return;
-        const center = c ?? { lat: 20, lng: 0 };
+        // Center priority in pick mode: existing coords → fallback (last saved) → Korea center.
+        const pickFallback = fallbackCenter ?? { lat: 36.5, lng: 127.8 };
+        const center = c ?? (mode === "pick" ? pickFallback : { lat: 20, lng: 0 });
         const map = new window.google.maps.Map(mapRef.current, {
           center,
-          zoom: c ? 14 : 2,
+          zoom: c ? 14 : mode === "pick" ? 11 : 2,
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: "cooperative",
@@ -141,7 +131,7 @@ export function MapDialog({
           position: c ?? center,
           map,
           draggable: mode === "pick",
-          visible: !!c || mode === "view" ? !!c : false,
+          visible: !!c,
         });
         markerRef.current = marker;
 

@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download, Tag, Plus } from "lucide-react";
 import { toPng } from "html-to-image";
-import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, type Album } from "@/lib/storage";
+import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, getLastSavedCoords, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Hl } from "@/lib/highlight";
@@ -100,6 +100,15 @@ function AlbumView() {
     const unsub = subscribeAlbums(reload);
     return () => { cancelled = true; unsub(); };
   }, [id]);
+
+  // Remember the last-saved coords across albums so the pick map opens
+  // somewhere sensible instead of dropping the user in the middle of the ocean.
+  const [lastCoords, setLastCoords] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getLastSavedCoords().then((c) => { if (!cancelled) setLastCoords(c); });
+    return () => { cancelled = true; };
+  }, []);
 
   // First-time edit coachmark: shown once right after album creation.
   const [coachOpen, setCoachOpen] = useState(false);
@@ -341,6 +350,7 @@ function AlbumView() {
             ? { lat: album.lat, lng: album.lng }
             : undefined
         }
+        fallbackCenter={lastCoords ?? undefined}
         onCoordsResolved={(c) => patch({ lat: c.lat, lng: c.lng })}
         onPick={({ lat, lng, label }) => {
           void patch({ lat, lng, location: label });

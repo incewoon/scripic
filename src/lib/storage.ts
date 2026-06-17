@@ -69,6 +69,18 @@ export async function getAlbums(): Promise<Album[]> {
   return (await get<Album[]>(KEY)) ?? [];
 }
 
+/** Returns the most-recently created album coords, used as a default
+ *  map center when the user opens the location picker on a new album. */
+export async function getLastSavedCoords(): Promise<{ lat: number; lng: number } | null> {
+  const list = await getAlbums();
+  const withCoords = list
+    .filter((a) => typeof a.lat === "number" && typeof a.lng === "number")
+    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+  const top = withCoords[0];
+  if (!top || top.lat == null || top.lng == null) return null;
+  return { lat: top.lat, lng: top.lng };
+}
+
 export async function saveAlbum(album: Album) {
   const list = await getAlbums();
   list.unshift(album);
