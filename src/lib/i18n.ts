@@ -425,6 +425,11 @@ const dict = {
     pickLocationHint: "지도를 탭하면 핀이 찍혀요. 위치를 저장해주세요.",
     saveLocation: "이 위치로 저장",
     addLocation: "장소 추가",
+    searchPlacePlaceholder: "장소 또는 주소 검색",
+    useCurrentLocation: "현재 위치 사용",
+    locationPermissionDenied: "위치 권한이 거부되었어요. 지도를 탭하거나 검색해주세요.",
+    placeSearchNoResults: "검색 결과가 없어요",
+    searching: "검색 중…",
     // Edit coachmark
     editCoachTitle: "이 앨범을 다듬어보세요",
     editCoachBody: "연필 버튼으로 내용을 수정하거나, 지도에서 장소를 추가할 수 있어요.",
