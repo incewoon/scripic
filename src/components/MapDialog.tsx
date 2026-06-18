@@ -149,6 +149,7 @@ export function MapDialog({
           gestureHandling: "cooperative",
           clickableIcons: false,
         });
+        mapInstanceRef.current = map;
         const marker = new window.google.maps.Marker({
           position: c ?? center,
           map,
