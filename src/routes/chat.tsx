@@ -273,7 +273,7 @@ function Chat() {
         photoCount: ph.length,
         lang: getLang(),
         mode,
-        maxTurnsPerPhoto: 3,
+        maxTurnsPerPhoto: 4,
       })) {
         assistant += delta;
         setMessages((m) => m.map((x, i) => (i === m.length - 1 ? { ...x, content: assistant } : x)));
@@ -404,7 +404,9 @@ function Chat() {
       sessionStorage.removeItem("memori_tags");
       // Mark this album as just-created so the detail screen shows the
       // first-time edit coachmark exactly once.
-      try { sessionStorage.setItem("scripic:justCreated", id); } catch {}
+      try {
+        sessionStorage.setItem("scripic:justCreated", id);
+      } catch {}
       setMessages([]);
       toast.success(t.completed);
       leavingRef.current = true;
