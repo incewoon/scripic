@@ -209,6 +209,70 @@ export function MapDialog({
     onOpenChange(false);
   }
 
+  // Move the map + marker to a coordinate and treat it as the user's pick.
+  function moveTo(lat: number, lng: number, zoom = 15) {
+    const map = mapInstanceRef.current;
+    const marker = markerRef.current;
+    if (!map || !marker) return;
+    const pos = { lat, lng };
+    map.panTo(pos);
+    map.setZoom(zoom);
+    marker.setPosition(pos);
+    marker.setVisible(true);
+    setPicked(pos);
+  }
+
+  // Debounced place search while typing.
+  useEffect(() => {
+    if (mode !== "pick" || !open) return;
+    const q = query.trim();
+    if (!q) {
+      setResults(null);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const id = setTimeout(async () => {
+      try {
+        const lang =
+          typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
+        const r = await placeSearch({ data: { query: q, lang } });
+        setResults(r);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(id);
+  }, [query, mode, open, placeSearch]);
+
+  function pickResult(r: PlaceSearchResult) {
+    moveTo(r.lat, r.lng, 16);
+    setResults(null);
+    setQuery("");
+  }
+
+  function useCurrentLocation() {
+    if (locating) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      toast(t.locationPermissionDenied);
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        moveTo(pos.coords.latitude, pos.coords.longitude, 16);
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        toast(t.locationPermissionDenied);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
+    );
+  }
+
   const isPick = mode === "pick";
 
   return (
