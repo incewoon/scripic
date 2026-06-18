@@ -67,8 +67,8 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
       {...listeners}
     >
       <img src={item.url} alt="" className="w-full h-full object-cover pointer-events-none" />
-      <div className="absolute top-1.5 left-1.5 bg-background/85 backdrop-blur rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-semibold text-foreground/80">
-        {index + 1}
+      <div className={`absolute top-1.5 left-1.5 bg-background/85 backdrop-blur rounded-full flex items-center justify-center text-[11px] font-semibold text-foreground/80 ${index === 0 ? "h-6 px-2" : "w-6 h-6"}`}>
+        {index === 0 ? t.representative : index + 1}
       </div>
       <button
         onPointerDown={(e) => e.stopPropagation()}
