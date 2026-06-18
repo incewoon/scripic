@@ -98,6 +98,10 @@ export function MapDialog({
       setCoords(initialCoords);
       setPicked(mode === "pick" ? (initialCoords ?? null) : null);
       setSaving(false);
+      setQuery("");
+      setResults(null);
+      setSearching(false);
+      setLocating(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
