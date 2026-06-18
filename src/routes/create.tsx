@@ -50,6 +50,7 @@ async function fileToDataUrl(file: File, maxDim = 1280): Promise<string> {
 type Item = { id: string; url: string; meta: PhotoMeta };
 
 function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; onRemove: () => void }) {
+  const { t } = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = {
     transform: CSS.Transform.toString(transform),
