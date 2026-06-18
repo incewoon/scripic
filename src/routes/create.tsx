@@ -50,6 +50,7 @@ async function fileToDataUrl(file: File, maxDim = 1280): Promise<string> {
 type Item = { id: string; url: string; meta: PhotoMeta };
 
 function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; onRemove: () => void }) {
+  const { t } = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -66,8 +67,8 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
       {...listeners}
     >
       <img src={item.url} alt="" className="w-full h-full object-cover pointer-events-none" />
-      <div className="absolute top-1.5 left-1.5 bg-background/85 backdrop-blur rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-semibold text-foreground/80">
-        {index + 1}
+      <div className={`absolute top-1.5 left-1.5 bg-background/85 backdrop-blur rounded-full flex items-center justify-center text-[11px] font-semibold text-foreground/80 ${index === 0 ? "h-6 px-2" : "w-6 h-6"}`}>
+        {index === 0 ? t.representative : index + 1}
       </div>
       <button
         onPointerDown={(e) => e.stopPropagation()}
