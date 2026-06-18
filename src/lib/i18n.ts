@@ -218,6 +218,7 @@ const dict = {
     locationPermissionDenied: "Location permission denied. Tap the map or search instead.",
     placeSearchNoResults: "No results",
     searching: "Searching…",
+    representative: "Cover",
     // Edit coachmark
     editCoachTitle: "Polish this album anytime",
     editCoachBody: "Tap the pencil to edit, or add a location from the map.",
