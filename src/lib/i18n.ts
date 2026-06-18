@@ -213,6 +213,11 @@ const dict = {
     pickLocationHint: "Tap the map to drop a pin, then save.",
     saveLocation: "Save this location",
     addLocation: "Add location",
+    searchPlacePlaceholder: "Search place or address",
+    useCurrentLocation: "Use current location",
+    locationPermissionDenied: "Location permission denied. Tap the map or search instead.",
+    searchNoResults: "No results",
+    searching: "Searching…",
     // Edit coachmark
     editCoachTitle: "Polish this album anytime",
     editCoachBody: "Tap the pencil to edit, or add a location from the map.",
