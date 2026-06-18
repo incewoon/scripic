@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, ExternalLink, Loader2, Check } from "lucide-react";
+import { MapPin, ExternalLink, Loader2, Check, Search, LocateFixed, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -14,6 +14,8 @@ import {
 import { useT } from "@/lib/i18n";
 import { useServerFn } from "@tanstack/react-start";
 import { geocodeLocation, reverseGeocodeCoords } from "@/lib/geocode.functions";
+import { searchPlaces, type PlaceSearchResult } from "@/lib/places.functions";
+import { toast } from "sonner";
 
 declare global {
   interface Window {
@@ -68,6 +70,7 @@ export function MapDialog({
 }) {
   const { t } = useT();
   const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | undefined>(initialCoords);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "nocoords" | "error">("idle");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -76,6 +79,13 @@ export function MapDialog({
   const markerRef = useRef<any>(null);
   const geocode = useServerFn(geocodeLocation);
   const revGeocode = useServerFn(reverseGeocodeCoords);
+  const placeSearch = useServerFn(searchPlaces);
+
+  // Place search (pick mode only)
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<PlaceSearchResult[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   // Sync state with the latest props every time the dialog opens.
   // The dialog stays mounted between opens, so without this the `coords`
@@ -88,6 +98,10 @@ export function MapDialog({
       setCoords(initialCoords);
       setPicked(mode === "pick" ? (initialCoords ?? null) : null);
       setSaving(false);
+      setQuery("");
+      setResults(null);
+      setSearching(false);
+      setLocating(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -135,6 +149,7 @@ export function MapDialog({
           gestureHandling: "cooperative",
           clickableIcons: false,
         });
+        mapInstanceRef.current = map;
         const marker = new window.google.maps.Marker({
           position: c ?? center,
           map,
@@ -194,6 +209,70 @@ export function MapDialog({
     onOpenChange(false);
   }
 
+  // Move the map + marker to a coordinate and treat it as the user's pick.
+  function moveTo(lat: number, lng: number, zoom = 15) {
+    const map = mapInstanceRef.current;
+    const marker = markerRef.current;
+    if (!map || !marker) return;
+    const pos = { lat, lng };
+    map.panTo(pos);
+    map.setZoom(zoom);
+    marker.setPosition(pos);
+    marker.setVisible(true);
+    setPicked(pos);
+  }
+
+  // Debounced place search while typing.
+  useEffect(() => {
+    if (mode !== "pick" || !open) return;
+    const q = query.trim();
+    if (!q) {
+      setResults(null);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const id = setTimeout(async () => {
+      try {
+        const lang =
+          typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
+        const r = await placeSearch({ data: { query: q, lang } });
+        setResults(r);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(id);
+  }, [query, mode, open, placeSearch]);
+
+  function pickResult(r: PlaceSearchResult) {
+    moveTo(r.lat, r.lng, 16);
+    setResults(null);
+    setQuery("");
+  }
+
+  function useCurrentLocation() {
+    if (locating) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      toast(t.locationPermissionDenied);
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        moveTo(pos.coords.latitude, pos.coords.longitude, 16);
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        toast(t.locationPermissionDenied);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
+    );
+  }
+
   const isPick = mode === "pick";
 
   return (
@@ -211,16 +290,91 @@ export function MapDialog({
           </DialogHeader>
 
           {isPick ? (
-            <div className="relative block w-full aspect-square bg-muted">
-              <div ref={mapRef} className="absolute inset-0" />
-              {status !== "ready" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/80 text-sm warm-muted">
-                  {status === "loading" && <Loader2 size={20} className="animate-spin" />}
-                  {status === "loading" && <span>{t.loading}</span>}
-                  {status === "error" && <span className="px-6 text-center">{t.failed}</span>}
+            <>
+              <div className="px-5 pb-3">
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search
+                      size={14}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none"
+                    />
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder={t.searchPlacePlaceholder}
+                      className="w-full rounded-full bg-muted pl-8 pr-8 py-2 text-[13px] outline-none focus:ring-1 focus:ring-primary/40"
+                    />
+                    {query && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuery("");
+                          setResults(null);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 warm-muted"
+                        aria-label="Clear"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    disabled={locating}
+                    aria-label={t.useCurrentLocation}
+                    title={t.useCurrentLocation}
+                    className="shrink-0 rounded-full bg-muted p-2 active:scale-95 transition-transform disabled:opacity-50"
+                  >
+                    {locating ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <LocateFixed size={14} />
+                    )}
+                  </button>
                 </div>
-              )}
-            </div>
+                {(searching || results) && query.trim() && (
+                  <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border bg-background shadow-sm">
+                    {searching && (
+                      <div className="px-3 py-2 text-[12px] warm-muted flex items-center gap-2">
+                        <Loader2 size={12} className="animate-spin" />
+                        {t.searching}
+                      </div>
+                    )}
+                    {!searching && results && results.length === 0 && (
+                      <div className="px-3 py-2 text-[12px] warm-muted">
+                        {t.placeSearchNoResults}
+                      </div>
+                    )}
+                    {!searching &&
+                      results?.map((r) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => pickResult(r)}
+                          className="w-full text-left px-3 py-2 hover:bg-muted/60 border-b last:border-b-0"
+                        >
+                          <div className="text-[13px] truncate">{r.name || r.address}</div>
+                          {r.name && r.address && (
+                            <div className="text-[11px] warm-muted truncate">{r.address}</div>
+                          )}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+              <div className="relative block w-full aspect-square bg-muted">
+                <div ref={mapRef} className="absolute inset-0" />
+                {status !== "ready" && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/80 text-sm warm-muted">
+                    {status === "loading" && <Loader2 size={20} className="animate-spin" />}
+                    {status === "loading" && <span>{t.loading}</span>}
+                    {status === "error" && <span className="px-6 text-center">{t.failed}</span>}
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <button
               type="button"

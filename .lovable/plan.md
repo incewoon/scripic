@@ -1,30 +1,49 @@
-# 장소 추가 정확도/UX 개선
+# 픽 맵 UX 강화: 검색 + 현재위치
 
-## 문제
-1. 맵에서 핀을 찍어 장소를 추가/수정해도, 이후 화면에서는 핀 위치가 아닌 "요약 라벨(예: 강남구 역삼동)"을 재지오코딩한 좌표가 사용되어 마커가 실제 찍은 지점과 어긋남.
-2. 픽 모드에서 기본 중심점을 잡기 위해 `navigator.geolocation` 권한을 요청하고 있음. 권한이 거부되면 세계지도(위도 20, 경도 0)로 떨어져 다른 나라가 보임.
+현재 `MapDialog`의 픽 모드는 지도를 탭/드래그해서 핀을 찍는 방식만 지원합니다. 여기에 두 가지 입력 경로를 추가합니다.
 
-## 수정 내용
+## 1. 상단 검색창 (장소/주소 검색)
 
-### 1. `src/components/MapDialog.tsx` — 픽 좌표를 정확히 보존
-- `confirmPick()`에서 `onPick`에 넘기는 `{lat, lng}`은 사용자가 클릭/드래그한 `picked` 값 그대로 (현재 동작 유지). 라벨은 표시용으로만 사용.
-- 뷰 모드에서 `onCoordsResolved` 콜백이 의도치 않게 저장된 좌표를 덮어쓰지 않도록, 이미 `initialCoords`가 주어졌으면 재지오코딩/콜백 호출 자체를 건너뜀 (현재 `if (!c)` 가드 유지 + 명확화).
-- 픽 모드 진입 시 `navigator.geolocation` 호출 블록 제거.
-- 픽 모드 기본 중심 우선순위:
-  1) `initialCoords` (현재 앨범의 저장 좌표)
-  2) 외부에서 주입된 `fallbackCenter` (마지막 저장 좌표)
-  3) 그래도 없으면 줌 아웃된 기본값 (한국 중심으로)
-- 새 prop: `fallbackCenter?: { lat: number; lng: number }`.
+- `MapDialog` 픽 모드 헤더 아래에 검색 입력창 + 결과 드롭다운 추가.
+- Google **Places API (New)** 사용 — 브라우저 키로 `AutocompleteSuggestion.fetchAutocompleteSuggestions()` 호출 (디바운스 300ms, 세션 토큰 사용).
+- 결과 항목을 탭하면:
+  1. `places/v1/places/{id}` 를 서버 함수로 호출해 `location`(lat/lng)과 `displayName`을 가져옴.
+  2. 지도 중심/줌 이동 + 마커 표시 + `picked` 좌표 갱신.
+  3. 저장 버튼을 누르면 기존 흐름대로 `reverseGeocodeCoords`로 짧은 라벨(구 + 동)을 만들어 저장 — 검색 결과의 풀네임이 아니라 일관된 짧은 라벨로 표시되도록 함.
+- 새 서버 함수 `src/lib/places.functions.ts`:
+  - `searchPlaces({ query, lang })` → 게이트웨이 `places/v1/places:searchText` 호출, 상위 5개 `{id, name, address, location}` 반환.
+  - (선택) Autocomplete를 브라우저에서 직접 쓰는 대신 서버에서 `places:autocomplete` 호출하는 변형도 가능 — 검토 후 단순한 `searchText` 한 가지로 채택.
 
-### 2. `src/lib/storage.ts` — 최근 저장 좌표 헬퍼
-- `getLastSavedCoords(): Promise<{lat:number;lng:number} | null>` 추가.
-  - `getAlbums()`에서 `lat`/`lng`가 있는 앨범 중 가장 최근 `createdAt` 기준으로 반환.
+## 2. 현재 위치 버튼
 
-### 3. `src/routes/album.$id.tsx` — 픽 모드에 fallback 전달
-- 컴포넌트 마운트 시 `getLastSavedCoords()`를 한 번 읽어 state(`lastCoords`)에 저장.
-- `<MapDialog ... fallbackCenter={lastCoords ?? undefined} />` 전달.
-- `onCoordsResolved`는 그대로 두되, 픽 결과로 저장된 `album.lat/lng`가 있으면 호출되지 않음 (MapDialog 가드 덕분).
+- 검색창 우측에 위치 아이콘 버튼 추가.
+- 탭 시 `navigator.geolocation.getCurrentPosition()` 호출 (브라우저가 권한 프롬프트 표시 — 동의는 OS/브라우저가 처리).
+- 성공: 해당 좌표로 지도 중심 이동 + 마커 표시 + `picked` 갱신.
+- 실패/거부: toast로 "위치 권한이 거부되었습니다. 지도를 탭하거나 검색하세요" 안내 (i18n).
+- 권한 요청은 **사용자가 버튼을 눌렀을 때만** — 기존처럼 자동 호출하지 않음. 거부해도 기존 fallback(마지막 저장 좌표/한국 중심) 그대로 동작.
 
-## 결과
-- 앨범의 `location` 텍스트는 짧은 라벨, `lat`/`lng`는 사용자가 실제로 찍은 좌표가 1:1로 저장/표시됨.
-- 픽 맵을 열면 (a) 현재 앨범 좌표 → (b) 직전 앨범 저장 좌표 → (c) 한국 중심 순으로 중심이 잡혀, 권한 없이도 엉뚱한 나라가 뜨지 않음.
+## 3. i18n 추가
+
+`src/lib/i18n.ts`에 ko/en 두 세트 추가:
+- `searchPlacePlaceholder` ("장소 또는 주소 검색")
+- `useCurrentLocation` ("현재 위치 사용")
+- `locationPermissionDenied` ("위치 권한이 거부되었습니다")
+- `searchNoResults` ("검색 결과가 없습니다")
+
+## 4. 저장 동작 (변경 없음 확인)
+
+- 검색이든 현재위치든 지도탭이든, 최종 저장 좌표는 항상 사용자가 확정한 `picked` 그대로.
+- 표시 라벨은 항상 `reverseGeocodeCoords`로 만든 짧은 라벨 → 일관성 유지.
+
+## 영향 파일
+
+- `src/components/MapDialog.tsx` — 검색바/현재위치 버튼 UI + 핸들러.
+- `src/lib/places.functions.ts` (신규) — 서버 함수 `searchPlaces`.
+- `src/lib/i18n.ts` — 신규 문자열.
+- `.lovable/plan.md` — 변경 내역 갱신.
+
+## 비변경 / 비목표
+
+- 앨범 생성 시 EXIF 위치 추출은 그대로 비활성 유지.
+- 자동 지오로케이션 권한 요청 금지 — 버튼 클릭 시에만.
+- 라벨 포맷(구 + 동) 로직은 그대로.
