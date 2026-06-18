@@ -70,6 +70,7 @@ export function MapDialog({
 }) {
   const { t } = useT();
   const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | undefined>(initialCoords);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "nocoords" | "error">("idle");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -78,6 +79,13 @@ export function MapDialog({
   const markerRef = useRef<any>(null);
   const geocode = useServerFn(geocodeLocation);
   const revGeocode = useServerFn(reverseGeocodeCoords);
+  const placeSearch = useServerFn(searchPlaces);
+
+  // Place search (pick mode only)
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<PlaceSearchResult[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   // Sync state with the latest props every time the dialog opens.
   // The dialog stays mounted between opens, so without this the `coords`
