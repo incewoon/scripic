@@ -290,16 +290,91 @@ export function MapDialog({
           </DialogHeader>
 
           {isPick ? (
-            <div className="relative block w-full aspect-square bg-muted">
-              <div ref={mapRef} className="absolute inset-0" />
-              {status !== "ready" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/80 text-sm warm-muted">
-                  {status === "loading" && <Loader2 size={20} className="animate-spin" />}
-                  {status === "loading" && <span>{t.loading}</span>}
-                  {status === "error" && <span className="px-6 text-center">{t.failed}</span>}
+            <>
+              <div className="px-5 pb-3">
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search
+                      size={14}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none"
+                    />
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder={t.searchPlacePlaceholder}
+                      className="w-full rounded-full bg-muted pl-8 pr-8 py-2 text-[13px] outline-none focus:ring-1 focus:ring-primary/40"
+                    />
+                    {query && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuery("");
+                          setResults(null);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 warm-muted"
+                        aria-label="Clear"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    disabled={locating}
+                    aria-label={t.useCurrentLocation}
+                    title={t.useCurrentLocation}
+                    className="shrink-0 rounded-full bg-muted p-2 active:scale-95 transition-transform disabled:opacity-50"
+                  >
+                    {locating ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <LocateFixed size={14} />
+                    )}
+                  </button>
                 </div>
-              )}
-            </div>
+                {(searching || results) && query.trim() && (
+                  <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border bg-background shadow-sm">
+                    {searching && (
+                      <div className="px-3 py-2 text-[12px] warm-muted flex items-center gap-2">
+                        <Loader2 size={12} className="animate-spin" />
+                        {t.searching}
+                      </div>
+                    )}
+                    {!searching && results && results.length === 0 && (
+                      <div className="px-3 py-2 text-[12px] warm-muted">
+                        {t.placeSearchNoResults}
+                      </div>
+                    )}
+                    {!searching &&
+                      results?.map((r) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => pickResult(r)}
+                          className="w-full text-left px-3 py-2 hover:bg-muted/60 border-b last:border-b-0"
+                        >
+                          <div className="text-[13px] truncate">{r.name || r.address}</div>
+                          {r.name && r.address && (
+                            <div className="text-[11px] warm-muted truncate">{r.address}</div>
+                          )}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+              <div className="relative block w-full aspect-square bg-muted">
+                <div ref={mapRef} className="absolute inset-0" />
+                {status !== "ready" && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/80 text-sm warm-muted">
+                    {status === "loading" && <Loader2 size={20} className="animate-spin" />}
+                    {status === "loading" && <span>{t.loading}</span>}
+                    {status === "error" && <span className="px-6 text-center">{t.failed}</span>}
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <button
               type="button"
