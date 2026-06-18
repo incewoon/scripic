@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, ExternalLink, Loader2, Check } from "lucide-react";
+import { MapPin, ExternalLink, Loader2, Check, Search, LocateFixed, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -14,6 +14,8 @@ import {
 import { useT } from "@/lib/i18n";
 import { useServerFn } from "@tanstack/react-start";
 import { geocodeLocation, reverseGeocodeCoords } from "@/lib/geocode.functions";
+import { searchPlaces, type PlaceSearchResult } from "@/lib/places.functions";
+import { toast } from "sonner";
 
 declare global {
   interface Window {
