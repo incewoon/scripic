@@ -410,7 +410,7 @@ function Create() {
                     {customTags.map((tg) => (
                       <span
                         key={tg}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-medium text-primary-foreground shadow-[var(--shadow-warm)]"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap flex-shrink-0 text-[12px] font-medium text-primary-foreground shadow-[var(--shadow-warm)]"
                         style={{ background: "var(--gradient-warm)" }}
                       >
                         #{tg}
