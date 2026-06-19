@@ -271,10 +271,8 @@ function Create() {
             {count} / {PHOTO_MAX}
           </span>
         </header>
-
         <h1 className="font-display text-[28px] leading-tight warm-text mb-2">{t.pickPhotos}</h1>
         <p className="text-[15px] warm-muted mb-4 leading-relaxed">{t.pickHint}</p>
-
         <div className="card-info mb-5 rounded-2xl px-4 py-3 flex items-start gap-3">
           <Info size={18} className="mt-0.5 flex-shrink-0" style={{ color: "var(--cta-accent)" }} />
           <div className="text-[13.5px] leading-relaxed">
@@ -282,7 +280,6 @@ function Create() {
             <span className="block text-[12px] info-muted mt-1">{t.dragHint}</span>
           </div>
         </div>
-
         <div className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">{t.chatMode}</div>
           <div className="flex gap-1.5 mb-2">
@@ -309,7 +306,6 @@ function Create() {
             {mode === "creative" ? t.modeCreativeDesc : mode === "fact" ? t.modeFactDesc : t.modeBriefDesc}
           </div>
         </div>
-
         <div className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">{t.toneSection}</div>
           <div className="flex gap-1.5 mb-2">
@@ -336,7 +332,6 @@ function Create() {
             {tone === "politely" ? t.tonePolitelyDesc : tone === "friendly" ? t.toneFriendlyDesc : t.toneShortDesc}
           </div>
         </div>
-
         <div className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-1">{t.tagsLabel}</div>
           <div className="text-[11px] warm-muted mb-2 leading-relaxed">{t.tagsHint}</div>
@@ -442,14 +437,13 @@ function Create() {
             </button>
           </div>
         </div>
-
+        //원래위치
         <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-5">
           <div
             className="h-full transition-all duration-500 rounded-full"
             style={{ width: `${pct}%`, background: "var(--gradient-warm)" }}
           />
         </div>
-
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-3 gap-2.5">
@@ -474,7 +468,6 @@ function Create() {
             </div>
           </SortableContext>
         </DndContext>
-
         <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
       </div>
 
