@@ -1,6 +1,6 @@
 //chat.tsx - ai대화입력 관련 코드
-
-"use client";
+armSilenceTimer;
+("use client");
 
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -30,6 +30,9 @@ const TOKEN_RE = /\[(READY_TO_FINISH|PROPOSE_FINISH)\]/g;
 
 // 전체 대화(사용자+AI) 최대 메시지 수. 도달 시 강제 마무리.
 const MAX_TOTAL_MESSAGES = 18;
+
+// ★ 추가: 음성입력 중 침묵 감지까지 기다리는 시간(밀리초)
+const SILENCE_TIMEOUT_MS = 5000;
 
 function sanitizeForDisplay(text: string) {
   return text.replace(TOKEN_RE, "").trim();
