@@ -397,70 +397,80 @@ function Chat() {
     }, 3000);
   }
 
+  function createRecognition() {
+    const SR: any =
+      typeof window !== "undefined"
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null;
+    if (!SR) return null;
+    const rec = new SR();
+    rec.lang = getLang() === "ko" ? "ko-KR" : "en-US";
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
+
+    rec.onresult = (e: any) => {
+      let finalTxt = "";
+      let interimTxt = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalTxt += r[0].transcript;
+        else interimTxt += r[0].transcript;
+      }
+      if (finalTxt) {
+        baseInputRef.current = (baseInputRef.current + finalTxt).replace(/\s*$/, "") + " ";
+      }
+      setInput(baseInputRef.current + interimTxt);
+      moveCursorEnd();
+      armSilenceTimer();
+    };
+
+    rec.onerror = (e: any) => {
+      if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+        shouldRestartRef.current = false;
+        toast.error(t.micPermissionDenied);
+      }
+    };
+
+    rec.onend = () => {
+      if (shouldRestartRef.current) {
+        // ★ 핵심: 같은 인스턴스를 재시작하지 않고 새 인스턴스를 만든다
+        const fresh = createRecognition();
+        if (fresh) {
+          recognitionRef.current = fresh;
+          try {
+            fresh.start();
+            return;
+          } catch {
+            /* fallthrough */
+          }
+        }
+      }
+      clearSilenceTimer();
+      setListening(false);
+    };
+
+    return rec;
+  }
+
   function toggleMic() {
     if (listening) {
       shouldRestartRef.current = false;
       clearSilenceTimer();
       try {
         recognitionRef.current?.stop();
-      } catch {
-        /* noop */
-      }
+      } catch {}
       return;
     }
-    const SR: any =
-      typeof window !== "undefined"
-        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        : null;
-    if (!SR) {
+    const rec = createRecognition();
+    if (!rec) {
       toast.error(t.micNotSupported);
       return;
     }
+    baseInputRef.current = input ? input.replace(/\s*$/, "") + " " : "";
+    recognitionRef.current = rec;
+    shouldRestartRef.current = true;
     try {
-      const rec = new SR();
-      rec.lang = getLang() === "ko" ? "ko-KR" : "en-US";
-      rec.interimResults = true;
-      rec.continuous = true;
-      rec.maxAlternatives = 1;
-      baseInputRef.current = input ? input.replace(/\s*$/, "") + " " : "";
-      rec.onresult = (e: any) => {
-        let finalTxt = "";
-        let interimTxt = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const r = e.results[i];
-          if (r.isFinal) finalTxt += r[0].transcript;
-          else interimTxt += r[0].transcript;
-        }
-        if (finalTxt) {
-          baseInputRef.current = (baseInputRef.current + finalTxt).replace(/\s*$/, "") + " ";
-        }
-        setInput(baseInputRef.current + interimTxt);
-        moveCursorEnd();
-        armSilenceTimer();
-      };
-      rec.onerror = (e: any) => {
-        if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
-          shouldRestartRef.current = false;
-          toast.error(t.micPermissionDenied);
-        } else if (e?.error === "no-speech" || e?.error === "audio-capture" || e?.error === "network") {
-          // allow restart
-          return;
-        }
-      };
-      rec.onend = () => {
-        if (shouldRestartRef.current) {
-          try {
-            rec.start();
-            return;
-          } catch {
-            /* fallthrough */
-          }
-        }
-        clearSilenceTimer();
-        setListening(false);
-      };
-      recognitionRef.current = rec;
-      shouldRestartRef.current = true;
       rec.start();
       setListening(true);
       armSilenceTimer();
@@ -471,7 +481,6 @@ function Chat() {
       setListening(false);
     }
   }
-
   async function finish(messagesOverride?: Msg[]) {
     const msgs = messagesOverride ?? messages;
     const activePhotos = photosRef.current.length ? photosRef.current : photos;
