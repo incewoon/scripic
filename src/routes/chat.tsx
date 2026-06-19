@@ -2,7 +2,7 @@
 
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar, Mic } from "lucide-react";
 import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
