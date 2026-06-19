@@ -463,9 +463,11 @@ function Chat() {
     if (listening) {
       shouldRestartRef.current = false;
       clearSilenceTimer();
+      recGenRef.current++; // ★ 현재 인스턴스를 즉시 "구세대"로 만들어 이후 이벤트 차단
       try {
         recognitionRef.current?.stop();
       } catch {}
+      setListening(false);
       return;
     }
     const rec = createRecognition();
