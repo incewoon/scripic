@@ -147,7 +147,7 @@ function Chat() {
   const [generating, setGenerating] = useState(false);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
   const autoStartedRef = useRef(false);
