@@ -481,6 +481,7 @@ function Chat() {
       setListening(false);
     }
   }
+
   async function finish(messagesOverride?: Msg[]) {
     const msgs = messagesOverride ?? messages;
     const activePhotos = photosRef.current.length ? photosRef.current : photos;
