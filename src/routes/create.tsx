@@ -393,7 +393,7 @@ function Create() {
                             return [...prev, p];
                           });
                         }}
-                        className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all active:scale-[0.97] ${
+                        className={`px-3 py-1.5 rounded-full whitespace-nowrap flex-shrink-0 text-[12px] font-medium transition-all active:scale-[0.97] ${
                           active
                             ? "text-primary-foreground shadow-[var(--shadow-warm)]"
                             : "border border-border/60 warm-text bg-card/50"
