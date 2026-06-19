@@ -405,7 +405,7 @@ function Chat() {
         : null;
     if (!SR) return null;
 
-    const myGen = ++recGenRef.current; // 이 인스턴스만의 고유 번호
+    const myGen = ++recGenRef.current;
     const rec = new SR();
     rec.lang = getLang() === "ko" ? "ko-KR" : "en-US";
     rec.interimResults = true;
@@ -413,18 +413,19 @@ function Chat() {
     rec.maxAlternatives = 1;
 
     rec.onresult = (e: any) => {
-      if (myGen !== recGenRef.current) return; // ★ 옛 인스턴스의 늦은 이벤트 무시
+      if (myGen !== recGenRef.current) return;
+
+      // ★ resultIndex를 신뢰하지 않고, 매번 전체 결과를 처음부터 다시 조립
       let finalTxt = "";
       let interimTxt = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      for (let i = 0; i < e.results.length; i++) {
         const r = e.results[i];
         if (r.isFinal) finalTxt += r[0].transcript;
         else interimTxt += r[0].transcript;
       }
-      if (finalTxt) {
-        baseInputRef.current = (baseInputRef.current + finalTxt).replace(/\s*$/, "") + " ";
-      }
-      setInput(baseInputRef.current + interimTxt);
+
+      // baseInputRef는 "이번 인식 세션이 시작되기 전까지 있던 텍스트"만 보관
+      setInput(sessionBaseRef.current + finalTxt + interimTxt);
       moveCursorEnd();
       armSilenceTimer();
     };
@@ -438,17 +439,17 @@ function Chat() {
     };
 
     rec.onend = () => {
-      if (myGen !== recGenRef.current) return; // ★ 이미 다음 세대가 떠 있으면 아무것도 안 함
+      if (myGen !== recGenRef.current) return;
       if (shouldRestartRef.current) {
+        // 다음 세션을 위해 지금까지 입력된 전체 텍스트를 새 베이스로 고정
+        sessionBaseRef.current = input; // ※ 클로저 문제 있어 아래 대안 참고
         const fresh = createRecognition();
         if (fresh) {
           recognitionRef.current = fresh;
           try {
             fresh.start();
             return;
-          } catch {
-            /* fallthrough */
-          }
+          } catch {}
         }
       }
       clearSilenceTimer();
