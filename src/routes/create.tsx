@@ -67,7 +67,9 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
       {...listeners}
     >
       <img src={item.url} alt="" className="w-full h-full object-cover pointer-events-none" />
-      <div className={`absolute top-1.5 left-1.5 bg-background/85 backdrop-blur rounded-full flex items-center justify-center text-[11px] font-semibold text-foreground/80 ${index === 0 ? "h-6 px-2" : "w-6 h-6"}`}>
+      <div
+        className={`absolute top-1.5 left-1.5 bg-background/85 backdrop-blur rounded-full flex items-center justify-center text-[11px] font-semibold text-foreground/80 ${index === 0 ? "h-6 px-2" : "w-6 h-6"}`}
+      >
         {index === 0 ? t.representative : index + 1}
       </div>
       <button
@@ -276,8 +278,8 @@ function Create() {
         <div className="card-info mb-5 rounded-2xl px-4 py-3 flex items-start gap-3">
           <Info size={18} className="mt-0.5 flex-shrink-0" style={{ color: "var(--cta-accent)" }} />
           <div className="text-[13.5px] leading-relaxed">
-            <b className="font-semibold">{t.photoMax3}</b>{" "}
-            <span className="text-[11px] info-muted align-middle">{t.dragHint}</span>
+            <b className="font-semibold">{t.photoMax3}</b>
+            <span className="block text-[11px] info-muted mt-1">{t.dragHint}</span>
           </div>
         </div>
 
