@@ -405,6 +405,8 @@ function Chat() {
         ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
         : null;
     if (!SR) return null;
+
+    const myGen = ++recGenRef.current; // 이 인스턴스만의 고유 번호
     const rec = new SR();
     rec.lang = getLang() === "ko" ? "ko-KR" : "en-US";
     rec.interimResults = true;
@@ -412,6 +414,7 @@ function Chat() {
     rec.maxAlternatives = 1;
 
     rec.onresult = (e: any) => {
+      if (myGen !== recGenRef.current) return; // ★ 옛 인스턴스의 늦은 이벤트 무시
       let finalTxt = "";
       let interimTxt = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -428,6 +431,7 @@ function Chat() {
     };
 
     rec.onerror = (e: any) => {
+      if (myGen !== recGenRef.current) return;
       if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
         shouldRestartRef.current = false;
         toast.error(t.micPermissionDenied);
@@ -435,8 +439,8 @@ function Chat() {
     };
 
     rec.onend = () => {
+      if (myGen !== recGenRef.current) return; // ★ 이미 다음 세대가 떠 있으면 아무것도 안 함
       if (shouldRestartRef.current) {
-        // ★ 핵심: 같은 인스턴스를 재시작하지 않고 새 인스턴스를 만든다
         const fresh = createRecognition();
         if (fresh) {
           recognitionRef.current = fresh;
