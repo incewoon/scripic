@@ -366,8 +366,8 @@ function Create() {
         </div>
         <div className="mb-5">
           <div className="flex items-baseline gap-2 mb-2">
-            <div className="text-[12px] font-medium warm-muted mb-1">{t.tagsLabel}</div>
-            <div className="text-[11px] warm-muted mb-2 leading-relaxed">{t.tagsHint}</div>
+            <span className="text-[12px] font-medium warm-muted mb-1">{t.tagsLabel}</span>
+            <span className="text-[11px] warm-muted mb-2 leading-relaxed">{t.tagsHint}</span>
           </div>
           {(() => {
             const presets: string[] = [
