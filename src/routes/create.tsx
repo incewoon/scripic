@@ -280,7 +280,7 @@ function Create() {
             <span className="block text-[12px] info-muted mt-1">{t.dragHint}</span>
           </div>
         </div>
-        //카드인포 끝{/* 사진 진행률 바 + 사진 그리드 */}
+        {/* 사진 진행률 바 + 사진 그리드 */}
         <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-5">
           <div
             className="h-full transition-all duration-500 rounded-full"
