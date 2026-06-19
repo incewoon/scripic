@@ -312,7 +312,6 @@ function Create() {
           </SortableContext>
         </DndContext>
         <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
-        //이동
         <div className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">{t.chatMode}</div>
           <div className="flex gap-1.5 mb-2">
