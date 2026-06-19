@@ -370,7 +370,9 @@ function Create() {
         </div>
         <div className="mb-5">
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-[12px] font-medium warm-muted">{t.tagsLabel}</span>
+            <span className="text-[12px] font-medium warm-muted">
+              <b className="font-semibold">{t.tagsLabel}</b>
+            </span>
             <span className="text-[11px] warm-muted">{t.tagsHint}</span>
           </div>
           {(() => {
