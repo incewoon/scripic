@@ -734,12 +734,7 @@ function Chat() {
             placeholder={t.inputPlaceholder}
             disabled={busy}
             rows={1}
-            style={{ maxHeight: 140, overflowY: "auto" }}
-            onInput={(e) => {
-              const el = e.currentTarget;
-              el.style.height = "auto";
-              el.style.height = Math.min(el.scrollHeight, 140) + "px";
-            }}
+            style={{ maxHeight: 140, overflowY: "auto", boxSizing: "border-box" }}
             className="flex-1 bg-transparent px-3 py-2 outline-none text-sm resize-none"
           />
           <button
