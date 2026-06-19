@@ -1,49 +1,31 @@
-# 픽 맵 UX 강화: 검색 + 현재위치
+# 채팅 입력창 음성→텍스트 마이크 버튼
 
-현재 `MapDialog`의 픽 모드는 지도를 탭/드래그해서 핀을 찍는 방식만 지원합니다. 여기에 두 가지 입력 경로를 추가합니다.
+`src/routes/chat.tsx` 입력창(line 567 부근) 왼쪽에 마이크 버튼을 추가해서, 사용자가 디바이스 내장 음성인식으로 말하면 그 텍스트가 입력창(`input` state)에 채워지도록 합니다. **전송은 하지 않음** — 사용자가 직접 Send 버튼을 눌러야 합니다.
 
-## 1. 상단 검색창 (장소/주소 검색)
+## 사용 기술
 
-- `MapDialog` 픽 모드 헤더 아래에 검색 입력창 + 결과 드롭다운 추가.
-- Google **Places API (New)** 사용 — 브라우저 키로 `AutocompleteSuggestion.fetchAutocompleteSuggestions()` 호출 (디바운스 300ms, 세션 토큰 사용).
-- 결과 항목을 탭하면:
-  1. `places/v1/places/{id}` 를 서버 함수로 호출해 `location`(lat/lng)과 `displayName`을 가져옴.
-  2. 지도 중심/줌 이동 + 마커 표시 + `picked` 좌표 갱신.
-  3. 저장 버튼을 누르면 기존 흐름대로 `reverseGeocodeCoords`로 짧은 라벨(구 + 동)을 만들어 저장 — 검색 결과의 풀네임이 아니라 일관된 짧은 라벨로 표시되도록 함.
-- 새 서버 함수 `src/lib/places.functions.ts`:
-  - `searchPlaces({ query, lang })` → 게이트웨이 `places/v1/places:searchText` 호출, 상위 5개 `{id, name, address, location}` 반환.
-  - (선택) Autocomplete를 브라우저에서 직접 쓰는 대신 서버에서 `places:autocomplete` 호출하는 변형도 가능 — 검토 후 단순한 `searchText` 한 가지로 채택.
+- 브라우저/디바이스 내장 **Web Speech API** (`window.SpeechRecognition` / `window.webkitSpeechRecognition`).
+  - iOS Safari, Chrome(Android/Desktop), Edge 모두 webkit 프리픽스로 지원.
+  - 별도 서버/API 키 불필요, 디바이스 OS의 STT 엔진 사용.
+- 미지원 브라우저에서는 마이크 버튼을 숨김 (또는 비활성화).
 
-## 2. 현재 위치 버튼
+## 동작
 
-- 검색창 우측에 위치 아이콘 버튼 추가.
-- 탭 시 `navigator.geolocation.getCurrentPosition()` 호출 (브라우저가 권한 프롬프트 표시 — 동의는 OS/브라우저가 처리).
-- 성공: 해당 좌표로 지도 중심 이동 + 마커 표시 + `picked` 갱신.
-- 실패/거부: toast로 "위치 권한이 거부되었습니다. 지도를 탭하거나 검색하세요" 안내 (i18n).
-- 권한 요청은 **사용자가 버튼을 눌렀을 때만** — 기존처럼 자동 호출하지 않음. 거부해도 기존 fallback(마지막 저장 좌표/한국 중심) 그대로 동작.
+1. 마이크 버튼 탭 → `SpeechRecognition` 인스턴스 생성 후 `start()`.
+   - `lang` = 현재 i18n 언어 (`ko` → `ko-KR`, `en` → `en-US`).
+   - `interimResults = true`, `continuous = false` (한 발화 단위).
+2. 인식 중에는 버튼이 빨간색 + 펄스 애니메이션으로 녹음중 표시.
+3. `onresult` 콜백에서 누적된 transcript를 `setInput((prev) => prev + transcript)` 로 입력창에 추가 (기존 입력값 보존).
+4. 다시 탭하거나 `onend`/`onerror` 발생 시 녹음 종료, 버튼 원상복귀.
+5. 권한 거부(`not-allowed`) / 오류 시 toast로 안내 (i18n).
 
-## 3. i18n 추가
+## 변경 파일
 
-`src/lib/i18n.ts`에 ko/en 두 세트 추가:
-- `searchPlacePlaceholder` ("장소 또는 주소 검색")
-- `useCurrentLocation` ("현재 위치 사용")
-- `locationPermissionDenied` ("위치 권한이 거부되었습니다")
-- `searchNoResults` ("검색 결과가 없습니다")
-
-## 4. 저장 동작 (변경 없음 확인)
-
-- 검색이든 현재위치든 지도탭이든, 최종 저장 좌표는 항상 사용자가 확정한 `picked` 그대로.
-- 표시 라벨은 항상 `reverseGeocodeCoords`로 만든 짧은 라벨 → 일관성 유지.
-
-## 영향 파일
-
-- `src/components/MapDialog.tsx` — 검색바/현재위치 버튼 UI + 핸들러.
-- `src/lib/places.functions.ts` (신규) — 서버 함수 `searchPlaces`.
-- `src/lib/i18n.ts` — 신규 문자열.
-- `.lovable/plan.md` — 변경 내역 갱신.
+- `src/routes/chat.tsx` — 마이크 버튼 UI + `useSpeechRecognition` 로컬 훅(같은 파일 내) 추가.
+- `src/lib/i18n.ts` — 신규 문자열 `micStart`, `micListening`, `micNotSupported`, `micPermissionDenied`.
 
 ## 비변경 / 비목표
 
-- 앨범 생성 시 EXIF 위치 추출은 그대로 비활성 유지.
-- 자동 지오로케이션 권한 요청 금지 — 버튼 클릭 시에만.
-- 라벨 포맷(구 + 동) 로직은 그대로.
+- 서버 STT(Lovable AI, ElevenLabs 등) 사용 안 함 — 사용자 요구대로 디바이스 내장 변환만.
+- 자동 전송 없음 — 입력창에 텍스트만 채움.
+- 다른 화면(MapDialog 등)에는 적용하지 않음.
