@@ -141,6 +141,8 @@ function Chat() {
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const baseInputRef = useRef("");
+  const shouldRestartRef = useRef(false);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [busy, setBusy] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
@@ -360,8 +362,37 @@ function Chat() {
     await send(v);
   }
 
+  function moveCursorEnd() {
+    const el = inputRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      try {
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+        el.scrollLeft = el.scrollWidth;
+      } catch { /* noop */ }
+    });
+  }
+
+  function clearSilenceTimer() {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }
+
+  function armSilenceTimer() {
+    clearSilenceTimer();
+    silenceTimerRef.current = setTimeout(() => {
+      shouldRestartRef.current = false;
+      try { recognitionRef.current?.stop(); } catch { /* noop */ }
+    }, 3000);
+  }
+
   function toggleMic() {
     if (listening) {
+      shouldRestartRef.current = false;
+      clearSilenceTimer();
       try { recognitionRef.current?.stop(); } catch { /* noop */ }
       return;
     }
@@ -377,29 +408,53 @@ function Chat() {
       const rec = new SR();
       rec.lang = getLang() === "ko" ? "ko-KR" : "en-US";
       rec.interimResults = true;
-      rec.continuous = false;
+      rec.continuous = true;
       rec.maxAlternatives = 1;
       baseInputRef.current = input ? input.replace(/\s*$/, "") + " " : "";
       rec.onresult = (e: any) => {
-        let txt = "";
-        for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
-        setInput(baseInputRef.current + txt);
+        let finalTxt = "";
+        let interimTxt = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const r = e.results[i];
+          if (r.isFinal) finalTxt += r[0].transcript;
+          else interimTxt += r[0].transcript;
+        }
+        if (finalTxt) {
+          baseInputRef.current = (baseInputRef.current + finalTxt).replace(/\s*$/, "") + " ";
+        }
+        setInput(baseInputRef.current + interimTxt);
+        moveCursorEnd();
+        armSilenceTimer();
       };
       rec.onerror = (e: any) => {
         if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+          shouldRestartRef.current = false;
           toast.error(t.micPermissionDenied);
+        } else if (e?.error === "no-speech" || e?.error === "audio-capture" || e?.error === "network") {
+          // allow restart
+          return;
         }
+      };
+      rec.onend = () => {
+        if (shouldRestartRef.current) {
+          try { rec.start(); return; } catch { /* fallthrough */ }
+        }
+        clearSilenceTimer();
         setListening(false);
       };
-      rec.onend = () => setListening(false);
       recognitionRef.current = rec;
+      shouldRestartRef.current = true;
       rec.start();
       setListening(true);
+      armSilenceTimer();
     } catch (err) {
       console.error("[mic] start failed", err);
+      shouldRestartRef.current = false;
+      clearSilenceTimer();
       setListening(false);
     }
   }
+
 
   async function finish(messagesOverride?: Msg[]) {
     const msgs = messagesOverride ?? messages;
