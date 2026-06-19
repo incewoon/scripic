@@ -678,7 +678,7 @@ function Chat() {
       </div>
 
       <div className="px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-gradient-to-t from-background to-transparent">
-        <div className="flex gap-2 items-center glass rounded-full px-2 py-1.5 border border-border/50">
+        <div className="flex gap-2 items-end glass rounded-3xl px-2 py-1.5 border border-border/50">
           <button
             type="button"
             onClick={toggleMic}
