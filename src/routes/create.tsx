@@ -279,7 +279,7 @@ function Create() {
           <Info size={18} className="mt-0.5 flex-shrink-0" style={{ color: "var(--cta-accent)" }} />
           <div className="text-[13.5px] leading-relaxed">
             <b className="font-semibold">{t.photoMax3}</b>
-            <span className="block text-[11px] info-muted mt-1">{t.dragHint}</span>
+            <span className="block text-[12px] info-muted mt-1">{t.dragHint}</span>
           </div>
         </div>
 
