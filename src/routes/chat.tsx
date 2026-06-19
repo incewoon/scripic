@@ -1,6 +1,6 @@
 //chat.tsx - ai대화입력 관련 코드
 
-("use client");
+"use client";
 
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
