@@ -360,6 +360,47 @@ function Chat() {
     await send(v);
   }
 
+  function toggleMic() {
+    if (listening) {
+      try { recognitionRef.current?.stop(); } catch { /* noop */ }
+      return;
+    }
+    const SR: any =
+      typeof window !== "undefined"
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null;
+    if (!SR) {
+      toast.error(t.micNotSupported);
+      return;
+    }
+    try {
+      const rec = new SR();
+      rec.lang = getLang() === "ko" ? "ko-KR" : "en-US";
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.maxAlternatives = 1;
+      baseInputRef.current = input ? input.replace(/\s*$/, "") + " " : "";
+      rec.onresult = (e: any) => {
+        let txt = "";
+        for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+        setInput(baseInputRef.current + txt);
+      };
+      rec.onerror = (e: any) => {
+        if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+          toast.error(t.micPermissionDenied);
+        }
+        setListening(false);
+      };
+      rec.onend = () => setListening(false);
+      recognitionRef.current = rec;
+      rec.start();
+      setListening(true);
+    } catch (err) {
+      console.error("[mic] start failed", err);
+      setListening(false);
+    }
+  }
+
   async function finish(messagesOverride?: Msg[]) {
     const msgs = messagesOverride ?? messages;
     const activePhotos = photosRef.current.length ? photosRef.current : photos;
