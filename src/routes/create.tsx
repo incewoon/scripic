@@ -471,37 +471,6 @@ function Create() {
           </div>
         </div>
         //원래위치
-        <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-5">
-          <div
-            className="h-full transition-all duration-500 rounded-full"
-            style={{ width: `${pct}%`, background: "var(--gradient-warm)" }}
-          />
-        </div>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-3 gap-2.5">
-              {items.map((it, i) => (
-                <SortablePhoto
-                  key={it.id}
-                  item={it}
-                  index={i}
-                  onRemove={() => setItems((ps) => ps.filter((x) => x.id !== it.id))}
-                />
-              ))}
-              {items.length === 0 && (
-                <button
-                  onClick={tryOpenPicker}
-                  disabled={busy}
-                  className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
-                >
-                  <ImagePlus size={26} strokeWidth={1.6} />
-                  <span className="text-[11px] mt-1.5 warm-muted font-medium">{busy ? t.processing : t.addPhoto}</span>
-                </button>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
-        <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
       </div>
 
       <UploadLimitDialog open={limitReason !== null} reason={limitReason} onClose={() => setLimitReason(null)} />
