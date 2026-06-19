@@ -289,7 +289,7 @@ function Create() {
         </div>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-3 gap-2.5" mb-1>
               {items.map((it, i) => (
                 <SortablePhoto
                   key={it.id}
