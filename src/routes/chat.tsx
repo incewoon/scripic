@@ -403,7 +403,7 @@ function Chat() {
       } catch {
         /* noop */
       }
-    }, 3000);
+    }, SILENCE_TIMEOUT_MS); // ★ 상수 사용
   }
 
   function createRecognition() {
