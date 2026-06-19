@@ -379,7 +379,7 @@ function Create() {
             const customTags = tags.filter((tg) => !presets.includes(tg));
             return (
               <>
-                <div className="flex flex-wrap gap-1.5 mb-2">
+                <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
                   {presets.map((p) => {
                     const active = tags.includes(p);
                     return (
@@ -406,7 +406,7 @@ function Create() {
                   })}
                 </div>
                 {customTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
+                  <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
                     {customTags.map((tg) => (
                       <span
                         key={tg}
