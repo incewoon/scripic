@@ -31,8 +31,6 @@ const TOKEN_RE = /\[(READY_TO_FINISH|PROPOSE_FINISH)\]/g;
 // 전체 대화(사용자+AI) 최대 메시지 수. 도달 시 강제 마무리.
 const MAX_TOTAL_MESSAGES = 18;
 
-const recGenRef = useRef(0); // 현재 유효한 인스턴스 세대
-
 function sanitizeForDisplay(text: string) {
   return text.replace(TOKEN_RE, "").trim();
 }
