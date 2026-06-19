@@ -2,7 +2,7 @@
 
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, X, MapPin, Calendar, Mic } from "lucide-react";
 import { saveAlbum } from "@/lib/storage";
 import { toast } from "sonner";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
@@ -138,6 +138,9 @@ function Chat() {
   });
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const baseInputRef = useRef("");
   const [busy, setBusy] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
@@ -357,6 +360,47 @@ function Chat() {
     await send(v);
   }
 
+  function toggleMic() {
+    if (listening) {
+      try { recognitionRef.current?.stop(); } catch { /* noop */ }
+      return;
+    }
+    const SR: any =
+      typeof window !== "undefined"
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null;
+    if (!SR) {
+      toast.error(t.micNotSupported);
+      return;
+    }
+    try {
+      const rec = new SR();
+      rec.lang = getLang() === "ko" ? "ko-KR" : "en-US";
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.maxAlternatives = 1;
+      baseInputRef.current = input ? input.replace(/\s*$/, "") + " " : "";
+      rec.onresult = (e: any) => {
+        let txt = "";
+        for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+        setInput(baseInputRef.current + txt);
+      };
+      rec.onerror = (e: any) => {
+        if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+          toast.error(t.micPermissionDenied);
+        }
+        setListening(false);
+      };
+      rec.onend = () => setListening(false);
+      recognitionRef.current = rec;
+      rec.start();
+      setListening(true);
+    } catch (err) {
+      console.error("[mic] start failed", err);
+      setListening(false);
+    }
+  }
+
   async function finish(messagesOverride?: Msg[]) {
     const msgs = messagesOverride ?? messages;
     const activePhotos = photosRef.current.length ? photosRef.current : photos;
@@ -564,6 +608,20 @@ function Chat() {
 
       <div className="px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-gradient-to-t from-background to-transparent">
         <div className="flex gap-2 items-center glass rounded-full px-2 py-1.5 border border-border/50">
+          <button
+            type="button"
+            onClick={toggleMic}
+            disabled={busy}
+            aria-label={listening ? t.micListening : t.micStart}
+            title={listening ? t.micListening : t.micStart}
+            className={`p-2.5 rounded-full transition-colors disabled:opacity-40 ${
+              listening
+                ? "bg-destructive text-destructive-foreground animate-pulse"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            <Mic size={16} />
+          </button>
           <input
             ref={inputRef}
             value={input}
