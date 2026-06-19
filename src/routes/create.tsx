@@ -469,7 +469,6 @@ function Create() {
             </button>
           </div>
         </div>
-        //원래위치
       </div>
 
       <UploadLimitDialog open={limitReason !== null} reason={limitReason} onClose={() => setLimitReason(null)} />
