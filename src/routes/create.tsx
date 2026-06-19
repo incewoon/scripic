@@ -281,7 +281,7 @@ function Create() {
           </div>
         </div>
         {/* 사진 진행률 바 + 사진 그리드 */}
-        <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-2">
+        <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-1">
           <div
             className="h-full transition-all duration-500 rounded-full"
             style={{ width: `${pct}%`, background: "var(--gradient-warm)" }}
