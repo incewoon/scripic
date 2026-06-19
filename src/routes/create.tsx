@@ -341,7 +341,9 @@ function Create() {
           </div>
         </div>
         <div className="mb-5">
-          <div className="text-[12px] font-medium warm-muted mb-2">{t.toneSection}</div>
+          <div className="text-[12px] font-medium warm-muted mb-2">
+            <b className="font-semibold">{t.toneSection}</b>
+          </div>
           <div className="flex gap-1.5 mb-2">
             {(["politely", "friendly", "short"] as ChatTone[]).map((tn) => {
               const label = tn === "politely" ? t.tonePolitely : tn === "friendly" ? t.toneFriendly : t.toneShort;
