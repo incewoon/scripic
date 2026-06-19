@@ -275,7 +275,7 @@ function Create() {
         <p className="text-[15px] warm-muted mb-3 leading-relaxed">{t.pickHint}</p>
         <div className="card-info mb-2 rounded-2xl px-3 py-2.5 flex items-start gap-2.5">
           <Info size={18} className="mt-0.5 flex-shrink-0" style={{ color: "var(--cta-accent)" }} />
-          <div className="text-[13.5px] leading-relaxed">
+          <div className="text-[13px] leading-snug">
             <b className="font-semibold">{t.photoMax3}</b>
             <span className="block text-[12px] info-muted mt-1">{t.dragHint}</span>
           </div>
