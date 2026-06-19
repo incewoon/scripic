@@ -312,7 +312,7 @@ function Create() {
           </SortableContext>
         </DndContext>
         <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
-        <div className="mb-5">
+        <div className="mt-4 mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">{t.chatMode}</div>
           <div className="flex gap-1.5 mb-2">
             {(["creative", "fact", "brief"] as ChatMode[]).map((m) => {
