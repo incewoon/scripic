@@ -415,7 +415,7 @@ function Chat() {
     rec.onresult = (e: any) => {
       if (myGen !== recGenRef.current) return;
 
-      // ★ resultIndex를 신뢰하지 않고, 매번 전체 결과를 처음부터 다시 조립
+      // resultIndex를 신뢰하지 않고, 매번 전체 결과를 처음부터 다시 조립
       let finalTxt = "";
       let interimTxt = "";
       for (let i = 0; i < e.results.length; i++) {
@@ -424,8 +424,8 @@ function Chat() {
         else interimTxt += r[0].transcript;
       }
 
-      // baseInputRef는 "이번 인식 세션이 시작되기 전까지 있던 텍스트"만 보관
-      setInput(sessionBaseRef.current + finalTxt + interimTxt);
+      // baseInputRef = 이번 recognition 세션이 시작되기 전까지의 텍스트
+      setInput(baseInputRef.current + finalTxt + interimTxt);
       moveCursorEnd();
       armSilenceTimer();
     };
@@ -441,15 +441,21 @@ function Chat() {
     rec.onend = () => {
       if (myGen !== recGenRef.current) return;
       if (shouldRestartRef.current) {
-        // 다음 세션을 위해 지금까지 입력된 전체 텍스트를 새 베이스로 고정
-        sessionBaseRef.current = input; // ※ 클로저 문제 있어 아래 대안 참고
+        // 재시작 직전, 지금까지 누적된 input 값을 baseInputRef에 고정
+        // (stale closure 방지를 위해 functional setState로 최신값을 읽음)
+        setInput((cur) => {
+          baseInputRef.current = cur;
+          return cur;
+        });
         const fresh = createRecognition();
         if (fresh) {
           recognitionRef.current = fresh;
           try {
             fresh.start();
             return;
-          } catch {}
+          } catch {
+            /* fallthrough */
+          }
         }
       }
       clearSilenceTimer();
