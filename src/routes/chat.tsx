@@ -252,6 +252,14 @@ function Chat() {
     window.setTimeout(() => scrollToLatest("smooth"), 300);
   }
 
+  // ★ 추가: 입력창 텍스트가 바뀔 때마다 (타이핑이든 음성입력이든) 높이를 다시 계산
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 140) + "px";
+  }, [input]);
+
   async function send(text: string, ph = photos, prior = messages, aiPhotos?: string[]) {
     if (!authReady || !user) {
       toast.error(t.connectionError);
