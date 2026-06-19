@@ -147,7 +147,7 @@ function Chat() {
   const [generating, setGenerating] = useState(false);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const finishingRef = useRef(false);
   const autoStartedRef = useRef(false);
@@ -369,7 +369,10 @@ function Chat() {
       try {
         const len = el.value.length;
         el.setSelectionRange(len, len);
-        el.scrollLeft = el.scrollWidth;
+        // auto-resize textarea
+        el.style.height = "auto";
+        el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+        el.scrollTop = el.scrollHeight;
       } catch { /* noop */ }
     });
   }
@@ -389,6 +392,57 @@ function Chat() {
     }, 3000);
   }
 
+  function createRecognition(): any | null {
+    const SR: any =
+      typeof window !== "undefined"
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null;
+    if (!SR) return null;
+    const rec = new SR();
+    rec.lang = getLang() === "ko" ? "ko-KR" : "en-US";
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e: any) => {
+      let finalTxt = "";
+      let interimTxt = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalTxt += r[0].transcript;
+        else interimTxt += r[0].transcript;
+      }
+      if (finalTxt) {
+        baseInputRef.current = (baseInputRef.current + finalTxt).replace(/\s*$/, "") + " ";
+      }
+      setInput(baseInputRef.current + interimTxt);
+      moveCursorEnd();
+      armSilenceTimer();
+    };
+    rec.onerror = (e: any) => {
+      if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+        shouldRestartRef.current = false;
+        toast.error(t.micPermissionDenied);
+      }
+      // other errors (no-speech/audio-capture/network) handled via onend restart
+    };
+    rec.onend = () => {
+      if (shouldRestartRef.current) {
+        // create a FRESH instance to avoid duplicate replay of buffered results
+        try {
+          const next = createRecognition();
+          if (next) {
+            recognitionRef.current = next;
+            next.start();
+            return;
+          }
+        } catch { /* fallthrough */ }
+      }
+      clearSilenceTimer();
+      setListening(false);
+    };
+    return rec;
+  }
+
   function toggleMic() {
     if (listening) {
       shouldRestartRef.current = false;
@@ -396,52 +450,13 @@ function Chat() {
       try { recognitionRef.current?.stop(); } catch { /* noop */ }
       return;
     }
-    const SR: any =
-      typeof window !== "undefined"
-        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        : null;
-    if (!SR) {
+    const rec = createRecognition();
+    if (!rec) {
       toast.error(t.micNotSupported);
       return;
     }
     try {
-      const rec = new SR();
-      rec.lang = getLang() === "ko" ? "ko-KR" : "en-US";
-      rec.interimResults = true;
-      rec.continuous = true;
-      rec.maxAlternatives = 1;
       baseInputRef.current = input ? input.replace(/\s*$/, "") + " " : "";
-      rec.onresult = (e: any) => {
-        let finalTxt = "";
-        let interimTxt = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const r = e.results[i];
-          if (r.isFinal) finalTxt += r[0].transcript;
-          else interimTxt += r[0].transcript;
-        }
-        if (finalTxt) {
-          baseInputRef.current = (baseInputRef.current + finalTxt).replace(/\s*$/, "") + " ";
-        }
-        setInput(baseInputRef.current + interimTxt);
-        moveCursorEnd();
-        armSilenceTimer();
-      };
-      rec.onerror = (e: any) => {
-        if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
-          shouldRestartRef.current = false;
-          toast.error(t.micPermissionDenied);
-        } else if (e?.error === "no-speech" || e?.error === "audio-capture" || e?.error === "network") {
-          // allow restart
-          return;
-        }
-      };
-      rec.onend = () => {
-        if (shouldRestartRef.current) {
-          try { rec.start(); return; } catch { /* fallthrough */ }
-        }
-        clearSilenceTimer();
-        setListening(false);
-      };
       recognitionRef.current = rec;
       shouldRestartRef.current = true;
       rec.start();
@@ -454,6 +469,7 @@ function Chat() {
       setListening(false);
     }
   }
+
 
 
   async function finish(messagesOverride?: Msg[]) {
@@ -662,7 +678,7 @@ function Chat() {
       </div>
 
       <div className="px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-gradient-to-t from-background to-transparent">
-        <div className="flex gap-2 items-center glass rounded-full px-2 py-1.5 border border-border/50">
+        <div className="flex gap-2 items-end glass rounded-3xl px-2 py-1.5 border border-border/50">
           <button
             type="button"
             onClick={toggleMic}
@@ -677,15 +693,26 @@ function Chat() {
           >
             <Mic size={16} />
           </button>
-          <input
+          <textarea
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+            }}
             onFocus={handleInputFocus}
-            onKeyDown={(e) => e.key === "Enter" && onSend()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                onSend();
+              }
+            }}
             placeholder={t.inputPlaceholder}
             disabled={busy}
-            className="flex-1 bg-transparent px-3 py-2 outline-none text-sm"
+            rows={1}
+            className="flex-1 bg-transparent px-3 py-2 outline-none text-sm resize-none leading-5 max-h-[140px] overflow-y-auto"
           />
           <button
             onClick={onSend}
