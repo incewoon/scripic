@@ -141,6 +141,8 @@ function Chat() {
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const baseInputRef = useRef("");
+  const shouldRestartRef = useRef(false);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [busy, setBusy] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
