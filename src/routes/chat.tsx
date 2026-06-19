@@ -693,15 +693,26 @@ function Chat() {
           >
             <Mic size={16} />
           </button>
-          <input
+          <textarea
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+            }}
             onFocus={handleInputFocus}
-            onKeyDown={(e) => e.key === "Enter" && onSend()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                onSend();
+              }
+            }}
             placeholder={t.inputPlaceholder}
             disabled={busy}
-            className="flex-1 bg-transparent px-3 py-2 outline-none text-sm"
+            rows={1}
+            className="flex-1 bg-transparent px-3 py-2 outline-none text-sm resize-none leading-5 max-h-[140px] overflow-y-auto"
           />
           <button
             onClick={onSend}
