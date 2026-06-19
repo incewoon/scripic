@@ -373,7 +373,7 @@ function Create() {
             <span className="text-[12px] font-medium warm-muted">
               <b className="font-semibold">{t.tagsLabel}</b>
             </span>
-            <span className="text-[11px] warm-muted">{t.tagsHint}</span>
+            <span className="text-[12px] warm-muted">{t.tagsHint}</span>
           </div>
           {(() => {
             const presets: string[] = [
