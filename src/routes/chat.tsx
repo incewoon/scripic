@@ -415,21 +415,24 @@ function Chat() {
     rec.onresult = (e: any) => {
       if (myGen !== recGenRef.current) return;
 
-      // resultIndex를 신뢰하지 않고, 매번 전체 결과를 처음부터 다시 조립
+      // 각 result는 "지금까지의 전체 문장"을 담고 있을 수 있으므로
+      // 전부 더하지 않고, 가장 마지막 결과만 사용한다.
       let finalTxt = "";
       let interimTxt = "";
+
       for (let i = 0; i < e.results.length; i++) {
         const r = e.results[i];
-        if (r.isFinal) finalTxt += r[0].transcript;
-        else interimTxt += r[0].transcript;
+        if (r.isFinal) {
+          finalTxt = r[0].transcript; // ★ += 가 아니라 = (덮어쓰기)
+        } else {
+          interimTxt = r[0].transcript; // ★ 마찬가지로 덮어쓰기
+        }
       }
 
-      // baseInputRef = 이번 recognition 세션이 시작되기 전까지의 텍스트
       setInput(baseInputRef.current + finalTxt + interimTxt);
       moveCursorEnd();
       armSilenceTimer();
     };
-
     rec.onerror = (e: any) => {
       if (myGen !== recGenRef.current) return;
       if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
