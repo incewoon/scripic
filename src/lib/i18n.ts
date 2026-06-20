@@ -113,7 +113,7 @@ const dict = {
 
     freeNoticeTitle: "Free during beta",
     freeNoticeBody:
-      "Scripic is free right now. While in beta, each album holds up to 3 photos and you can create 1 album per day.",
+      "Scripic is free right now. While in beta, each album holds up to 3 photos and you can create 1 album per day.(Post a review on social media to create one extra album per day. (Each verified review can only be used once.))",
     freeNoticeSoon: "More photos per album, unlimited daily creation, and other features are coming soon.",
     gotIt: "Got it",
     // Storage diagnostics
