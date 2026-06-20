@@ -243,7 +243,7 @@ const dict = {
       "Photos: pick up to 3 photos that belong to one moment. Long-press to drag and reorder; the first one becomes the cover.",
     createUsageMode:
       'Story type — choose how the album should be written. "Creative" weaves a literary scene, "Factual" sticks to what\'s in the photo, and "Brief" keeps it short.',
-    createUsageTone: "Tone — choose how the AI talks to you during the chat (polite, friendly, or short).",
+    createUsageTone: "Tone — choose a tone for organizing your album (polite, friendly, or short).",
     createUsageTags: "Tags — tap a preset or add your own. Custom tags you create stay available next time too.",
     dontShowNextTime: "Don't show next time",
     // Chat-screen usage coachmark
@@ -484,7 +484,7 @@ const dict = {
       "사진: 하나의 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 대표 사진이 돼요.",
     createUsageMode:
       "정리 타입 — 앨범을 어떻게 정리할지 골라요. '창의적'은 한 편의 글처럼 엮어주고, '사실 중심'은 사진에 보이는 내용 위주로, '간결하게'는 짧게 정리해요.",
-    createUsageTone: "정리 어조 — AI가 앨점을 정리할때의 문체를 골라요 (정중하게 · 친근하게 · 짧게).",
+    createUsageTone: "정리 어조 — 앨범을 정리할때의 문체를 골라요 (정중하게 · 친근하게 · 짧게).",
     createUsageTags: "태그 — 프리셋을 누르거나 직접 추가할 수 있어요. 직접 만든 태그는 다음 앨범에서도 계속 보여요.",
     dontShowNextTime: "다음부터 보지 않기",
     // AI 대화화면 사용법 안내
