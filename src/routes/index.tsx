@@ -31,8 +31,6 @@ function parsePeriodDate(period?: string): number {
   return 0;
 }
 
-
-
 export const Route = createFileRoute("/")({
   component: Home,
   validateSearch: (s: Record<string, unknown>) => ({
@@ -53,7 +51,10 @@ export const Route = createFileRoute("/")({
       { rel: "manifest", href: "/manifest.json" },
       { rel: "apple-touch-icon", href: "/icon-192.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Myeongjo:wght@400;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Myeongjo:wght@400;700&display=swap",
+      },
     ],
   }),
 });
@@ -87,9 +88,7 @@ function Home() {
   };
 
   const toggleTag = (tg: string) => {
-    const next = selectedTags.includes(tg)
-      ? selectedTags.filter((x: string) => x !== tg)
-      : [...selectedTags, tg];
+    const next = selectedTags.includes(tg) ? selectedTags.filter((x: string) => x !== tg) : [...selectedTags, tg];
     navigate({ to: "/", search: { q: query, tags: next }, replace: true });
   };
 
@@ -105,11 +104,16 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  useEffect(() => () => {
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    },
+    [],
+  );
 
-  useEffect(() => { if (!hasSeenStorageNotice()) setNoticeOpen(true); }, []);
+  useEffect(() => {
+    if (!hasSeenStorageNotice()) setNoticeOpen(true);
+  }, []);
 
   useEffect(() => {
     try {
@@ -123,23 +127,34 @@ function Home() {
   const changeSort = (m: SortMode) => {
     setSortMode(m);
     setSortOpen(false);
-    try { localStorage.setItem(SORT_KEY, m); } catch {}
+    try {
+      localStorage.setItem(SORT_KEY, m);
+    } catch {}
   };
 
   const toggleDir = () => {
     setSortDir((prev) => {
       const next = prev === "desc" ? "asc" : "desc";
-      try { localStorage.setItem(SORT_DIR_KEY, next); } catch {}
+      try {
+        localStorage.setItem(SORT_DIR_KEY, next);
+      } catch {}
       return next;
     });
   };
 
   useEffect(() => {
     let cancelled = false;
-    const reload = () => { getAlbums().then((list) => { if (!cancelled) setAlbums(list); }); };
+    const reload = () => {
+      getAlbums().then((list) => {
+        if (!cancelled) setAlbums(list);
+      });
+    };
     reload();
     const unsub = subscribeAlbums(reload);
-    return () => { cancelled = true; unsub(); };
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, []);
 
   const count = albums?.length ?? 0;
@@ -166,11 +181,17 @@ function Home() {
     ? sortedAlbums.filter((a) => {
         if (tokens.length > 0) {
           const hay = [
-            a.title, a.subtitle, a.intro, a.closing,
-            a.period ?? "", a.location ?? "",
+            a.title,
+            a.subtitle,
+            a.intro,
+            a.closing,
+            a.period ?? "",
+            a.location ?? "",
             ...(a.tags ?? []),
             ...a.photos.map((p) => p.caption ?? ""),
-          ].join("\n").toLowerCase();
+          ]
+            .join("\n")
+            .toLowerCase();
           if (!tokens.every((tk) => hay.includes(tk))) return false;
         }
         if (selectedTags.length > 0) {
@@ -191,25 +212,15 @@ function Home() {
   })();
 
   const onCreate = () => {
-    if (!canCreateAlbumToday()) { setLimitOpen(true); return; }
+    if (!canCreateAlbumToday()) {
+      setLimitOpen(true);
+      return;
+    }
     navigate({ to: "/create" });
   };
 
   return (
     <div className="mx-auto max-w-md min-h-screen px-5 pt-8 pb-44">
-      <header className="mb-6 text-center">
-        <button
-          type="button"
-          onClick={() => setNoticeOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-card/70 px-3.5 py-1.5 text-[11px] warm-muted mb-3 border border-border/60 shadow-[var(--shadow-soft)] hover:bg-card transition-colors active:scale-[0.98]"
-          aria-label={t.storageNoticeTitle}
-        >
-          <BookHeart size={12} className="text-primary" /> {t.storedLocally}
-        </button>
-        <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Scripic</h1>
-        <p className="text-[13px] warm-muted">{t.appTagline}</p>
-      </header>
-
       <div className="mb-3">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none" />
@@ -221,7 +232,9 @@ function Home() {
               setInputValue(v);
               if (!isComposingRef.current) syncToUrl(v);
             }}
-            onCompositionStart={() => { isComposingRef.current = true; }}
+            onCompositionStart={() => {
+              isComposingRef.current = true;
+            }}
             onCompositionEnd={(e) => {
               isComposingRef.current = false;
               syncToUrl((e.target as HTMLInputElement).value);
@@ -277,8 +290,6 @@ function Home() {
           </div>
         </div>
       )}
-
-
 
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -342,7 +353,10 @@ function Home() {
       {albums === null ? (
         <div className="text-center text-sm warm-muted py-20">{t.loading}</div>
       ) : albums.length === 0 ? (
-        <button onClick={onCreate} className="w-full polaroid rotate-[-2deg] hover:rotate-0 transition-transform py-16 text-center">
+        <button
+          onClick={onCreate}
+          className="w-full polaroid rotate-[-2deg] hover:rotate-0 transition-transform py-16 text-center"
+        >
           <div className="text-5xl mb-3">📷</div>
           <div className="font-display text-lg warm-text">{t.firstMemoryTitle}</div>
           <div className="text-sm warm-text mt-2">{t.firstMemoryTagline}</div>
@@ -357,8 +371,14 @@ function Home() {
         <div className="space-y-5">
           {(visibleAlbums ?? sortedAlbums ?? albums).map((a) => {
             const locale = lang === "ko" ? "ko-KR" : "en-US";
-            const date = a.period || new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
-            const createdDate = new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
+            const date =
+              a.period ||
+              new Date(a.createdAt).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
+            const createdDate = new Date(a.createdAt).toLocaleDateString(locale, {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            });
             return (
               <div key={a.id} className="album-card group relative">
                 <button
@@ -380,22 +400,41 @@ function Home() {
                 </button>
                 <Link to="/album/$id" params={{ id: a.id }} search={{ q: query, tags: selectedTags }} className="block">
                   <div className="aspect-[5/4] bg-muted relative overflow-hidden">
-                    <img src={a.photos[0]?.dataUrl} alt={a.title} className="w-full h-full object-cover" loading="lazy" />
+                    <img
+                      src={a.photos[0]?.dataUrl}
+                      alt={a.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
                     <div className="absolute top-3 right-3 flex gap-1">
                       {a.photos.slice(1, 4).map((p, idx) => (
-                        <div key={idx} className="w-9 h-9 rounded-md overflow-hidden border-2 border-white/80 shadow-md">
+                        <div
+                          key={idx}
+                          className="w-9 h-9 rounded-md overflow-hidden border-2 border-white/80 shadow-md"
+                        >
                           <img src={p.dataUrl} alt="" className="w-full h-full object-cover" />
                         </div>
                       ))}
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                       <div className="text-[10px] uppercase tracking-[0.15em] opacity-80 mb-1 flex items-center gap-2">
-                        <span><Hl text={date} query={query} /></span>
-                        {a.location && <span className="flex items-center gap-1"><MapPin size={9}/><Hl text={a.location} query={query} /></span>}
+                        <span>
+                          <Hl text={date} query={query} />
+                        </span>
+                        {a.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin size={9} />
+                            <Hl text={a.location} query={query} />
+                          </span>
+                        )}
                       </div>
-                      <div className="font-display text-[20px] leading-tight drop-shadow-sm"><Hl text={a.title} query={query} /></div>
-                      <div className="text-[12px] opacity-90 mt-1 italic font-display"><Hl text={a.subtitle} query={query} /></div>
+                      <div className="font-display text-[20px] leading-tight drop-shadow-sm">
+                        <Hl text={a.title} query={query} />
+                      </div>
+                      <div className="text-[12px] opacity-90 mt-1 italic font-display">
+                        <Hl text={a.subtitle} query={query} />
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
@@ -414,10 +453,9 @@ function Home() {
           onClick={onCreate}
           className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
         >
-          <Plus size={18} strokeWidth={2.5}/> {t.newAlbum}
+          <Plus size={18} strokeWidth={2.5} /> {t.newAlbum}
         </button>
       </div>
-
 
       <StorageNoticeDialog open={noticeOpen} onClose={() => setNoticeOpen(false)} />
 
@@ -432,18 +470,29 @@ function Home() {
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "var(--gradient-warm)" }}>
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{ background: "var(--gradient-warm)" }}
+                >
                   <Sparkles size={16} className="text-primary-foreground" />
                 </div>
                 <h2 className="font-display text-[20px] warm-text leading-tight">{t.dailyLimitTitle}</h2>
               </div>
-              <button onClick={() => setLimitOpen(false)} className="p-1.5 -mr-1 -mt-1 text-muted-foreground hover:text-foreground"><X size={18} /></button>
+              <button
+                onClick={() => setLimitOpen(false)}
+                className="p-1.5 -mr-1 -mt-1 text-muted-foreground hover:text-foreground"
+              >
+                <X size={18} />
+              </button>
             </div>
             <p className="text-[13.5px] warm-muted leading-relaxed mb-2">{t.dailyLimitBody}</p>
             <p className="text-[12px] warm-muted mb-5">{t.dailyLimitNextAt(nextAvailableDateLabel(lang))}</p>
             {!hasExtraUsedToday() && (
               <button
-                onClick={() => { setLimitOpen(false); setRewardOpen(true); }}
+                onClick={() => {
+                  setLimitOpen(false);
+                  setRewardOpen(true);
+                }}
                 className="w-full mb-2 rounded-full py-3 text-[14px] font-medium active:scale-[0.98] transition-transform border border-primary/40 bg-primary/10 warm-text inline-flex items-center justify-center gap-2"
               >
                 <Sparkles size={14} /> {t.reviewRewardCta}
@@ -463,9 +512,10 @@ function Home() {
       <ReviewRewardDialog
         open={rewardOpen}
         onClose={() => setRewardOpen(false)}
-        onGranted={() => { /* user can press Okay to close, then create */ }}
+        onGranted={() => {
+          /* user can press Okay to close, then create */
+        }}
       />
-
     </div>
   );
 }
