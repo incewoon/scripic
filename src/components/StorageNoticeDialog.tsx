@@ -39,8 +39,7 @@ export function StorageNoticeDialog({ open, onClose }: Props) {
   if (!open) return null;
 
   const close = () => {
-    markSeenForSession();
-    if (dontShow) markDismissedForever();
+    markDismissedForever();
     onClose();
   };
 
