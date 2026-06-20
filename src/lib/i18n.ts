@@ -113,8 +113,9 @@ const dict = {
 
     freeNoticeTitle: "Free during beta",
     freeNoticeBody:
-      "Scripic is free right now. While in beta, each album holds up to 3 photos and you can create 1 album per day.(Post a review on social media to create one extra album per day. (Each verified review can only be used once.))",
-    freeNoticeSoon: "More photos per album, unlimited daily creation, and other features are coming soon.",
+      "Scripic is free right now. While in beta, each album holds up to 3 photos and you can create 1 album per day.",
+    freeNoticeSoon:
+      "Post a review on social media to create one extra album per day. (Each verified review can only be used once.)",
     gotIt: "Got it",
     // Storage diagnostics
     storageDiagSection: "Storage status",
@@ -356,8 +357,9 @@ const dict = {
 
     freeNoticeTitle: "무료 베타 안내",
     freeNoticeBody:
-      "Scripic는 현재 무료로 제공돼요. 베타 기간 동안은 한 앨범에 사진 3장까지, 하루 1개 앨범 만들기로 제한돼요.(SNS에 후기를 올려주시면 하루에 한번만 앨범을 하나 더 만들 수 있어요, 한번 인증된 후기는 재사용할 수 없어요.)",
-    freeNoticeSoon: "더 많은 사진과 무제한 앨범 제작 등 추가 기능을 빠른 시일 내에 열어드릴게요.",
+      "Scripic는 현재 무료로 제공돼요. 베타 기간 동안은 한 앨범에 사진 3장까지, 하루 1개 앨범 만들기로 제한돼요.",
+    freeNoticeSoon:
+      "SNS에 후기를 올려주시면 하루에 한번만 앨범을 하나 더 만들 수 있어요 (한번 인증된 후기는 재사용할 수 없어요.)",
     gotIt: "확인했어요",
     // Storage diagnostics
     storageDiagSection: "저장소 상태",
