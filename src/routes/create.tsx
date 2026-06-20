@@ -162,6 +162,39 @@ function Create() {
     });
   }, []);
 
+  // Load previously-used custom tags (non-preset) from saved albums,
+  // in first-seen order across albums (oldest album first).
+  useEffect(() => {
+    const presets = new Set<string>([
+      t.tagPresetTravel,
+      t.tagPresetFamily,
+      t.tagPresetDaily,
+      t.tagPresetFriends,
+      t.tagPresetFood,
+      t.tagPresetSpecial,
+    ]);
+    void getAlbums()
+      .then((albums) => {
+        const seen = new Set<string>();
+        const out: string[] = [];
+        // saveAlbum unshifts (newest first), so reverse for chronological add order.
+        for (const a of [...albums].reverse()) {
+          for (const tg of a.tags ?? []) {
+            if (!tg) continue;
+            if (presets.has(tg)) continue;
+            const k = tg.toLowerCase();
+            if (seen.has(k)) continue;
+            seen.add(k);
+            out.push(tg);
+          }
+        }
+        setMyTags(out);
+      })
+      .catch(() => {
+        /* ignore */
+      });
+  }, [t]);
+
   useEffect(() => {
     if (items.length > prevCountRef.current && scrollRef.current) {
       const el = scrollRef.current;
