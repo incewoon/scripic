@@ -12,6 +12,8 @@ import type { PhotoMeta } from "@/lib/photoMeta";
 import { aiChatStream, aiGenerateAlbum } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 import { useAuthReady } from "@/lib/useAuthReady";
+import { ChatUsageDialog, shouldShowChatUsage } from "@/components/ChatUsageDialog";
+
 
 export const ssr = false;
 export const csr = true;
