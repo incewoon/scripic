@@ -161,6 +161,12 @@ function Chat() {
   const autoStartedRef = useRef(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const stickToBottomRef = useRef(true);
+  const [usageOpen, setUsageOpen] = useState(false);
+
+  useEffect(() => {
+    if (shouldShowChatUsage()) setUsageOpen(true);
+  }, []);
+
 
   function isNearBottom() {
     const el = scrollRef.current;
