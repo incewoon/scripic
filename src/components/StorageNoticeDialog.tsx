@@ -36,7 +36,6 @@ function markDismissedForever() {
 
 export function StorageNoticeDialog({ open, onClose }: Props) {
   const { t } = useT();
-  const [dontShow, setDontShow] = useState(false);
   if (!open) return null;
 
   const close = () => {
@@ -76,9 +75,7 @@ export function StorageNoticeDialog({ open, onClose }: Props) {
         <div className="px-6 pb-6">
           <h2 className="font-display text-[22px] warm-text leading-tight mb-3">{t.storageNoticeTitle}</h2>
 
-          <p className="text-[13.5px] warm-muted leading-relaxed mb-3 whitespace-pre-line">
-            {t.privacyConsentBody}
-          </p>
+          <p className="text-[13.5px] warm-muted leading-relaxed mb-3 whitespace-pre-line">{t.privacyConsentBody}</p>
 
           <button
             onClick={openPolicy}
