@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageCircle, X, Sparkles, Mic, CheckCircle } from "lucide-react";
+import { MessageCircle, X, Sparkles, Mic } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
 const SESSION_KEY = "memori_chat_usage_session";
