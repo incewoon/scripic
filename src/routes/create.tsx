@@ -19,6 +19,7 @@ import { canCreateAlbumToday } from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
 import { PrivacyConsentDialog, shouldShowPrivacyConsent } from "@/components/PrivacyConsentDialog";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
+import { getAlbums } from "@/lib/storage";
 
 const PHOTO_MAX = 3;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -112,6 +113,7 @@ function Create() {
   const [busy, setBusy] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagDraft, setTagDraft] = useState("");
+  const [myTags, setMyTags] = useState<string[]>([]);
   const [mode, setModeState] = useState<ChatMode>(() => loadDefault(MODE_KEY, VALID_MODES, "creative"));
   const [tone, setToneState] = useState<ChatTone>(() => loadDefault(TONE_KEY, VALID_TONES, "politely"));
 
@@ -159,6 +161,39 @@ function Create() {
       /* retried at call time */
     });
   }, []);
+
+  // Load previously-used custom tags (non-preset) from saved albums,
+  // in first-seen order across albums (oldest album first).
+  useEffect(() => {
+    const presets = new Set<string>([
+      t.tagPresetTravel,
+      t.tagPresetFamily,
+      t.tagPresetDaily,
+      t.tagPresetFriends,
+      t.tagPresetFood,
+      t.tagPresetSpecial,
+    ]);
+    void getAlbums()
+      .then((albums) => {
+        const seen = new Set<string>();
+        const out: string[] = [];
+        // saveAlbum unshifts (newest first), so reverse for chronological add order.
+        for (const a of [...albums].reverse()) {
+          for (const tg of a.tags ?? []) {
+            if (!tg) continue;
+            if (presets.has(tg)) continue;
+            const k = tg.toLowerCase();
+            if (seen.has(k)) continue;
+            seen.add(k);
+            out.push(tg);
+          }
+        }
+        setMyTags(out);
+      })
+      .catch(() => {
+        /* ignore */
+      });
+  }, [t]);
 
   useEffect(() => {
     if (items.length > prevCountRef.current && scrollRef.current) {
@@ -384,7 +419,7 @@ function Create() {
               t.tagPresetFood,
               t.tagPresetSpecial,
             ];
-            const customTags = tags.filter((tg) => !presets.includes(tg));
+            const customTags = tags.filter((tg) => !presets.includes(tg) && !myTags.includes(tg));
             return (
               <>
                 <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
@@ -393,6 +428,30 @@ function Create() {
                     return (
                       <button
                         key={p}
+                        type="button"
+                        onClick={() => {
+                          setTags((prev) => {
+                            if (prev.includes(p)) return prev.filter((x) => x !== p);
+                            if (prev.length >= 5) return prev;
+                            return [...prev, p];
+                          });
+                        }}
+                        className={`px-3 py-1.5 rounded-full whitespace-nowrap flex-shrink-0 text-[12px] font-medium transition-all active:scale-[0.97] ${
+                          active
+                            ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                            : "border border-border/60 warm-text bg-card/50"
+                        }`}
+                        style={active ? { background: "var(--gradient-warm)" } : undefined}
+                      >
+                        #{p}
+                      </button>
+                    );
+                  })}
+                  {myTags.map((p) => {
+                    const active = tags.includes(p);
+                    return (
+                      <button
+                        key={`my-${p}`}
                         type="button"
                         onClick={() => {
                           setTags((prev) => {
