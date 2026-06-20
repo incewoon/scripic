@@ -419,7 +419,7 @@ function Create() {
               t.tagPresetFood,
               t.tagPresetSpecial,
             ];
-            const customTags = tags.filter((tg) => !presets.includes(tg));
+            const customTags = tags.filter((tg) => !presets.includes(tg) && !myTags.includes(tg));
             return (
               <>
                 <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
