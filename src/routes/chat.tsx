@@ -879,7 +879,10 @@ function Chat() {
         </div>
       )}
 
+      <ChatUsageDialog open={usageOpen} onClose={() => setUsageOpen(false)} />
+
       {generating && (
+
         <div className="fixed inset-0 z-[60] bg-background/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
           <div className="relative mb-5">
             <div className="w-14 h-14 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
