@@ -99,7 +99,7 @@ export function ChatUsageDialog({ open, onClose }: Props) {
             <span className="text-[12.5px] warm-muted">{t.dontShowNextTime}</span>
           </label>
 
-          <CheckCircle className="hidden" />
+          
         </div>
       </div>
     </div>
