@@ -220,7 +220,7 @@ function Home() {
   };
 
   return (
-    <div className="mx-auto max-w-md min-h-screen px-5 pt-8 pb-44">
+    <div className="mx-auto max-w-md min-h-screen px-5 pt-10 pb-44">
       <header className="mb-6 text-center">
         <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Scripic</h1>
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
