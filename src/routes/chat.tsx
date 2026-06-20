@@ -12,6 +12,8 @@ import type { PhotoMeta } from "@/lib/photoMeta";
 import { aiChatStream, aiGenerateAlbum } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 import { useAuthReady } from "@/lib/useAuthReady";
+import { ChatUsageDialog, shouldShowChatUsage } from "@/components/ChatUsageDialog";
+
 
 export const ssr = false;
 export const csr = true;
@@ -159,6 +161,12 @@ function Chat() {
   const autoStartedRef = useRef(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const stickToBottomRef = useRef(true);
+  const [usageOpen, setUsageOpen] = useState(false);
+
+  useEffect(() => {
+    if (shouldShowChatUsage()) setUsageOpen(true);
+  }, []);
+
 
   function isNearBottom() {
     const el = scrollRef.current;
@@ -871,7 +879,10 @@ function Chat() {
         </div>
       )}
 
+      <ChatUsageDialog open={usageOpen} onClose={() => setUsageOpen(false)} />
+
       {generating && (
+
         <div className="fixed inset-0 z-[60] bg-background/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
           <div className="relative mb-5">
             <div className="w-14 h-14 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
