@@ -447,6 +447,30 @@ function Create() {
                       </button>
                     );
                   })}
+                  {myTags.map((p) => {
+                    const active = tags.includes(p);
+                    return (
+                      <button
+                        key={`my-${p}`}
+                        type="button"
+                        onClick={() => {
+                          setTags((prev) => {
+                            if (prev.includes(p)) return prev.filter((x) => x !== p);
+                            if (prev.length >= 5) return prev;
+                            return [...prev, p];
+                          });
+                        }}
+                        className={`px-3 py-1.5 rounded-full whitespace-nowrap flex-shrink-0 text-[12px] font-medium transition-all active:scale-[0.97] ${
+                          active
+                            ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                            : "border border-border/60 warm-text bg-card/50"
+                        }`}
+                        style={active ? { background: "var(--gradient-warm)" } : undefined}
+                      >
+                        #{p}
+                      </button>
+                    );
+                  })}
                 </div>
                 {customTags.length > 0 && (
                   <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
