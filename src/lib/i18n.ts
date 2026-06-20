@@ -108,15 +108,18 @@ const dict = {
     notifPermissionDenied: "Notifications are off in your phone's settings.",
     backHome: "Back",
     storageNoticeTitle: "Stored only on this device",
-    storageNoticeBody: "Your photos and the captions woven from your conversation are kept only on this device. Even with the same account, they don't sync to other devices.",
-    
+    storageNoticeBody:
+      "Your photos and the captions woven from your conversation are kept only on this device. Even with the same account, they don't sync to other devices.",
+
     freeNoticeTitle: "Free during beta",
-    freeNoticeBody: "Scripic is free right now. While in beta, each album holds up to 3 photos and you can create 1 album per day.",
+    freeNoticeBody:
+      "Scripic is free right now. While in beta, each album holds up to 3 photos and you can create 1 album per day.",
     freeNoticeSoon: "More photos per album, unlimited daily creation, and other features are coming soon.",
     gotIt: "Got it",
     // Storage diagnostics
     storageDiagSection: "Storage status",
-    storageDiagDesc: "If yesterday's albums are missing, the browser may have evicted them or you're on a different URL.",
+    storageDiagDesc:
+      "If yesterday's albums are missing, the browser may have evicted them or you're on a different URL.",
     storageDiagOrigin: "Current address",
     storageDiagPersisted: "Persistent storage",
     storageDiagPersistedYes: "On — browser won't auto-delete",
@@ -134,15 +137,19 @@ const dict = {
     backupExporting: "Preparing backup…",
     backupRestoring: "Restoring…",
     backupInfoDeviceTitle: "Device-only storage",
-    backupInfoDeviceBody: "Backup files are saved only to your device's downloads folder. For privacy and security, cloud backup isn't supported — your photos and albums never leave your device.",
+    backupInfoDeviceBody:
+      "Backup files are saved only to your device's downloads folder. For privacy and security, cloud backup isn't supported — your photos and albums never leave your device.",
     backupInfoPinTitle: "PIN-encrypted",
-    backupInfoPinBody: "Every backup is encrypted with a 4-digit PIN you set. If you lose the PIN, the file can't be restored — please keep it somewhere safe.",
+    backupInfoPinBody:
+      "Every backup is encrypted with a 4-digit PIN you set. If you lose the PIN, the file can't be restored — please keep it somewhere safe.",
     backupInfoStepsTitle: "How backup works",
-    backupInfoStep1: "Tap \"Download backup file\" — a PIN prompt appears.",
-    backupInfoStep2: "Enter your PIN. All albums, photos, and theme settings are bundled into an encrypted .mwbak file and saved to your device.",
-    backupInfoStep3: "To restore, tap \"Restore from backup file\", pick the .mwbak file, and enter the same PIN.",
+    backupInfoStep1: 'Tap "Download backup file" — a PIN prompt appears.',
+    backupInfoStep2:
+      "Enter your PIN. All albums, photos, and theme settings are bundled into an encrypted .mwbak file and saved to your device.",
+    backupInfoStep3: 'To restore, tap "Restore from backup file", pick the .mwbak file, and enter the same PIN.',
     backupInfoWarnTitle: "Important",
-    backupInfoWarnBody: "If you clear app data or browser storage, only a backup file can bring your albums back. Please keep your backup file in a safe place and back up regularly.",
+    backupInfoWarnBody:
+      "If you clear app data or browser storage, only a backup file can bring your albums back. Please keep your backup file in a safe place and back up regularly.",
     themeSection: "Theme",
     themeSectionDesc: "Choose how the app looks. Changes apply right away.",
     themeTimeless: "Timeless Script",
@@ -177,7 +184,8 @@ const dict = {
     tapMapToOpen: "Tap the map to open in Google Maps",
     mapUnavailable: "We couldn't find this place on the map",
     saveToGoogleMapsTitle: "Save this place to Google Maps",
-    saveToGoogleMapsBody: "Google Maps will open. To save the place:\n1) Tap the pin\n2) Tap 'Save'\n3) Pick a list (Want to go, Favorites, etc.)",
+    saveToGoogleMapsBody:
+      "Google Maps will open. To save the place:\n1) Tap the pin\n2) Tap 'Save'\n3) Pick a list (Want to go, Favorites, etc.)",
     // Daily limit
     dailyLimitTitle: "One album per day",
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
@@ -186,7 +194,8 @@ const dict = {
     // Review reward
     reviewRewardCta: "Share a review · get +1 album today",
     reviewRewardTitle: "Upload your review screenshot",
-    reviewRewardDesc: "Post about Scripic on Instagram, Facebook, Threads, X, or any social media, then upload the screenshot. AI will verify it and grant you 1 extra album today.",
+    reviewRewardDesc:
+      "Post about Scripic on Instagram, Facebook, Threads, X, or any social media, then upload the screenshot. AI will verify it and grant you 1 extra album today.",
     reviewRewardPickImage: "Pick screenshot",
     reviewRewardSubmit: "Verify & claim",
     reviewRewardChecking: "Verifying…",
@@ -206,7 +215,8 @@ const dict = {
     uploadLimitSize: "Each image must be 10 MB or smaller.",
     uploadLimitOk: "Got it",
     privacyConsentTitle: "Before you upload a photo",
-    privacyConsentBody: "This app sends your photo to Google Gemini API for AI analysis. Analysis results (conversation summary and comments) are stored only on your device. No data is stored on our servers.\n\nSee our Privacy Policy for details.",
+    privacyConsentBody:
+      "This app sends your photo to Google Gemini API for AI analysis. Analysis results (conversation summary and comments) are stored only on your device. No data is stored on our servers.\n\nSee our Privacy Policy for details.",
     privacyPolicyView: "View Privacy Policy",
     privacyDontShowAgain: "Don't show again",
     privacyAgreeContinue: "Agree & continue",
@@ -229,21 +239,24 @@ const dict = {
     editCoachOk: "Got it",
     // Create-screen usage coachmark
     createUsageTitle: "How to create an album",
-    createUsagePhotos: "Photos: pick up to 3 photos that belong to one moment. Long-press to drag and reorder; the first one becomes the cover.",
-    createUsageMode: "Story type — choose how the album should be written. \"Creative\" weaves a literary scene, \"Factual\" sticks to what's in the photo, and \"Brief\" keeps it short.",
+    createUsagePhotos:
+      "Photos: pick up to 3 photos that belong to one moment. Long-press to drag and reorder; the first one becomes the cover.",
+    createUsageMode:
+      'Story type — choose how the album should be written. "Creative" weaves a literary scene, "Factual" sticks to what\'s in the photo, and "Brief" keeps it short.',
     createUsageTone: "Tone — choose how the AI talks to you during the chat (polite, friendly, or short).",
     createUsageTags: "Tags — tap a preset or add your own. Custom tags you create stay available next time too.",
     dontShowNextTime: "Don't show next time",
     // Chat-screen usage coachmark
     chatUsageTitle: "How the conversation works",
-    chatUsageIntro: "Chat with the AI to pull out memories you didn't realize you had — small details, smells, who was there.",
-    chatUsageTurns: "You get about 3 turns per photo, and after roughly 9 total turns the conversation will wrap up on its own.",
-    chatUsageFinish: "Tap \"Finish\" at the top right anytime to stop the chat and create the album right away.",
+    chatUsageIntro:
+      "Chat with the AI to pull out memories you didn't realize you had — small details, smells, who was there.",
+    chatUsageTurns:
+      "You get about 3 turns per photo, and after roughly 9 total turns the conversation will wrap up on its own.",
+    chatUsageFinish: 'Tap "Finish" at the top right anytime to stop the chat and create the album right away.',
     chatUsageMic: "Tap the mic button to speak instead of typing.",
   },
 
   ko: {
-
     appTagline: "사진 한 장이 한 편의 스크립트가 돼요.",
     appSubtitle: "잊고 싶지 않은 순간들을 담아두세요",
     storedLocally: "모든 데이터는 이 기기에만 저장돼요",
@@ -340,9 +353,10 @@ const dict = {
     backHome: "뒤로",
     storageNoticeTitle: "이 기기에만 저장돼요",
     storageNoticeBody: "사진과 정리된 대화 내용은 이 기기에만 저장되며, 다른 기기와는 연동되지 않아요.",
-    
+
     freeNoticeTitle: "무료 베타 안내",
-    freeNoticeBody: "Scripic는 현재 무료로 제공돼요. 베타 기간 동안은 한 앨범에 사진 3장까지, 하루 1개 앨범 만들기로 제한돼요.",
+    freeNoticeBody:
+      "Scripic는 현재 무료로 제공돼요. 베타 기간 동안은 한 앨범에 사진 3장까지, 하루 1개 앨범 만들기로 제한돼요.",
     freeNoticeSoon: "더 많은 사진과 무제한 앨범 제작 등 추가 기능을 빠른 시일 내에 열어드릴게요.",
     gotIt: "확인했어요",
     // Storage diagnostics
@@ -365,15 +379,18 @@ const dict = {
     backupExporting: "백업 파일을 준비하는 중…",
     backupRestoring: "복원하는 중…",
     backupInfoDeviceTitle: "기기 저장만 지원",
-    backupInfoDeviceBody: "백업 파일은 사용자 기기의 다운로드 폴더에만 저장돼요. 보안과 개인정보 보호를 위해 클라우드 백업은 지원하지 않으며, 사진과 앨범은 모두 기기 안에서만 관리돼요.",
+    backupInfoDeviceBody:
+      "백업 파일은 사용자 기기의 다운로드 폴더에만 저장돼요. 보안과 개인정보 보호를 위해 클라우드 백업은 지원하지 않으며, 사진과 앨범은 모두 기기 안에서만 관리돼요.",
     backupInfoPinTitle: "PIN으로 암호화",
-    backupInfoPinBody: "모든 백업 파일은 사용자가 설정한 4자리 PIN으로 암호화돼요. PIN을 잃어버리면 복원할 수 없으니 꼭 안전한 곳에 기억해 주세요.",
+    backupInfoPinBody:
+      "모든 백업 파일은 사용자가 설정한 4자리 PIN으로 암호화돼요. PIN을 잃어버리면 복원할 수 없으니 꼭 안전한 곳에 기억해 주세요.",
     backupInfoStepsTitle: "백업 과정",
-    backupInfoStep1: "\"백업 파일 다운로드\" 버튼을 누르면 PIN 입력창이 나타나요.",
+    backupInfoStep1: '"백업 파일 다운로드" 버튼을 누르면 PIN 입력창이 나타나요.',
     backupInfoStep2: "PIN을 입력하면 모든 앨범·사진·테마 설정이 암호화된 .mwbak 파일로 만들어져 기기에 저장돼요.",
-    backupInfoStep3: "복원할 때는 \"백업 파일에서 복원\"을 누르고 같은 PIN으로 .mwbak 파일을 선택하면 돼요.",
+    backupInfoStep3: '복원할 때는 "백업 파일에서 복원"을 누르고 같은 PIN으로 .mwbak 파일을 선택하면 돼요.',
     backupInfoWarnTitle: "주의",
-    backupInfoWarnBody: "앱 데이터나 브라우저 저장소를 비우면 백업 파일 없이는 복원할 수 없어요. 백업 파일은 안전한 곳에 보관하고, 정기적으로 백업해 주세요.",
+    backupInfoWarnBody:
+      "앱 데이터나 브라우저 저장소를 비우면 백업 파일 없이는 복원할 수 없어요. 백업 파일은 안전한 곳에 보관하고, 정기적으로 백업해 주세요.",
     themeSection: "테마",
     themeSectionDesc: "분위기를 골라보세요. 바로 적용돼요.",
     themeTimeless: "타임리스 스크립트",
@@ -408,7 +425,8 @@ const dict = {
     tapMapToOpen: "지도를 누르면 구글맵에서 열려요",
     mapUnavailable: "지도에서 위치를 찾지 못했어요",
     saveToGoogleMapsTitle: "구글맵에 저장할 수 있어요",
-    saveToGoogleMapsBody: "구글맵 앱이 열리면 이렇게 저장하세요:\n1) 핀을 한 번 누르세요\n2) '저장' 버튼을 누르세요\n3) 가고 싶은 곳, 즐겨찾는 장소 등 원하는 목록을 선택하세요",
+    saveToGoogleMapsBody:
+      "구글맵 앱이 열리면 이렇게 저장하세요:\n1) 핀을 한 번 누르세요\n2) '저장' 버튼을 누르세요\n3) 가고 싶은 곳, 즐겨찾는 장소 등 원하는 목록을 선택하세요",
     // Daily limit
     dailyLimitTitle: "하루에 한 개만 만들 수 있어요",
     dailyLimitBody: "오늘은 이미 추억을 하나 엮었어요. 내일 다시 새로운 앨범을 만들 수 있어요.",
@@ -417,7 +435,8 @@ const dict = {
     // Review reward
     reviewRewardCta: "후기 올리고 +1개 더 만들기",
     reviewRewardTitle: "후기 스크린샷을 올려주세요",
-    reviewRewardDesc: "Instagram, Facebook, Threads, X 등 SNS에 올린 Scripic 후기 화면을 캡처해서 올려주세요. AI가 확인 후 오늘 추가 앨범 1개를 드려요.",
+    reviewRewardDesc:
+      "Instagram, Facebook, Threads, X 등 SNS에 올린 Scripic 후기 화면을 캡처해서 올려주세요. AI가 확인 후 오늘 추가 앨범 1개를 드려요.",
     reviewRewardPickImage: "스크린샷 선택",
     reviewRewardSubmit: "확인하고 받기",
     reviewRewardChecking: "확인 중…",
@@ -437,7 +456,8 @@ const dict = {
     uploadLimitSize: "사진 한 장은 10MB 이하만 올릴 수 있어요.",
     uploadLimitOk: "확인",
     privacyConsentTitle: "사진을 올리기 전에 알려드려요",
-    privacyConsentBody: "이 앱은 사진을 Google Gemini API로 전송하여 AI 분석을 진행합니다. 분석 결과(대화 요약 및 코멘트)는 사용자 기기에만 저장되며, 개발자 서버에는 저장되지 않습니다.\n\n자세한 내용은 개인정보처리방침을 확인해주세요.",
+    privacyConsentBody:
+      "이 앱은 사진을 Google Gemini API로 전송하여 AI 분석을 진행합니다. 분석 결과(대화 요약 및 코멘트)는 사용자 기기에만 저장되며, 서버에는 저장되지 않습니다.\n\n자세한 내용은 개인정보처리방침을 확인해주세요.",
     privacyPolicyView: "개인정보처리방침 보기",
     privacyDontShowAgain: "다시 보지 않기",
     privacyAgreeContinue: "동의하고 계속하기",
@@ -460,19 +480,21 @@ const dict = {
     editCoachOk: "확인",
     // 앨범 생성화면 사용법 안내
     createUsageTitle: "앨범 만들기, 이렇게 해요",
-    createUsagePhotos: "사진: 하나의 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 대표 사진이 돼요.",
-    createUsageMode: "정리 타입 — 앨범을 어떻게 정리할지 골라요. '창의적'은 한 편의 글처럼 엮어주고, '사실 중심'은 사진에 보이는 내용 위주로, '간결하게'는 짧게 정리해요.",
+    createUsagePhotos:
+      "사진: 하나의 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 대표 사진이 돼요.",
+    createUsageMode:
+      "정리 타입 — 앨범을 어떻게 정리할지 골라요. '창의적'은 한 편의 글처럼 엮어주고, '사실 중심'은 사진에 보이는 내용 위주로, '간결하게'는 짧게 정리해요.",
     createUsageTone: "정리 어조 — AI가 대화 중에 사용할 말투를 골라요 (정중하게 · 친근하게 · 짧게).",
     createUsageTags: "태그 — 프리셋을 누르거나 직접 추가할 수 있어요. 직접 만든 태그는 다음 앨범에서도 계속 보여요.",
     dontShowNextTime: "다음부터 보지 않기",
     // AI 대화화면 사용법 안내
     chatUsageTitle: "AI와 대화하는 법",
-    chatUsageIntro: "AI와 대화하며 미처 떠올리지 못했던 기억들을 꺼내보세요. 작은 디테일, 그날의 분위기, 함께한 사람까지.",
+    chatUsageIntro:
+      "AI와 대화하며 미처 떠올리지 못했던 기억들을 꺼내보세요. 작은 디테일, 그날의 분위기, 함께한 사람까지.",
     chatUsageTurns: "사진 한 장당 약 3번 정도 대화할 수 있고, 전체 9번 정도가 되면 대화는 자동으로 마무리돼요.",
     chatUsageFinish: "언제든 우측 상단의 '완성하기' 버튼을 누르면 대화를 끝내고 바로 앨범을 만들어요.",
     chatUsageMic: "마이크 버튼을 누르면 말로 입력할 수 있어요.",
   },
-
 } as const;
 
 export type ChatMode = "creative" | "fact" | "brief";
