@@ -90,16 +90,6 @@ export function StorageNoticeDialog({ open, onClose }: Props) {
             <p className="text-[12px] warm-muted leading-relaxed">{t.freeNoticeSoon}</p>
           </div>
 
-          <label className="flex items-center gap-2 mb-4 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={dontShow}
-              onChange={(e) => setDontShow(e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            <span className="text-[12.5px] warm-muted">{t.dontShowNextTime}</span>
-          </label>
-
           <button
             onClick={close}
             className="w-full text-primary-foreground rounded-full py-3 text-[14.5px] font-medium shadow-[var(--shadow-soft)] active:scale-[0.98] transition-transform"
