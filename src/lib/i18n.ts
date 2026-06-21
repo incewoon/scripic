@@ -1,4 +1,4 @@
-// Lightweight i18n. Keep the first render hydration-safe by starting from a
+// Lightweight i18n. Keep the first render hydration-safe by stipstarting from a
 // stable default, then switching to the device language on the client.
 import { useEffect, useState } from "react";
 
@@ -144,10 +144,10 @@ const dict = {
     backupInfoPinBody:
       "Every backup is encrypted with a 4-digit PIN you set. If you lose the PIN, the file can't be restored — please keep it somewhere safe.",
     backupInfoStepsTitle: "How backup works",
-    backupInfoStep1: 'Tap "Download backup file" — a PIN prompt appears.',
+    backupInfoStep1: "Tap 'Download backup file' — a PIN prompt appears.",
     backupInfoStep2:
       "Enter your PIN. All albums, photos, and theme settings are bundled into an encrypted .mwbak file and saved to your device.",
-    backupInfoStep3: 'To restore, tap "Restore from backup file", pick the .mwbak file, and enter the same PIN.',
+    backupInfoStep3: "To restore, tap 'Restore from backup file', pick the .mwbak file, and enter the same PIN.",
     backupInfoWarnTitle: "Important",
     backupInfoWarnBody:
       "If you clear app data or browser storage, only a backup file can bring your albums back. Please keep your backup file in a safe place and back up regularly.",
