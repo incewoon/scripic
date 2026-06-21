@@ -243,7 +243,7 @@ const dict = {
     createUsagePhotos:
       "Photos: pick up to 3 photos that belong to one moment. Long-press to drag and reorder; the first one becomes the cover.",
     createUsageMode:
-      'Story type — choose how the album should be written. "Creative" weaves a literary scene, "Factual" sticks to what\'s in the photo, and "Brief" keeps it short.',
+      "Story type — choose how the album should be written. \'Creative\' weaves a literary scene, \'Factual\' sticks to what\'s in the photo, and \'Brief\' keeps it short.",
     createUsageTone: "Tone — choose a tone for organizing your album (polite, friendly, or short).",
     createUsageTags: "Tags — tap a preset or add your own. Custom tags you create stay available next time too.",
     dontShowNextTime: "Don't show next time",
@@ -253,7 +253,7 @@ const dict = {
       "Chat with the AI to pull out memories you didn't realize you had — small details, smells, who was there.",
     chatUsageTurns:
       "You get about 3 turns per photo, and after roughly 9 total turns the conversation will wrap up on its own.",
-    chatUsageFinish: 'Tap "Finish" at the top right anytime to stop the chat and create the album right away.',
+    chatUsageFinish: "Tap 'Finish' at the top right anytime to stop the chat and create the album right away.",
     chatUsageMic: "Tap the mic button to speak instead of typing.",
   },
 
