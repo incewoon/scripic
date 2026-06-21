@@ -9,6 +9,8 @@ import { Hl } from "@/lib/highlight";
 import { MapDialog } from "@/components/MapDialog";
 import { EditCoachmark, shouldShowEditCoach } from "@/components/EditCoachmark";
 
+const downloadRef = useRef<HTMLButtonElement>(null);
+
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
   ssr: false,
@@ -23,26 +25,44 @@ export const Route = createFileRoute("/album/$id")({
 });
 
 function EditableText({
-  editKey, activeKey, setActiveKey, editingMode,
-  value, onSave, multiline = false, className = "", placeholder = "", highlightQuery = "",
+  editKey,
+  activeKey,
+  setActiveKey,
+  editingMode,
+  value,
+  onSave,
+  multiline = false,
+  className = "",
+  placeholder = "",
+  highlightQuery = "",
 }: {
   editKey: string;
   activeKey: string | null;
   setActiveKey: (k: string | null) => void;
   editingMode: boolean;
-  value: string; onSave: (v: string) => void; multiline?: boolean; className?: string; placeholder?: string;
+  value: string;
+  onSave: (v: string) => void;
+  multiline?: boolean;
+  className?: string;
+  placeholder?: string;
   highlightQuery?: string;
 }) {
   const { t } = useT();
   const editing = editingMode && activeKey === editKey;
   const [draft, setDraft] = useState(value);
-  useEffect(() => { if (editing) setDraft(value); }, [editing, value]);
+  useEffect(() => {
+    if (editing) setDraft(value);
+  }, [editing, value]);
 
   // Read-only mode: just plain text, no click affordance
   if (!editingMode) {
     return (
       <div className={className}>
-        {value ? <Hl text={value} query={highlightQuery} /> : <span className="warm-muted italic">{placeholder || "—"}</span>}
+        {value ? (
+          <Hl text={value} query={highlightQuery} />
+        ) : (
+          <span className="warm-muted italic">{placeholder || "—"}</span>
+        )}
       </div>
     );
   }
@@ -71,8 +91,21 @@ function EditableText({
         className={`w-full bg-card border border-border rounded-lg px-2.5 py-1.5 text-foreground outline-none focus:border-primary ${className}`}
       />
       <div className="flex gap-2 mt-2 justify-end">
-        <button onClick={() => setActiveKey(null)} className="text-xs warm-muted px-2 py-1 flex items-center gap-1"><X size={12}/>{t.cancel}</button>
-        <button onClick={() => { onSave(draft); setActiveKey(null); toast.success(t.saved); }} className="text-xs bg-primary text-primary-foreground rounded-full px-3 py-1 flex items-center gap-1"><Check size={12}/>{t.save}</button>
+        <button onClick={() => setActiveKey(null)} className="text-xs warm-muted px-2 py-1 flex items-center gap-1">
+          <X size={12} />
+          {t.cancel}
+        </button>
+        <button
+          onClick={() => {
+            onSave(draft);
+            setActiveKey(null);
+            toast.success(t.saved);
+          }}
+          className="text-xs bg-primary text-primary-foreground rounded-full px-3 py-1 flex items-center gap-1"
+        >
+          <Check size={12} />
+          {t.save}
+        </button>
       </div>
     </div>
   );
@@ -94,11 +127,16 @@ function AlbumView() {
   useEffect(() => {
     let cancelled = false;
     const reload = () => {
-      getAlbums().then((list) => { if (!cancelled) setAlbum(list.find((a) => a.id === id) ?? null); });
+      getAlbums().then((list) => {
+        if (!cancelled) setAlbum(list.find((a) => a.id === id) ?? null);
+      });
     };
     reload();
     const unsub = subscribeAlbums(reload);
-    return () => { cancelled = true; unsub(); };
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, [id]);
 
   // Remember the last-saved coords across albums so the pick map opens
@@ -106,8 +144,12 @@ function AlbumView() {
   const [lastCoords, setLastCoords] = useState<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
     let cancelled = false;
-    getLastSavedCoords().then((c) => { if (!cancelled) setLastCoords(c); });
-    return () => { cancelled = true; };
+    getLastSavedCoords().then((c) => {
+      if (!cancelled) setLastCoords(c);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // First-time edit coachmark: shown once right after album creation.
@@ -131,7 +173,7 @@ function AlbumView() {
 
   async function patchCaption(idx: number, value: string) {
     if (!album) return;
-    const photos = album.photos.map((ph, i) => i === idx ? { ...ph, caption: value } : ph);
+    const photos = album.photos.map((ph, i) => (i === idx ? { ...ph, caption: value } : ph));
     await patch({ photos });
   }
 
@@ -140,7 +182,7 @@ function AlbumView() {
     setDownloading(true);
     setActiveKey(null);
     try {
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
       const dataUrl = await toPng(shareRef.current, {
         pixelRatio: 2,
         backgroundColor: "#fdf6f1",
@@ -159,19 +201,24 @@ function AlbumView() {
   }
 
   if (album === undefined) return <div className="p-10 text-center text-sm warm-muted">{t.loading}</div>;
-  if (album === null) return (
-    <div className="p-10 text-center">
-      <p className="text-sm warm-muted mb-4">{t.notFound}</p>
-      <Link to="/" className="text-primary text-sm">{t.home}</Link>
-    </div>
-  );
+  if (album === null)
+    return (
+      <div className="p-10 text-center">
+        <p className="text-sm warm-muted mb-4">{t.notFound}</p>
+        <Link to="/" className="text-primary text-sm">
+          {t.home}
+        </Link>
+      </div>
+    );
 
   const shareLink = typeof window !== "undefined" ? window.location.origin : "";
 
   return (
     <div className="mx-auto max-w-md min-h-screen pb-20">
       <header className="sticky top-0 z-10 glass flex items-center justify-between px-5 py-3 border-b border-border/40">
-        <Link to="/" search={{ q, tags: searchTags }} className="p-2 -ml-2 text-foreground/70"><ArrowLeft size={20}/></Link>
+        <Link to="/" search={{ q, tags: searchTags }} className="p-2 -ml-2 text-foreground/70">
+          <ArrowLeft size={20} />
+        </Link>
         <div className="flex items-center gap-1">
           <button
             ref={pencilBtnRef}
@@ -186,7 +233,9 @@ function AlbumView() {
             }`}
             aria-label={t.edit}
             aria-pressed={editMode}
-          ><Pencil size={18}/></button>
+          >
+            <Pencil size={18} />
+          </button>
           <button
             onClick={async () => {
               if (confirm(t.confirmDelete)) {
@@ -196,14 +245,19 @@ function AlbumView() {
             }}
             className="p-2 text-muted-foreground hover:text-destructive"
             aria-label={t.delete}
-          ><Trash2 size={18}/></button>
+          >
+            <Trash2 size={18} />
+          </button>
         </div>
       </header>
 
       <div ref={shareRef} className="bg-background">
         <div className="px-6 pt-10 pb-4 text-center">
           <EditableText
-            editKey="title" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
+            editKey="title"
+            activeKey={activeKey}
+            setActiveKey={setActiveKey}
+            editingMode={editMode}
             value={album.title}
             onSave={(v) => patch({ title: v })}
             className="font-display text-3xl text-foreground mb-2 text-center"
@@ -211,7 +265,10 @@ function AlbumView() {
             highlightQuery={q}
           />
           <EditableText
-            editKey="subtitle" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
+            editKey="subtitle"
+            activeKey={activeKey}
+            setActiveKey={setActiveKey}
+            editingMode={editMode}
             value={album.subtitle}
             onSave={(v) => patch({ subtitle: v })}
             className="text-sm warm-muted italic text-center"
@@ -221,8 +278,18 @@ function AlbumView() {
 
           <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
             <div className="flex items-center gap-1.5">
-              <Calendar size={12}/>
-              <EditableText editKey="period" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode} value={album.period || ""} onSave={(v) => patch({ period: v })} placeholder={t.period} className="text-[12px]" highlightQuery={q} />
+              <Calendar size={12} />
+              <EditableText
+                editKey="period"
+                activeKey={activeKey}
+                setActiveKey={setActiveKey}
+                editingMode={editMode}
+                value={album.period || ""}
+                onSave={(v) => patch({ period: v })}
+                placeholder={t.period}
+                className="text-[12px]"
+                highlightQuery={q}
+              />
             </div>
             {album.location || (album.lat != null && album.lng != null) ? (
               <button
@@ -235,7 +302,7 @@ function AlbumView() {
                 className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
                 aria-label={t.openGoogleMaps}
               >
-                <MapPin size={12}/>
+                <MapPin size={12} />
                 {album.location ? <Hl text={album.location} query={q} /> : <span>{t.openGoogleMaps}</span>}
               </button>
             ) : (
@@ -249,7 +316,7 @@ function AlbumView() {
                 className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
                 aria-label={t.addLocation}
               >
-                <Plus size={12}/>
+                <Plus size={12} />
                 <span>{t.addLocation}</span>
               </button>
             )}
@@ -274,7 +341,10 @@ function AlbumView() {
 
         <div className="px-6 mb-8">
           <EditableText
-            editKey="intro" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
+            editKey="intro"
+            activeKey={activeKey}
+            setActiveKey={setActiveKey}
+            editingMode={editMode}
             value={album.intro}
             onSave={(v) => patch({ intro: v })}
             multiline
@@ -287,10 +357,19 @@ function AlbumView() {
         <div className="space-y-8 px-5">
           {album.photos.map((p, i) => (
             <figure key={i} className={`polaroid ${i % 2 === 0 ? "rotate-[-1.5deg]" : "rotate-[1.5deg]"}`}>
-              <img src={p.dataUrl} alt={p.caption} className="w-full aspect-[4/3] object-cover rounded-sm" loading="lazy" crossOrigin="anonymous" />
+              <img
+                src={p.dataUrl}
+                alt={p.caption}
+                className="w-full aspect-[4/3] object-cover rounded-sm"
+                loading="lazy"
+                crossOrigin="anonymous"
+              />
               <figcaption className="text-center font-display text-[15px] mt-3 text-foreground/80 px-2">
                 <EditableText
-                  editKey={`caption-${i}`} activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
+                  editKey={`caption-${i}`}
+                  activeKey={activeKey}
+                  setActiveKey={setActiveKey}
+                  editingMode={editMode}
                   value={p.caption}
                   onSave={(v) => patchCaption(i, v)}
                   multiline
@@ -305,7 +384,10 @@ function AlbumView() {
 
         <div className="px-6 mt-12 text-center">
           <EditableText
-            editKey="closing" activeKey={activeKey} setActiveKey={setActiveKey} editingMode={editMode}
+            editKey="closing"
+            activeKey={activeKey}
+            setActiveKey={setActiveKey}
+            editingMode={editMode}
             value={album.closing}
             onSave={(v) => patch({ closing: v })}
             multiline
@@ -333,7 +415,7 @@ function AlbumView() {
           className="w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-[14px] text-primary-foreground shadow-[var(--shadow-warm)] disabled:opacity-60 active:scale-[0.98] transition-transform"
           style={{ background: "var(--gradient-warm)" }}
         >
-          <Download size={16}/> {downloading ? t.preparing : t.download}
+          <Download size={16} /> {downloading ? t.preparing : t.download}
         </button>
       </div>
 
@@ -342,11 +424,7 @@ function AlbumView() {
         onOpenChange={setMapOpen}
         mode={mapMode}
         location={album.location || ""}
-        initialCoords={
-          album.lat != null && album.lng != null
-            ? { lat: album.lat, lng: album.lng }
-            : undefined
-        }
+        initialCoords={album.lat != null && album.lng != null ? { lat: album.lat, lng: album.lng } : undefined}
         fallbackCenter={lastCoords ?? undefined}
         onCoordsResolved={(c) => patch({ lat: c.lat, lng: c.lng })}
         onPick={({ lat, lng, label }) => {
