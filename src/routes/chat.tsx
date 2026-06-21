@@ -12,7 +12,7 @@ import type { PhotoMeta } from "@/lib/photoMeta";
 import { aiChatStream, aiGenerateAlbum } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 import { useAuthReady } from "@/lib/useAuthReady";
-import { ChatUsageDialog, shouldShowChatUsage } from "@/components/ChatUsageDialog";
+import { ChatUsageCoachmark, shouldShowChatUsage } from "@/components/ChatUsageCoachmark";
 
 
 export const ssr = false;
@@ -162,6 +162,9 @@ function Chat() {
   const [keyboardInset, setKeyboardInset] = useState(0);
   const stickToBottomRef = useRef(true);
   const [usageOpen, setUsageOpen] = useState(false);
+  const finishBtnRef = useRef<HTMLButtonElement>(null);
+  const micBtnRef = useRef<HTMLButtonElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (shouldShowChatUsage()) setUsageOpen(true);
