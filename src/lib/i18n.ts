@@ -504,7 +504,8 @@ const dict = {
     createCoachModeBody:
       "AI에게 앨범을 어떻게 정리시킬지 선택해요. 'Creative'은 한 편의 소설처럼 상상을 더해 이야기를 엮어주고, 'Fact'은 대화에 있는 사실 내용을 그대로, 'Brief'는 대화내용을 짧게 요약해요.",
     createCoachToneTitle: "정리 어조",
-    createCoachToneBody: "앨범을 정리할 때의 문체를 골라요 — 정중하게, 친근하게, 짧게 중에서요.",
+    createCoachToneBody:
+      "앨범을 정리할때의 문체를 골라요 (Politely 공손하게 · Friendly 친근하게 · Short 짧게 문서처럼)..",
     createCoachTagsTitle: "태그",
     createCoachTagsBody:
       "프리셋을 누르거나 직접 입력해 추가할 수 있어요. 직접 만든 태그는 다음 앨범 만들 때도 계속 나타나요.",
