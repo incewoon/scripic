@@ -235,7 +235,38 @@ const dict = {
     placeSearchNoResults: "No results",
     searching: "Searching…",
     representative: "Cover",
-    // Edit coachmark---
+    // Coachmark common
+    coachNext: "Next",
+    coachDone: "Got it",
+    // Album edit coachmark (2 steps)
+    editCoachPencilTitle: "Edit anything",
+    editCoachPencilBody: "Tap this pencil to edit the title, subtitle, and body of your album.",
+    editCoachLocationTitle: "Add a location",
+    editCoachLocationBody: "Tap here to pick where these photos were taken — search or drop a pin on the map.",
+    // Create-screen coachmark (4 steps)
+    createCoachPhotosTitle: "Pick your photos",
+    createCoachPhotosBody:
+      "Pick up to 3 photos from one moment. Long-press to drag and reorder; the first one becomes the cover.",
+    createCoachModeTitle: "Story type",
+    createCoachModeBody:
+      'Pick how the album reads. "Creative" weaves a literary scene, "Factual" sticks to what\'s in the photo, "Brief" keeps it short.',
+    createCoachToneTitle: "Tone",
+    createCoachToneBody: "Pick the voice of the writing — polite, friendly, or short.",
+    createCoachTagsTitle: "Tags",
+    createCoachTagsBody:
+      "Tap a preset or add your own. Custom tags you create stay available the next time you make an album.",
+    // Chat-screen coachmark (4 steps)
+    chatCoachIntroTitle: "How the conversation works",
+    chatCoachIntroBody:
+      "Chat with the AI to pull out memories you didn't realize you had — small details, smells, who was there.",
+
+    chatCoachTurnsTitle: "About the chat length",
+    chatCoachTurnsBody:
+      "You get about 3 turns per photo, and after roughly 9 total turns the conversation wraps up on its own.",
+    chatCoachFinishTitle: "Finish anytime",
+    chatCoachFinishBody: 'Tap "Finish" at the top right to stop the chat and create the album right away.',
+    chatCoachMicTitle: "Talk instead of typing",
+    chatCoachMicBody: "Tap the mic button to speak — your voice is transcribed into the input.",
   },
 
   ko: {
