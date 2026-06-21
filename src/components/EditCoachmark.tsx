@@ -36,6 +36,7 @@ export function EditCoachmark({
   const steps: CoachStep[] = [
     { target: pencilRef, title: t.editCoachPencilTitle, body: t.editCoachPencilBody, placement: "auto" },
     { target: locationRef, title: t.editCoachLocationTitle, body: t.editCoachLocationBody, placement: "auto" },
+    { target: downloadRef, title: t.saveImageCoachTitle, body: t.saveImageCoachBody, placement: "auto" },
   ];
   return (
     <Coachmark
