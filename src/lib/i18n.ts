@@ -1,4 +1,3 @@
-// LightweigcreateUsageModht i18n. Keep the first render hydration-safe by starting from a
 // stable default, then switching to the device language on the client.
 import { useEffect, useState } from "react";
 
