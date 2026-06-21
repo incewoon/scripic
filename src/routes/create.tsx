@@ -381,7 +381,7 @@ function Create() {
             {mode === "creative" ? t.modeCreativeDesc : mode === "fact" ? t.modeFactDesc : t.modeBriefDesc}
           </div>
         </div>
-        <div className="mb-5">
+        <div ref={toneSectionRef} className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">
             <b className="font-semibold">{t.toneSection}</b>
           </div>
@@ -409,7 +409,7 @@ function Create() {
             {tone === "politely" ? t.tonePolitelyDesc : tone === "friendly" ? t.toneFriendlyDesc : t.toneShortDesc}
           </div>
         </div>
-        <div className="mb-5">
+        <div ref={tagsSectionRef} className="mb-5">
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-[12px] font-medium warm-muted">
               <b className="font-semibold">{t.tagsLabel}</b>
@@ -545,7 +545,14 @@ function Create() {
       </div>
 
       <UploadLimitDialog open={limitReason !== null} reason={limitReason} onClose={() => setLimitReason(null)} />
-      <PrivacyConsentDialog open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+      <CreateUsageCoachmark
+        open={coachOpen}
+        onClose={() => setCoachOpen(false)}
+        photoRef={photoSectionRef}
+        modeRef={modeSectionRef}
+        toneRef={toneSectionRef}
+        tagsRef={tagsSectionRef}
+      />
 
       <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
         {items.length > 0 && items.length < PHOTO_MAX && (
