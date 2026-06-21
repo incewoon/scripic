@@ -248,9 +248,9 @@ const dict = {
     createUsageTags: "Tags — tap a preset or add your own. Custom tags you create stay available next time too.",
     dontShowNextTime: "Don't show next time",
     // Chat-screen usage coachmark
-    chatUsageTitle: "How the conversation works",
+    chatUsageTitle: "AI conversation Tips",
     chatUsageIntro:
-      "Chat with the AI to pull out memories you didn't realize you had — small details, smells, who was there.",
+      "You can ask about the moments AI might have missed; bring back the memories that weren't captured in the photos. The tiny details, the vibe of that day, and the people who were with you. (Please note: AI is not always accurate and can make mistakes.)",
     chatUsageTurns:
       "You get about 3 turns per photo, and after roughly 9 total turns the conversation will wrap up on its own.",
     chatUsageFinish: 'Tap "Finish" at the top right anytime to stop the chat and create the album right away.',
