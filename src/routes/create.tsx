@@ -17,7 +17,7 @@ import { extractMeta, summarizePeriod, type PhotoMeta } from "@/lib/photoMeta";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import { canCreateAlbumToday } from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
-import { PrivacyConsentDialog, shouldShowPrivacyConsent } from "@/components/PrivacyConsentDialog";
+import { CreateUsageCoachmark, shouldShowCreateUsage } from "@/components/CreateUsageCoachmark";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
 import { getAlbums } from "@/lib/storage";
 
@@ -134,9 +134,13 @@ function Create() {
     }
   };
   const [limitReason, setLimitReason] = useState<"type" | "size" | null>(null);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [coachOpen, setCoachOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const photoSectionRef = useRef<HTMLDivElement>(null);
+  const modeSectionRef = useRef<HTMLDivElement>(null);
+  const toneSectionRef = useRef<HTMLDivElement>(null);
+  const tagsSectionRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
   const navigate = useNavigate();
 
@@ -148,9 +152,9 @@ function Create() {
     }
   }, [navigate, t.dailyLimitBody]);
 
-  // Show privacy / Gemini consent once per session (or until "don't show again").
+  // First-visit coachmark on this device.
   useEffect(() => {
-    if (shouldShowPrivacyConsent()) setPrivacyOpen(true);
+    if (shouldShowCreateUsage()) setCoachOpen(true);
   }, []);
 
   // Pre-warm Firebase anonymous auth + App Check token while the user picks
