@@ -389,7 +389,7 @@ const dict = {
     backupInfoStepsTitle: "백업 과정",
     backupInfoStep1: '"백업 파일 다운로드" 버튼을 누르면 PIN 입력창이 나타나요.',
     backupInfoStep2: "PIN을 입력하면 모든 앨범·사진·테마 설정이 암호화된 .mwbak 파일로 만들어져 기기에 저장돼요.",
-    backupInfoStep3: '복원할 때는 "백업 파일에서 복원"을 누르고 같은 PIN으로 .mwbak 파일을 선택하면 돼요.',
+    backupInfoStep3: "복원할 때는 '백업 파일에서 복원'을 누르고 같은 PIN으로 .mwbak 파일을 선택하면 돼요.",
     backupInfoWarnTitle: "주의",
     backupInfoWarnBody:
       "앱 데이터나 브라우저 저장소를 비우면 백업 파일 없이는 복원할 수 없어요. 백업 파일은 안전한 곳에 보관하고, 정기적으로 백업해 주세요.",
