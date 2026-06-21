@@ -1,3 +1,5 @@
+"use client";
+
 // stable default, then switching to the device language on the client.
 import { useEffect, useState } from "react";
 
