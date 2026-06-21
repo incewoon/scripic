@@ -488,26 +488,36 @@ const dict = {
     placeSearchNoResults: "검색 결과가 없어요",
     searching: "검색 중…",
     representative: "대표",
-    // Edit coachmark
-    editCoachTitle: "이 앨범을 다듬어보세요",
-    editCoachBody: "연필 버튼으로 내용을 수정하거나, 지도에서 장소를 추가할 수 있어요.",
-    editCoachOk: "확인",
-    // 앨범 생성화면 사용법 안내
-    createUsageTitle: "앨범 만들기, 이렇게 해요",
-    createUsagePhotos:
-      "사진: 하나의 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 대표 사진이 돼요.",
-    createUsageMode:
-      "정리 타입 — AI가 앨범을 어떻게 정리할지 골라요. 'Creative'은 한 편의 글처럼 상상을 더해 이야기를 엮어주고, 'Fact'은 대화를 내용을 그대로, 'Brief'는 대화내용만 짧게 정리해요.",
-    createUsageTone: "정리 어조 — 앨범을 정리할때의 문체를 골라요 (정중하게 · 친근하게 · 짧게).",
-    createUsageTags: "태그 — 프리셋을 누르거나 직접 추가할 수 있어요. 직접 만든 태그는 다음 앨범에서도 계속 보여요.",
-    dontShowNextTime: "다음부터 보지 않기",
-    // AI 대화화면 사용법 안내
-    chatUsageTitle: "AI와 대화하는 법",
-    chatUsageIntro:
-      "AI와 대화하며 미처 떠올리지 못했던 기억들을 꺼내보세요. 작은 디테일, 그날의 분위기, 함께한 사람까지.",
-    chatUsageTurns: "사진 한 장당 약 3번 정도 대화할 수 있고, 전체 9번 정도가 되면 대화는 자동으로 마무리돼요.",
-    chatUsageFinish: "언제든 우측 상단의 '완성하기' 버튼을 누르면 대화를 끝내고 바로 앨범을 만들어요.",
-    chatUsageMic: "마이크 버튼을 누르면 말로 입력할 수 있어요.",
+    // 코치마크 공통
+    coachNext: "다음",
+    coachDone: "확인",
+    // 앨범 편집 코치마크 (2단계)
+    editCoachPencilTitle: "내용을 수정해요",
+    editCoachPencilBody: "이 연필 버튼을 누르면 제목·소제목·본문을 직접 수정할 수 있어요.",
+    editCoachLocationTitle: "장소를 추가해요",
+    editCoachLocationBody: "여기를 눌러 사진이 찍힌 장소를 지도에서 검색하거나 핀으로 찍을 수 있어요.",
+    // 앨범 생성 코치마크 (4단계)
+    createCoachPhotosTitle: "사진을 골라요",
+    createCoachPhotosBody:
+      "하나의 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 대표 사진이 돼요.",
+    createCoachModeTitle: "정리 타입",
+    createCoachModeBody:
+      "앨범을 어떻게 정리할지 골라요. '창의적'은 한 편의 글처럼 엮어주고, '사실 중심'은 사진에 보이는 내용 위주로, '간결하게'는 짧게 정리해요.",
+    createCoachToneTitle: "정리 어조",
+    createCoachToneBody: "앨범을 정리할 때의 문체를 골라요 — 정중하게, 친근하게, 짧게 중에서요.",
+    createCoachTagsTitle: "태그",
+    createCoachTagsBody:
+      "프리셋을 누르거나 직접 입력해 추가할 수 있어요. 직접 만든 태그는 다음 앨범 만들 때도 계속 나타나요.",
+    // AI 대화 코치마크 (4단계)
+    chatCoachIntroTitle: "AI와 대화하는 법",
+    chatCoachIntroBody:
+      "AI와 대화하며 미처 떠올리지 못했던 기억들을 꺼내보세요. 작은 디테일, 그날의 분위기, 함께한 사람까지요.",
+    chatCoachTurnsTitle: "대화는 이만큼 가능해요",
+    chatCoachTurnsBody: "사진 한 장당 약 3번 정도 대화할 수 있고, 전체 9번 정도가 되면 대화는 자동으로 마무리돼요.",
+    chatCoachFinishTitle: "언제든 완성할 수 있어요",
+    chatCoachFinishBody: "우측 상단의 '완성하기' 버튼을 누르면 대화를 끝내고 바로 앨범을 만들어요.",
+    chatCoachMicTitle: "말로 입력할 수 있어요",
+    chatCoachMicBody: "마이크 버튼을 누르면 음성으로 입력할 수 있어요.",
   },
 } as const;
 
