@@ -488,7 +488,8 @@ const dict = {
       "정리 타입 — AI에게 앨범을 어떻게 정리시킬지 선택해요. 'Creative'은 한 편의 소설처럼 상상을 더해 이야기를 엮어주고, 'Fact'은 대화에 있는 사실 내용을 그대로, 'Brief'는 대화내용을 짧게 요약해요.",
     createUsageTone:
       "정리 어조 — 앨범을 정리할때의 문체를 골라요 (Politely 공손하게 · Friendly친근하게 · Short 짧게 문서처럼).",
-    createUsageTags: "태그 — 프리셋을 누르거나 직접 추가할 수 있어요. 직접 만든 태그는 다음 앨범에서도 계속 보여요.",
+    createUsageTags:
+      "태그 — 기본설정된 태크를 선택하거나 직접 만들 수 있어요. 직접 만든 태그는 다음 앨범에서도 계속 보여요.",
     dontShowNextTime: "다음부터 보지 않기",
     // AI 대화화면 사용법 안내
     chatUsageTitle: "AI와 대화하는 법",
