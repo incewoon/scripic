@@ -86,8 +86,8 @@ export function StorageNoticeDialog({ open, onClose }: Props) {
 
           <div className="mb-5 px-3 py-3 rounded-xl bg-background/60 border border-border/60">
             <h3 className="text-[13px] font-semibold warm-text mb-1">{t.freeNoticeTitle}</h3>
-            <p className="text-[12px] warm-muted leading-relaxed mb-1.5">{t.freeNoticeBody}</p>
-            <p className="text-[12px] warm-muted leading-relaxed">{t.freeNoticeSoon}</p>
+            <p className="text-[12px] warm-muted leading-relaxed mb-1.5 hitespace-pre-line">{t.freeNoticeBody}</p>
+            <p className="text-[12px] warm-muted leading-relaxed whitespace-pre-line">{t.freeNoticeSoon}</p>
           </div>
 
           <button
