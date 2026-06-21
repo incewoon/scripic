@@ -1,5 +1,4 @@
-"use client";
-
+// Lightweight i18n. Keep the first render hydration-safe by starting from a
 // stable default, then switching to the device language on the client.
 import { useEffect, useState } from "react";
 
@@ -244,14 +243,14 @@ const dict = {
     createUsagePhotos:
       "Photos: pick up to 3 photos that belong to one moment. Long-press to drag and reorder; the first one becomes the cover.",
     createUsageMode:
-      'Story type — choose how the album should be written. "Creative" weaves a literary scene, "Factual" sticks to what\'s in the conversation, and "Brief" keeps it short.',
+      'Story type — choose how the album should be written. "Creative" weaves a literary scene, "Factual" sticks to what\'s in the photo, and "Brief" keeps it short.',
     createUsageTone: "Tone — choose a tone for organizing your album (polite, friendly, or short).",
     createUsageTags: "Tags — tap a preset or add your own. Custom tags you create stay available next time too.",
     dontShowNextTime: "Don't show next time",
     // Chat-screen usage coachmark
-    chatUsageTitle: "AI conversation Tips",
+    chatUsageTitle: "How the conversation works",
     chatUsageIntro:
-      "You can ask about the moments AI might have missed; bring back the memories that weren't captured in the photos. The tiny details, the vibe of that day, and the people who were with you. (Please note AI is not always accurate and can make mistakes.)",
+      "Chat with the AI to pull out memories you didn't realize you had — small details, smells, who was there.",
     chatUsageTurns:
       "You get about 3 turns per photo, and after roughly 9 total turns the conversation will wrap up on its own.",
     chatUsageFinish: 'Tap "Finish" at the top right anytime to stop the chat and create the album right away.',
@@ -484,18 +483,16 @@ const dict = {
     // 앨범 생성화면 사용법 안내
     createUsageTitle: "앨범 만들기, 이렇게 해요",
     createUsagePhotos:
-      "사진: 기억하고 싶은 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 앨범 대표 사진이 돼요.",
+      "사진: 하나의 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 대표 사진이 돼요.",
     createUsageMode:
-      "정리 타입 — AI에게 앨범을 어떻게 정리시킬지 선택해요. 'Creative'은 한 편의 소설처럼 상상을 더해 이야기를 엮어주고, 'Fact'은 대화에 있는 사실 내용을 그대로, 'Brief'는 대화내용을 짧게 요약해요.",
-    createUsageTone:
-      "정리 어조 — 앨범을 정리할때의 문체를 골라요 (Politely 공손하게 · Friendly친근하게 · Short 짧게 문서처럼).",
-    createUsageTags:
-      "태그 — 기본설정된 태크를 선택하거나 직접 만들 수 있어요. 직접 만든 태그는 다음 앨범에서도 계속 보여요.",
+      "정리 타입 — AI가 앨범을 어떻게 정리할지 골라요. 'Creative'은 한 편의 글처럼 상상을 더해 이야기를 엮어주고, 'Fact'은 대화를 내용을 그대로, 'Brief'는 대화내용만 짧게 정리해요.",
+    createUsageTone: "정리 어조 — 앨범을 정리할때의 문체를 골라요 (정중하게 · 친근하게 · 짧게).",
+    createUsageTags: "태그 — 프리셋을 누르거나 직접 추가할 수 있어요. 직접 만든 태그는 다음 앨범에서도 계속 보여요.",
     dontShowNextTime: "다음부터 보지 않기",
     // AI 대화화면 사용법 안내
-    chatUsageTitle: "AI 대화 TIP",
+    chatUsageTitle: "AI와 대화하는 법",
     chatUsageIntro:
-      "AI가 미쳐 생각하지 못한 순간들을 물어볼 수 있어요, 사진에 미처 담지 못한 기억들을 꺼내보세요. 작은 디테일, 그날의 분위기, 함께한 사람까지.(AI는 정확하지 않으며 틀릴 수 도 있어요)",
+      "AI와 대화하며 미처 떠올리지 못했던 기억들을 꺼내보세요. 작은 디테일, 그날의 분위기, 함께한 사람까지.",
     chatUsageTurns: "사진 한 장당 약 3번 정도 대화할 수 있고, 전체 9번 정도가 되면 대화는 자동으로 마무리돼요.",
     chatUsageFinish: "언제든 우측 상단의 '완성하기' 버튼을 누르면 대화를 끝내고 바로 앨범을 만들어요.",
     chatUsageMic: "마이크 버튼을 누르면 말로 입력할 수 있어요.",
