@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ShieldCheck, X, ExternalLink } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { PRIVACY_POLICY_URL } from "@/components/PrivacyConsentDialog";
+import { PRIVACY_POLICY_URL } from "@/lib/legal";
 
 type Props = { open: boolean; onClose: () => void };
 
