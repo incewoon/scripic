@@ -495,7 +495,8 @@ const dict = {
     coachDone: "확인",
     // 앨범 편집 코치마크 (2단계)
     editCoachPencilTitle: "내용을 수정해요",
-    editCoachPencilBody: "이 연필 버튼을 누르면 제목·소제목·본문을 직접 수정할 수 있어요.",
+    editCoachPencilBody:
+      "상단에 연필 버튼을 누르면 제목·소제목·본문 등을 직접 수정할 수 있어요. \nAI가 정리한 내용이 맞는지 꼭 확인해보세요",
     editCoachLocationTitle: "장소를 추가해요",
     editCoachLocationBody: "여기를 눌러 사진이 찍힌 장소를 지도에서 검색하거나 핀으로 찍을 수 있어요.",
     // 앨범 생성 코치마크 (4단계)
