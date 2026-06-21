@@ -410,6 +410,7 @@ function AlbumView() {
 
       <div className="px-6 mt-6">
         <button
+          ref={downloadRef}
           onClick={downloadImage}
           disabled={downloading}
           className="w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-[14px] text-primary-foreground shadow-[var(--shadow-warm)] disabled:opacity-60 active:scale-[0.98] transition-transform"
