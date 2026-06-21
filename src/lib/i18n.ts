@@ -484,8 +484,7 @@ const dict = {
     createUsageTitle: "앨범 만들기, 이렇게 해요",
     createUsagePhotos:
       "사진: 기억하고 싶은 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 앨범 대표 사진이 돼요.",
-    createUsageMode:
-      "정리 타입 — AI에게 앨범을 어떻게 정리시킬지 선택해요. 'Creative'은 한 편의 소설처럼 상상을 더해 이야기를 엮어주고, 'Fact'은 대화에 있는 사실 내용을 그대로, 'Brief'는 대화내용을 짧게 요약해요.",
+    createUsageMode: "정리 타입 — 대화내용을 짧게 요약해요.",
     createUsageTone:
       "정리 어조 — 앨범을 정리할때의 문체를 골라요 (Politely 공손하게 · Friendly친근하게 · Short 짧게 문서처럼).",
     createUsageTags:
