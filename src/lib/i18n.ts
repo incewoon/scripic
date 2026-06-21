@@ -524,7 +524,8 @@ const dict = {
     chatCoachMicTitle: "말로 입력할 수 있어요",
     chatCoachMicBody: "마이크 버튼을 누르면 음성으로 입력할 수 있어요.",
     saveImageCoachTitle: "이미지로 저장하기",
-    saveImageCoachBody: "이미지로 저장해서 SNS나 친구들에게 공유해보세요.",
+    saveImageCoachBody:
+      "앨범을 SNS나 친구들에게 공유해보세요.\n SNS에 공유한것을 캡쳐하시면 하루에 앨범을 하나 더 만들 수 있어요.",
   },
 } as const;
 
