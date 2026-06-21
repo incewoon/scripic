@@ -508,7 +508,7 @@ const dict = {
       "앨범을 정리할때의 문체를 골라요 (Politely 공손하게 · Friendly 친근하게 · Short 짧게 문서처럼)..",
     createCoachTagsTitle: "태그",
     createCoachTagsBody:
-      "프리셋을 누르거나 직접 입력해 추가할 수 있어요. 직접 만든 태그는 다음 앨범 만들 때도 계속 나타나요.",
+      "기본설정된 태그를 선택하거나 직접 만들 수 있어요. 직접 만든 태그는 다음 앨범 만들 때도 계속 나타나요.",
     // AI 대화 코치마크 (4단계)
     chatCoachIntroTitle: "AI와 대화하는 법",
     chatCoachIntroBody:
