@@ -510,9 +510,9 @@ const dict = {
     createCoachTagsBody:
       "기본설정된 태그를 선택하거나 직접 만들 수 있어요. 직접 만든 태그는 다음 앨범 만들 때도 계속 나타나요.",
     // AI 대화 코치마크 (4단계)
-    chatCoachIntroTitle: "AI와 대화하는 법",
+    chatCoachIntroTitle: "AI 대화 팁",
     chatCoachIntroBody:
-      "AI와 대화하며 미처 떠올리지 못했던 기억들을 꺼내보세요. 작은 디테일, 그날의 분위기, 함께한 사람까지요.",
+      "AI가 미쳐 생각하지 못한 순간들을 물어볼 수 있어요, 사진에 미처 담지 못한 기억들을 꺼내보세요. 작은 디테일, 그날의 분위기, 함께한 사람까지.(AI는 정확하지 않으며 틀릴 수 도 있어요)",
     chatCoachTurnsTitle: "대화는 이만큼 가능해요",
     chatCoachTurnsBody: "사진 한 장당 약 3번 정도 대화할 수 있고, 전체 9번 정도가 되면 대화는 자동으로 마무리돼요.",
     chatCoachFinishTitle: "언제든 완성할 수 있어요",
