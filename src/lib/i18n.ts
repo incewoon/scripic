@@ -521,6 +521,8 @@ const dict = {
     chatCoachFinishBody: "우측 상단의 '완성하기' 버튼을 누르면 대화를 끝내고 바로 앨범을 만들어요.",
     chatCoachMicTitle: "말로 입력할 수 있어요",
     chatCoachMicBody: "마이크 버튼을 누르면 음성으로 입력할 수 있어요.",
+    saveImageCoachTitle: "이미지로 저장하기",
+    saveImageCoachBody: "이미지로 저장해서 SNS나 친구들에게 공유해보세요.",
   },
 } as const;
 
