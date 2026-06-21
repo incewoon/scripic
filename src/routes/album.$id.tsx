@@ -9,8 +9,6 @@ import { Hl } from "@/lib/highlight";
 import { MapDialog } from "@/components/MapDialog";
 import { EditCoachmark, shouldShowEditCoach } from "@/components/EditCoachmark";
 
-const downloadRef = useRef<HTMLButtonElement>(null);
-
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
   ssr: false,
@@ -156,6 +154,8 @@ function AlbumView() {
   const [coachOpen, setCoachOpen] = useState(false);
   const pencilBtnRef = useRef<HTMLButtonElement>(null);
   const locationChipRef = useRef<HTMLButtonElement>(null);
+  const downloadRef = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
     if (!album) return;
     if (!shouldShowEditCoach()) return;
