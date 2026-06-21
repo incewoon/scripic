@@ -249,7 +249,7 @@ const dict = {
       "Pick up to 3 photos from one moment. Long-press to drag and reorder; the first one becomes the cover.",
     createCoachModeTitle: "Story type",
     createCoachModeBody:
-      'Pick how the album reads. "Creative" weaves a literary scene, "Factual" sticks to what\'s in the photo, "Brief" keeps it short.',
+      'choose how the album should be written. "Creative" weaves a literary scene, "Factual" sticks to what\'s in the conversation, and "Brief" keeps it short.',
     createCoachToneTitle: "Tone",
     createCoachToneBody: "Pick the voice of the writing — polite, friendly, or short.",
     createCoachTagsTitle: "Tags",
