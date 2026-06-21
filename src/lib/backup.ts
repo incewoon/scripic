@@ -146,7 +146,7 @@ export async function exportBackupZip(pin: string): Promise<void> {
   outer.file("payload.enc", cipher);
 
   const blob = await outer.generateAsync({ type: "blob" });
-  const filename = `memoryweaver-backup-${fileTimestamp()}.mwbak`;
+  const filename = `scripic-backup-${fileTimestamp()}.bak`;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
