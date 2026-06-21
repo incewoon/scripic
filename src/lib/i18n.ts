@@ -372,7 +372,7 @@ const dict = {
     freeNoticeTitle: "무료 베타 안내",
     freeNoticeBody: "Scripic는 현재 무료로 제공돼요. \n베타 기간 동안은 하루 앨범 1개, 사진 3장으로 제한돼요.",
     freeNoticeSoon:
-      "SNS에 후기를 올려주시면 하루에 앨범을 하나 더 만들 수 있어요 \n(단, 한번 인증된 후기는 재사용할 수 없어요.)",
+      "하지만, SNS에 후기를 올려주시면 하루에 앨범을 하나 더 만들 수 있어요 \n(단, 한번 인증된 후기는 재사용할 수 없어요.)",
     gotIt: "확인했어요",
     // Storage diagnostics
     storageDiagSection: "저장소 상태",
