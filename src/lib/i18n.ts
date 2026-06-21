@@ -502,7 +502,7 @@ const dict = {
       "하나의 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 대표 사진이 돼요.",
     createCoachModeTitle: "정리 타입",
     createCoachModeBody:
-      "앨범을 어떻게 정리할지 골라요. '창의적'은 한 편의 글처럼 엮어주고, '사실 중심'은 사진에 보이는 내용 위주로, '간결하게'는 짧게 정리해요.",
+      "AI에게 앨범을 어떻게 정리시킬지 선택해요. 'Creative'은 한 편의 소설처럼 상상을 더해 이야기를 엮어주고, 'Fact'은 대화에 있는 사실 내용을 그대로, 'Brief'는 대화내용을 짧게 요약해요.",
     createCoachToneTitle: "정리 어조",
     createCoachToneBody: "앨범을 정리할 때의 문체를 골라요 — 정중하게, 친근하게, 짧게 중에서요.",
     createCoachTagsTitle: "태그",
