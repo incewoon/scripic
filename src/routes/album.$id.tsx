@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Hl } from "@/lib/highlight";
 import { MapDialog } from "@/components/MapDialog";
-import { EditCoachmark } from "@/components/EditCoachmark";
+import { EditCoachmark, shouldShowEditCoach } from "@/components/EditCoachmark";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
@@ -116,10 +116,7 @@ function AlbumView() {
   const locationChipRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!album) return;
-    let justCreatedId: string | null = null;
-    try { justCreatedId = sessionStorage.getItem("scripic:justCreated"); } catch {}
-    if (justCreatedId !== album.id) return;
-    try { sessionStorage.removeItem("scripic:justCreated"); } catch {}
+    if (!shouldShowEditCoach()) return;
     // Wait a tick for targets to mount + render.
     const tm = window.setTimeout(() => setCoachOpen(true), 350);
     return () => window.clearTimeout(tm);
@@ -361,7 +358,8 @@ function AlbumView() {
       <EditCoachmark
         open={coachOpen}
         onClose={() => setCoachOpen(false)}
-        targets={[pencilBtnRef, locationChipRef]}
+        pencilRef={pencilBtnRef}
+        locationRef={locationChipRef}
       />
     </div>
   );

@@ -17,7 +17,7 @@ import { extractMeta, summarizePeriod, type PhotoMeta } from "@/lib/photoMeta";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import { canCreateAlbumToday } from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
-import { PrivacyConsentDialog, shouldShowPrivacyConsent } from "@/components/PrivacyConsentDialog";
+import { CreateUsageCoachmark, shouldShowCreateUsage } from "@/components/CreateUsageCoachmark";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
 import { getAlbums } from "@/lib/storage";
 
@@ -134,9 +134,13 @@ function Create() {
     }
   };
   const [limitReason, setLimitReason] = useState<"type" | "size" | null>(null);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [coachOpen, setCoachOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const photoSectionRef = useRef<HTMLDivElement>(null);
+  const modeSectionRef = useRef<HTMLDivElement>(null);
+  const toneSectionRef = useRef<HTMLDivElement>(null);
+  const tagsSectionRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
   const navigate = useNavigate();
 
@@ -148,9 +152,9 @@ function Create() {
     }
   }, [navigate, t.dailyLimitBody]);
 
-  // Show privacy / Gemini consent once per session (or until "don't show again").
+  // First-visit coachmark on this device.
   useEffect(() => {
-    if (shouldShowPrivacyConsent()) setPrivacyOpen(true);
+    if (shouldShowCreateUsage()) setCoachOpen(true);
   }, []);
 
   // Pre-warm Firebase anonymous auth + App Check token while the user picks
@@ -316,38 +320,40 @@ function Create() {
           </div>
         </div>
         {/* 사진 진행률 바 + 사진 그리드 */}
-        <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-1">
-          <div
-            className="h-full transition-all duration-500 rounded-full"
-            style={{ width: `${pct}%`, background: "var(--gradient-warm)" }}
-          />
+        <div ref={photoSectionRef}>
+          <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-1">
+            <div
+              className="h-full transition-all duration-500 rounded-full"
+              style={{ width: `${pct}%`, background: "var(--gradient-warm)" }}
+            />
+          </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-3 gap-2.5" mb-1>
+                {items.map((it, i) => (
+                  <SortablePhoto
+                    key={it.id}
+                    item={it}
+                    index={i}
+                    onRemove={() => setItems((ps) => ps.filter((x) => x.id !== it.id))}
+                  />
+                ))}
+                {items.length === 0 && (
+                  <button
+                    onClick={tryOpenPicker}
+                    disabled={busy}
+                    className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
+                  >
+                    <ImagePlus size={26} strokeWidth={1.6} />
+                    <span className="text-[11px] mt-1.5 warm-muted font-medium">{busy ? t.processing : t.addPhoto}</span>
+                  </button>
+                )}
+              </div>
+            </SortableContext>
+          </DndContext>
+          <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
         </div>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-3 gap-2.5" mb-1>
-              {items.map((it, i) => (
-                <SortablePhoto
-                  key={it.id}
-                  item={it}
-                  index={i}
-                  onRemove={() => setItems((ps) => ps.filter((x) => x.id !== it.id))}
-                />
-              ))}
-              {items.length === 0 && (
-                <button
-                  onClick={tryOpenPicker}
-                  disabled={busy}
-                  className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
-                >
-                  <ImagePlus size={26} strokeWidth={1.6} />
-                  <span className="text-[11px] mt-1.5 warm-muted font-medium">{busy ? t.processing : t.addPhoto}</span>
-                </button>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
-        <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
-        <div className="mt-4 mb-5">
+        <div ref={modeSectionRef} className="mt-4 mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">
             <b className="font-semibold">{t.chatMode}</b>
           </div>
@@ -375,7 +381,7 @@ function Create() {
             {mode === "creative" ? t.modeCreativeDesc : mode === "fact" ? t.modeFactDesc : t.modeBriefDesc}
           </div>
         </div>
-        <div className="mb-5">
+        <div ref={toneSectionRef} className="mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">
             <b className="font-semibold">{t.toneSection}</b>
           </div>
@@ -403,7 +409,7 @@ function Create() {
             {tone === "politely" ? t.tonePolitelyDesc : tone === "friendly" ? t.toneFriendlyDesc : t.toneShortDesc}
           </div>
         </div>
-        <div className="mb-5">
+        <div ref={tagsSectionRef} className="mb-5">
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-[12px] font-medium warm-muted">
               <b className="font-semibold">{t.tagsLabel}</b>
@@ -539,7 +545,14 @@ function Create() {
       </div>
 
       <UploadLimitDialog open={limitReason !== null} reason={limitReason} onClose={() => setLimitReason(null)} />
-      <PrivacyConsentDialog open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+      <CreateUsageCoachmark
+        open={coachOpen}
+        onClose={() => setCoachOpen(false)}
+        photoRef={photoSectionRef}
+        modeRef={modeSectionRef}
+        toneRef={toneSectionRef}
+        tagsRef={tagsSectionRef}
+      />
 
       <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
         {items.length > 0 && items.length < PHOTO_MAX && (
