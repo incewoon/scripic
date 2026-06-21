@@ -7,8 +7,8 @@ import { getAlbums, type Album } from "./storage";
 import { set, get } from "idb-keyval";
 
 const SCHEMA_VERSION = 2;
-const APP_NAME = "memoryweaver";
-const LEGACY_APP_NAMES = ["moara"];
+const APP_NAME = "scripic";
+const LEGACY_APP_NAMES = ["memoryweaver", "moara"];
 const PBKDF2_ITER = 200_000;
 
 const KEY = "memori_albums_v1";
@@ -39,7 +39,9 @@ function bytesToDataUrl(bytes: Uint8Array, ext: string): string {
   return `data:${mime};base64,${btoa(bin)}`;
 }
 
-function pad(n: number, w = 3): string { return n.toString().padStart(w, "0"); }
+function pad(n: number, w = 3): string {
+  return n.toString().padStart(w, "0");
+}
 function fileTimestamp(d = new Date()): string {
   return `${d.getFullYear()}${pad(d.getMonth() + 1, 2)}${pad(d.getDate(), 2)}-${pad(d.getHours(), 2)}${pad(d.getMinutes(), 2)}`;
 }
@@ -58,7 +60,9 @@ function b64decode(s: string): Uint8Array {
 
 async function deriveKey(pin: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder().encode(pin);
-  const baseKey = await crypto.subtle.importKey("raw", enc.buffer.slice(0) as ArrayBuffer, "PBKDF2", false, ["deriveKey"]);
+  const baseKey = await crypto.subtle.importKey("raw", enc.buffer.slice(0) as ArrayBuffer, "PBKDF2", false, [
+    "deriveKey",
+  ]);
   return crypto.subtle.deriveKey(
     { name: "PBKDF2", salt: salt.buffer.slice(0) as ArrayBuffer, iterations: PBKDF2_ITER, hash: "SHA-256" },
     baseKey,
@@ -115,19 +119,30 @@ export async function exportBackupZip(pin: string): Promise<void> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(pin, salt);
   const cipher = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer.slice(0) as ArrayBuffer }, key, innerBytes.buffer.slice(0) as ArrayBuffer),
+    await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv.buffer.slice(0) as ArrayBuffer },
+      key,
+      innerBytes.buffer.slice(0) as ArrayBuffer,
+    ),
   );
 
   // Outer zip: meta.json + payload.enc.
   const outer = new JSZip();
-  outer.file("meta.json", JSON.stringify({
-    app: APP_NAME,
-    v: SCHEMA_VERSION,
-    kdf: "PBKDF2-SHA256",
-    iter: PBKDF2_ITER,
-    salt: b64encode(salt),
-    iv: b64encode(iv),
-  }, null, 2));
+  outer.file(
+    "meta.json",
+    JSON.stringify(
+      {
+        app: APP_NAME,
+        v: SCHEMA_VERSION,
+        kdf: "PBKDF2-SHA256",
+        iter: PBKDF2_ITER,
+        salt: b64encode(salt),
+        iv: b64encode(iv),
+      },
+      null,
+      2,
+    ),
+  );
   outer.file("payload.enc", cipher);
 
   const blob = await outer.generateAsync({ type: "blob" });
@@ -144,25 +159,34 @@ export async function exportBackupZip(pin: string): Promise<void> {
 
 // ---------- import ----------
 
-export type ImportResult =
-  | { ok: true; imported: number }
-  | { ok: false; reason: "invalid" | "wrong_password" };
+export type ImportResult = { ok: true; imported: number } | { ok: false; reason: "invalid" | "wrong_password" };
 
 export async function importBackupZip(file: File, pin: string): Promise<ImportResult> {
   if (!/^\d{4}$/.test(pin)) return { ok: false, reason: "wrong_password" };
 
   let outer: JSZip;
-  try { outer = await JSZip.loadAsync(file); }
-  catch { return { ok: false, reason: "invalid" }; }
+  try {
+    outer = await JSZip.loadAsync(file);
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
 
   const metaFile = outer.file("meta.json");
   const payloadFile = outer.file("payload.enc");
   if (!metaFile || !payloadFile) return { ok: false, reason: "invalid" };
 
   let meta: any;
-  try { meta = JSON.parse(await metaFile.async("string")); }
-  catch { return { ok: false, reason: "invalid" }; }
-  if (!meta || (meta.app !== APP_NAME && !LEGACY_APP_NAMES.includes(meta.app)) || typeof meta.salt !== "string" || typeof meta.iv !== "string") {
+  try {
+    meta = JSON.parse(await metaFile.async("string"));
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
+  if (
+    !meta ||
+    (meta.app !== APP_NAME && !LEGACY_APP_NAMES.includes(meta.app)) ||
+    typeof meta.salt !== "string" ||
+    typeof meta.iv !== "string"
+  ) {
     return { ok: false, reason: "invalid" };
   }
 
@@ -173,21 +197,37 @@ export async function importBackupZip(file: File, pin: string): Promise<ImportRe
   let plain: Uint8Array;
   try {
     const key = await deriveKey(pin, salt);
-    plain = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv.buffer.slice(0) as ArrayBuffer }, key, (cipher as Uint8Array).buffer.slice(0) as ArrayBuffer));
+    plain = new Uint8Array(
+      await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: iv.buffer.slice(0) as ArrayBuffer },
+        key,
+        (cipher as Uint8Array).buffer.slice(0) as ArrayBuffer,
+      ),
+    );
   } catch {
     return { ok: false, reason: "wrong_password" };
   }
 
   let inner: JSZip;
-  try { inner = await JSZip.loadAsync(plain); }
-  catch { return { ok: false, reason: "invalid" }; }
+  try {
+    inner = await JSZip.loadAsync(plain);
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
 
   const manifestFile = inner.file("manifest.json");
   if (!manifestFile) return { ok: false, reason: "invalid" };
   let manifest: any;
-  try { manifest = JSON.parse(await manifestFile.async("string")); }
-  catch { return { ok: false, reason: "invalid" }; }
-  if (!manifest || (manifest.app !== APP_NAME && !LEGACY_APP_NAMES.includes(manifest.app)) || !Array.isArray(manifest.albums)) {
+  try {
+    manifest = JSON.parse(await manifestFile.async("string"));
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
+  if (
+    !manifest ||
+    (manifest.app !== APP_NAME && !LEGACY_APP_NAMES.includes(manifest.app)) ||
+    !Array.isArray(manifest.albums)
+  ) {
     return { ok: false, reason: "invalid" };
   }
 
@@ -200,8 +240,11 @@ export async function importBackupZip(file: File, pin: string): Promise<ImportRe
     const albumJsonFile = inner.file(`${dir}/album.json`);
     if (!albumJsonFile) continue;
     let albumJson: any;
-    try { albumJson = JSON.parse(await albumJsonFile.async("string")); }
-    catch { continue; }
+    try {
+      albumJson = JSON.parse(await albumJsonFile.async("string"));
+    } catch {
+      continue;
+    }
 
     const photoFiles = Object.keys(inner.files)
       .filter((p) => p.startsWith(`${dir}/photos/`) && !inner.files[p].dir)
@@ -213,9 +256,8 @@ export async function importBackupZip(file: File, pin: string): Promise<ImportRe
       const ext = path.split(".").pop()?.toLowerCase() || "jpg";
       const bytes = await inner.file(path)!.async("uint8array");
       const dataUrl = bytesToDataUrl(bytes, ext);
-      const caption = Array.isArray(albumJson.photos) && albumJson.photos[i]?.caption
-        ? String(albumJson.photos[i].caption)
-        : "";
+      const caption =
+        Array.isArray(albumJson.photos) && albumJson.photos[i]?.caption ? String(albumJson.photos[i].caption) : "";
       photos.push({ dataUrl, caption });
     }
 
