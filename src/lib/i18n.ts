@@ -474,7 +474,7 @@ const dict = {
     uploadLimitOk: "확인",
     privacyConsentTitle: "사진을 올리기 전에 알려드려요",
     privacyConsentBody:
-      "·이 앱은 사진을 Google Gemini API로 전송하여 AI 분석을 진행합니다. \n·분석 결과(대화 요약 및 코멘트)는 사용자 기기에만 저장되며, 서버에는 저장되지 않습니다.\n·자세한 내용은 개인정보처리방침을 확인해주세요.",
+      "이 앱은 사진을 Google Gemini API로 전송하여 AI 분석을 진행합니다. \n분석 결과(대화 요약 및 코멘트)는 사용자 기기에만 저장되며, 서버에는 저장되지 않습니다.\n자세한 내용은 개인정보처리방침을 확인해주세요.",
     privacyPolicyView: "개인정보처리방침 보기",
     privacyDontShowAgain: "다시 보지 않기",
     privacyAgreeContinue: "동의하고 계속하기",
