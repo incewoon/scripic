@@ -256,9 +256,9 @@ const dict = {
     createCoachTagsBody:
       "Tap a preset or add your own. Custom tags you create stay available the next time you make an album.",
     // Chat-screen coachmark (4 steps)
-    chatCoachIntroTitle: "How the conversation works",
+    chatCoachIntroTitle: "AI conversation Tips",
     chatCoachIntroBody:
-      "Chat with the AI to pull out memories you didn't realize you had — small details, smells, who was there.",
+      "You can ask about the moments AI might have missed; bring back the memories that weren't captured in the photos. The tiny details, the vibe of that day, and the people who were with you. (Please note: AI is not always accurate and can make mistakes.)",
 
     chatCoachTurnsTitle: "About the chat length",
     chatCoachTurnsBody:
