@@ -100,14 +100,7 @@ export function Coachmark({ open, steps, onClose }: Props) {
             )}
           </mask>
         </defs>
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(0,0,0,0.62)"
-          mask="url(#coach-mask-multi)"
-        />
+        <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.62)" mask="url(#coach-mask-multi)" />
       </svg>
 
       {/* swallow taps on dim layer so users can't accidentally interact with the page */}
@@ -151,7 +144,7 @@ export function Coachmark({ open, steps, onClose }: Props) {
             {idx + 1} / {steps.length}
           </div>
           <p className="font-display text-base warm-text mb-1">{step.title}</p>
-          <p className="text-[13.5px] warm-muted leading-relaxed">{step.body}</p>
+          <p className="text-[13.5px] warm-muted leading-relaxed whitespace-pre-line">{step.body}</p>
           <div className="mt-4 flex justify-end">
             <button
               onClick={() => {
