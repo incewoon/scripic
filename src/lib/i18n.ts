@@ -146,8 +146,8 @@ const dict = {
     backupInfoStepsTitle: "How backup works",
     backupInfoStep1: "Tap 'Download backup file' — a PIN prompt appears.",
     backupInfoStep2:
-      "Enter your PIN. All albums, photos, and theme settings are bundled into an encrypted .mwbak file and saved to your device.",
-    backupInfoStep3: "To restore, tap 'Restore from backup file', pick the .mwbak file, and enter the same PIN.",
+      "Enter your PIN. All albums, photos, and theme settings are bundled into an encrypted .bak file and saved to your device.",
+    backupInfoStep3: "To restore, tap 'Restore from backup file', pick the .bak file, and enter the same PIN.",
     backupInfoWarnTitle: "Important",
     backupInfoWarnBody:
       "If you clear app data or browser storage, only a backup file can bring your albums back. Please keep your backup file in a safe place and back up regularly.",
