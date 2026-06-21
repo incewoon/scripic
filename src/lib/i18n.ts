@@ -370,8 +370,8 @@ const dict = {
     storageNoticeBody: "사진과 정리된 대화 내용은 이 기기에만 저장되며, 다른 기기와는 연동되지 않아요.",
 
     freeNoticeTitle: "무료 베타 안내",
-    freeNoticeBody:
-      "Scripic는 현재 무료로 제공돼요. \n\n베타 기간 동안은 한 앨범에 사진 3장까지, 하루 1개 앨범 만들기로 제한돼요.",
+    freeNoticeBody: 'Scripic는 현재 무료로 제공돼요.
+      베타 기간 동안은 한 앨범에 사진 3장까지, 하루 1개 앨범 만들기로 제한돼요.',
     freeNoticeSoon:
       "SNS에 후기를 올려주시면 하루에 한번만 앨범을 하나 더 만들 수 있어요 \n\n(한번 인증된 후기는 재사용할 수 없어요.)",
     gotIt: "확인했어요",
