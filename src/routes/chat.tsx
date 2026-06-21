@@ -677,6 +677,7 @@ function Chat() {
           </Link>
           <div className="text-xs text-muted-foreground">{t.chatPhotos(photos.length)}</div>
           <button
+            ref={finishBtnRef}
             onClick={() => void finish()}
             disabled={generating || busy}
             className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-50"
@@ -727,8 +728,9 @@ function Chat() {
       </div>
 
       <div className="px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-gradient-to-t from-background to-transparent">
-        <div className="flex gap-2 items-center glass rounded-full px-2 py-1.5 border border-border/50">
+        <div ref={composerRef} className="flex gap-2 items-center glass rounded-full px-2 py-1.5 border border-border/50">
           <button
+            ref={micBtnRef}
             type="button"
             onClick={toggleMic}
             disabled={busy}
@@ -882,7 +884,13 @@ function Chat() {
         </div>
       )}
 
-      <ChatUsageDialog open={usageOpen} onClose={() => setUsageOpen(false)} />
+      <ChatUsageCoachmark
+        open={usageOpen}
+        onClose={() => setUsageOpen(false)}
+        finishRef={finishBtnRef}
+        micRef={micBtnRef}
+        composerRef={composerRef}
+      />
 
       {generating && (
 
