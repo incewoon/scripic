@@ -498,7 +498,8 @@ const dict = {
     editCoachPencilBody:
       "상단에 연필 버튼을 누르면 제목·소제목·본문 등을 직접 수정할 수 있어요. \nAI가 정리한 내용이 맞는지 꼭 확인해보세요",
     editCoachLocationTitle: "장소를 추가해요",
-    editCoachLocationBody: "여기를 눌러 사진이 찍힌 장소를 지도에서 검색하거나 핀으로 찍을 수 있어요.",
+    editCoachLocationBody:
+      "여기를 눌러 사진이 찍힌 장소를 지도에서 검색하거나 핀으로 찍을 수 있어요. \n지도에 기억장소를 모아보세요(현재는 구글맵만 지원합니다)",
     // 앨범 생성 코치마크 (4단계)
     createCoachPhotosTitle: "사진을 골라요",
     createCoachPhotosBody:
