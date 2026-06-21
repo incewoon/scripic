@@ -113,8 +113,7 @@ const dict = {
       "Your photos and the captions woven from your conversation are kept only on this device. Even with the same account, they don't sync to other devices.",
 
     freeNoticeTitle: "Free during beta",
-    freeNoticeBody:
-      "Scripic is free right now. While in beta, each album holds up to 3 photos and you can create 1 album per day.",
+    freeNoticeBody: "Scripic is free right now. \nWhile in beta, each album holds up to 1 album and 3 photos per day.",
     freeNoticeSoon:
       "Post a review on social media to create one extra album per day. (Each verified review can only be used once.)",
     gotIt: "Got it",
