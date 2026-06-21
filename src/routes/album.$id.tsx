@@ -438,6 +438,7 @@ function AlbumView() {
         onClose={() => setCoachOpen(false)}
         pencilRef={pencilBtnRef}
         locationRef={locationChipRef}
+        downloadRef={}
       />
     </div>
   );
