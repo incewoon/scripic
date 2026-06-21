@@ -267,6 +267,8 @@ const dict = {
     chatCoachFinishBody: 'Tap "Finish" at the top right to stop the chat and create the album right away.',
     chatCoachMicTitle: "Talk instead of typing",
     chatCoachMicBody: "Tap the mic button to speak — your voice is transcribed into the input.",
+    saveImageCoachTitle: "Save as image",
+    saveImageCoachBody: "Save the album as an image and share it on SNS or with friends.",
   },
 
   ko: {
