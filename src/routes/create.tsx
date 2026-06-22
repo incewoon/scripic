@@ -301,7 +301,7 @@ function Create() {
 
   return (
     <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-3 pb-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-3 pb-2">
         <header className="flex items-center justify-between mb-3">
           <Link to="/" className="p-2 -ml-2 text-foreground/70">
             <ArrowLeft size={20} />
@@ -345,7 +345,9 @@ function Create() {
                     className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
                   >
                     <ImagePlus size={26} strokeWidth={1.6} />
-                    <span className="text-[11px] mt-1.5 warm-muted font-medium">{busy ? t.processing : t.addPhoto}</span>
+                    <span className="text-[11px] mt-1.5 warm-muted font-medium">
+                      {busy ? t.processing : t.addPhoto}
+                    </span>
                   </button>
                 )}
               </div>
