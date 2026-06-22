@@ -120,6 +120,16 @@ function Home() {
     if (!hasSeenStorageNotice()) setNoticeOpen(true);
   }, []);
 
+  // Show the home coachmark once, after the user has at least one album,
+  // and only when the first-launch storage notice is not in the way.
+  useEffect(() => {
+    if (!albums || albums.length === 0) return;
+    if (noticeOpen) return;
+    if (!shouldShowHomeCoach()) return;
+    const tm = window.setTimeout(() => setHomeCoachOpen(true), 400);
+    return () => window.clearTimeout(tm);
+  }, [albums, noticeOpen]);
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(SORT_KEY);
