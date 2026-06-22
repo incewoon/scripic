@@ -508,7 +508,7 @@ const dict = {
     homeCoachSettingsTitle: "설정",
     homeCoachSettingsBody: "글꼴과 분위기를 테마로 설정하고 앨범을 백업/복구할 수 있어요.",
     homeCoachSortTitle: "앨범 정렬",
-    homeCoachSortBody: "'만든 날짜'와 '사진 날짜' 기준으로 정렬을 바꾸고, 화살표로 오름/내림차순을 전환해요.",
+    homeCoachSortBody: "'만든 날짜'와 '사진 날짜' 기준으로 앨벙을 정렬 시킬 수 있어요.",
     // 앨범 편집 코치마크 (2단계)
     editCoachPencilTitle: "내용을 수정해요",
     editCoachPencilBody:
