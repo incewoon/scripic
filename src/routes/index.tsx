@@ -370,6 +370,7 @@ function Home() {
           >
             {sortDir === "desc" ? "↓" : "↑"}
           </button>
+          </div>
         </div>
       </div>
 
