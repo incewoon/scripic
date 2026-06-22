@@ -99,6 +99,10 @@ export async function exportBackupZip(pin: string): Promise<void> {
       closing: album.closing,
       period: album.period ?? null,
       location: album.location ?? null,
+      lat: typeof album.lat === "number" ? album.lat : null,
+      lng: typeof album.lng === "number" ? album.lng : null,
+      tags: Array.isArray(album.tags) ? album.tags : [],
+      favorite: !!album.favorite,
       createdAt: album.createdAt,
       photos: album.photos.map((p, i) => ({ index: i + 1, caption: p.caption })),
     };
@@ -276,6 +280,10 @@ export async function importBackupZip(file: File, pin: string): Promise<ImportRe
       closing: String(albumJson.closing ?? ""),
       period: albumJson.period ?? undefined,
       location: albumJson.location ?? undefined,
+      lat: typeof albumJson.lat === "number" ? albumJson.lat : undefined,
+      lng: typeof albumJson.lng === "number" ? albumJson.lng : undefined,
+      tags: Array.isArray(albumJson.tags) ? albumJson.tags.map((t: unknown) => String(t)) : undefined,
+      favorite: !!albumJson.favorite,
       photos,
       createdAt: Number(albumJson.createdAt ?? Date.now()),
     });
