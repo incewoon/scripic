@@ -540,6 +540,14 @@ function Home() {
           /* user can press Okay to close, then create */
         }}
       />
+
+      <HomeUsageCoachmark
+        open={homeCoachOpen}
+        onClose={() => setHomeCoachOpen(false)}
+        searchRef={searchRef}
+        settingsRef={settingsRef}
+        sortRef={sortRef}
+      />
     </div>
   );
 }
