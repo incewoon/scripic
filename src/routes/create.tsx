@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } pb-4from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ImagePlus, ArrowRight, X, GripVertical, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -556,7 +556,7 @@ function Create() {
         tagsRef={tagsSectionRef}
       />
 
-      <div className="px-5 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
+      <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
         {items.length > 0 && items.length < PHOTO_MAX && (
           <button
             onClick={tryOpenPicker}
