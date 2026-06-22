@@ -237,6 +237,15 @@ const dict = {
     // Coachmark common
     coachNext: "Next",
     coachDone: "Got it",
+    // Home-screen coachmark (3 steps)
+    homeCoachSearchTitle: "Find any memory",
+    homeCoachSearchBody:
+      "Search across titles, places, body text, and photo captions. Tap a tag chip below to filter by tag — combine multiple tags to narrow it down.",
+    homeCoachSettingsTitle: "Settings",
+    homeCoachSettingsBody: "Theme, backup, notifications, and other app settings live here.",
+    homeCoachSortTitle: "Sort your albums",
+    homeCoachSortBody:
+      "Switch between created date and photo date, and tap the arrow to flip between newest-first and oldest-first.",
     // Album edit coachmark (2 steps)
     editCoachPencilTitle: "Edit anything",
     editCoachPencilBody: "Tap this pencil to edit the title, subtitle, and body of your album.",
@@ -492,6 +501,14 @@ const dict = {
     // 코치마크 공통
     coachNext: "다음",
     coachDone: "확인",
+    // 메인 화면 코치마크 (3단계)
+    homeCoachSearchTitle: "앨범을 빠르게 찾아요",
+    homeCoachSearchBody:
+      "제목·장소·본문·사진 캡션까지 한 번에 검색돼요. 아래 태그 칩을 눌러 태그로 필터할 수도 있고, 여러 개를 함께 골라 좁힐 수도 있어요.",
+    homeCoachSettingsTitle: "설정",
+    homeCoachSettingsBody: "테마, 백업, 알림 같은 앱 설정을 여기서 바꿀 수 있어요.",
+    homeCoachSortTitle: "앨범 정렬",
+    homeCoachSortBody: "'만든 날짜'와 '사진 날짜' 기준으로 정렬을 바꾸고, 화살표로 오름/내림차순을 전환해요.",
     // 앨범 편집 코치마크 (2단계)
     editCoachPencilTitle: "내용을 수정해요",
     editCoachPencilBody:

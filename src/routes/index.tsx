@@ -6,6 +6,7 @@ import { useT } from "@/lib/i18n";
 import { canCreateAlbumToday, nextAvailableDateLabel, hasExtraUsedToday } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
 import { ReviewRewardDialog } from "@/components/ReviewRewardDialog";
+import { HomeUsageCoachmark, shouldShowHomeCoach } from "@/components/HomeUsageCoachmark";
 import { Hl, tokenize } from "@/lib/highlight";
 
 const SORT_KEY = "moara_album_sort_v1";
@@ -65,9 +66,13 @@ function Home() {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
   const [rewardOpen, setRewardOpen] = useState(false);
+  const [homeCoachOpen, setHomeCoachOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement | null>(null);
+  const settingsRef = useRef<HTMLAnchorElement | null>(null);
+  const sortRef = useRef<HTMLDivElement | null>(null);
   const { q: query, tags: selectedTags } = Route.useSearch();
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState(query);
@@ -114,6 +119,16 @@ function Home() {
   useEffect(() => {
     if (!hasSeenStorageNotice()) setNoticeOpen(true);
   }, []);
+
+  // Show the home coachmark once, after the user has at least one album,
+  // and only when the first-launch storage notice is not in the way.
+  useEffect(() => {
+    if (!albums || albums.length === 0) return;
+    if (noticeOpen) return;
+    if (!shouldShowHomeCoach()) return;
+    const tm = window.setTimeout(() => setHomeCoachOpen(true), 400);
+    return () => window.clearTimeout(tm);
+  }, [albums, noticeOpen]);
 
   useEffect(() => {
     try {
@@ -225,6 +240,7 @@ function Home() {
         <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Scripic</h1>
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
       </header>
+      <div ref={searchRef}>
       <div className="mb-3">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none" />
@@ -294,6 +310,7 @@ function Home() {
           </div>
         </div>
       )}
+      </div>
 
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -306,6 +323,7 @@ function Home() {
         </div>
         <div className="flex items-center gap-1.5">
           <Link
+            ref={settingsRef}
             to="/settings"
             className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 h-7 w-7 warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
             aria-label={t.settings}
@@ -313,6 +331,7 @@ function Home() {
           >
             <Settings size={12} />
           </Link>
+          <div ref={sortRef} className="flex items-center gap-1.5">
           <div className="relative">
             <button
               type="button"
@@ -351,6 +370,7 @@ function Home() {
           >
             {sortDir === "desc" ? "↓" : "↑"}
           </button>
+          </div>
         </div>
       </div>
 
@@ -519,6 +539,14 @@ function Home() {
         onGranted={() => {
           /* user can press Okay to close, then create */
         }}
+      />
+
+      <HomeUsageCoachmark
+        open={homeCoachOpen}
+        onClose={() => setHomeCoachOpen(false)}
+        searchRef={searchRef}
+        settingsRef={settingsRef}
+        sortRef={sortRef}
       />
     </div>
   );
