@@ -6,6 +6,7 @@ import { useT } from "@/lib/i18n";
 import { canCreateAlbumToday, nextAvailableDateLabel, hasExtraUsedToday } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
 import { ReviewRewardDialog } from "@/components/ReviewRewardDialog";
+import { HomeUsageCoachmark, shouldShowHomeCoach } from "@/components/HomeUsageCoachmark";
 import { Hl, tokenize } from "@/lib/highlight";
 
 const SORT_KEY = "moara_album_sort_v1";
@@ -65,9 +66,13 @@ function Home() {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
   const [rewardOpen, setRewardOpen] = useState(false);
+  const [homeCoachOpen, setHomeCoachOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [sortOpen, setSortOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement | null>(null);
+  const settingsRef = useRef<HTMLAnchorElement | null>(null);
+  const sortRef = useRef<HTMLDivElement | null>(null);
   const { q: query, tags: selectedTags } = Route.useSearch();
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState(query);
