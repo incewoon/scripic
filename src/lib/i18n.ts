@@ -506,7 +506,7 @@ const dict = {
     homeCoachSearchBody:
       "제목·장소·본문·사진 캡션까지 한 번에 검색돼요. \n태그를 추가했다면 칩을 눌러 태그로 필터할 수도 있고, 여러 개를 함께 골라 좁힐 수도 있어요.",
     homeCoachSettingsTitle: "설정",
-    homeCoachSettingsBody: "테마와 앨범 백업을 여기서 설정할 수 있어요.",
+    homeCoachSettingsBody: "글꼴과 분위기를 테마로 설정하고 앨범을 백업/복구할 수 있어요.",
     homeCoachSortTitle: "앨범 정렬",
     homeCoachSortBody: "'만든 날짜'와 '사진 날짜' 기준으로 정렬을 바꾸고, 화살표로 오름/내림차순을 전환해요.",
     // 앨범 편집 코치마크 (2단계)
