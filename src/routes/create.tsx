@@ -301,7 +301,7 @@ function Create() {
 
   return (
     <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-3 pb-2">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-3 pb-1">
         <header className="flex items-center justify-between mb-3">
           <Link to="/" className="p-2 -ml-2 text-foreground/70">
             <ArrowLeft size={20} />
