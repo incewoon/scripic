@@ -240,6 +240,7 @@ function Home() {
         <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Scripic</h1>
         <p className="text-[13px] warm-muted">{t.appTagline}</p>
       </header>
+      <div ref={searchRef}>
       <div className="mb-3">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none" />
@@ -309,6 +310,7 @@ function Home() {
           </div>
         </div>
       )}
+      </div>
 
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -321,6 +323,7 @@ function Home() {
         </div>
         <div className="flex items-center gap-1.5">
           <Link
+            ref={settingsRef}
             to="/settings"
             className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 h-7 w-7 warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
             aria-label={t.settings}
@@ -328,6 +331,7 @@ function Home() {
           >
             <Settings size={12} />
           </Link>
+          <div ref={sortRef} className="flex items-center gap-1.5">
           <div className="relative">
             <button
               type="button"
