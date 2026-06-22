@@ -504,7 +504,7 @@ const dict = {
     // 메인 화면 코치마크 (3단계)
     homeCoachSearchTitle: "앨범을 빠르게 찾아요",
     homeCoachSearchBody:
-      "제목·장소·본문·사진 캡션까지 한 번에 검색돼요. 아래 태그 칩을 눌러 태그로 필터할 수도 있고, 여러 개를 함께 골라 좁힐 수도 있어요.",
+      "제목·장소·본문·사진 캡션까지 한 번에 검색돼요. \n태그를 추가했다면 칩을 눌러 태그로 필터할 수도 있고, 여러 개를 함께 골라 좁힐 수도 있어요.",
     homeCoachSettingsTitle: "설정",
     homeCoachSettingsBody: "테마, 백업, 알림 같은 앱 설정을 여기서 바꿀 수 있어요.",
     homeCoachSortTitle: "앨범 정렬",
