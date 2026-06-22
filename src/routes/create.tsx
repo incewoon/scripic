@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } pb-4from "react";
 import { ArrowLeft, ImagePlus, ArrowRight, X, GripVertical, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -411,7 +411,7 @@ function Create() {
             {tone === "politely" ? t.tonePolitelyDesc : tone === "friendly" ? t.toneFriendlyDesc : t.toneShortDesc}
           </div>
         </div>
-        <div ref={tagsSectionRef} className="mb-5">
+        <div ref={tagsSectionRef} className="mb-3">
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-[12px] font-medium warm-muted">
               <b className="font-semibold">{t.tagsLabel}</b>
