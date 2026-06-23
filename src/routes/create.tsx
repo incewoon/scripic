@@ -349,7 +349,7 @@ function Create() {
           </DndContext>
           <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
         </div>
-        <div ref={modeSectionRef} className="mt-4 mb-5">
+        <div ref={modeSectionRef} className="mt-6 mb-5">
           <div className="text-[12px] font-medium warm-muted mb-2">
             <b className="font-semibold">{t.chatMode}</b>
           </div>
