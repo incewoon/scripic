@@ -297,7 +297,6 @@ function Create() {
   };
 
   const count = items.length;
-  const pct = Math.min(100, (count / PHOTO_MAX) * 100);
 
   return (
     <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
