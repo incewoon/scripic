@@ -297,7 +297,6 @@ function Create() {
   };
 
   const count = items.length;
-  const pct = Math.min(100, (count / PHOTO_MAX) * 100);
 
   return (
     <div className="mx-auto max-w-md flex flex-col h-[100dvh]">
@@ -319,17 +318,11 @@ function Create() {
             <span className="block text-[12px] info-muted mt-1">{t.dragHint}</span>
           </div>
         </div>
-        {/* 사진 진행률 바 + 사진 그리드 */}
+        {/* 사진 그리드 */}
         <div ref={photoSectionRef}>
-          <div className="h-1.5 bg-muted/70 rounded-full overflow-hidden mb-1">
-            <div
-              className="h-full transition-all duration-500 rounded-full"
-              style={{ width: `${pct}%`, background: "var(--gradient-warm)" }}
-            />
-          </div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-3 gap-2.5" mb-1>
+              <div className="grid grid-cols-3 gap-2.5 mb-1">
                 {items.map((it, i) => (
                   <SortablePhoto
                     key={it.id}
@@ -338,8 +331,9 @@ function Create() {
                     onRemove={() => setItems((ps) => ps.filter((x) => x.id !== it.id))}
                   />
                 ))}
-                {items.length === 0 && (
+                {items.length < PHOTO_MAX && (
                   <button
+                    type="button"
                     onClick={tryOpenPicker}
                     disabled={busy}
                     className="aspect-square rounded-2xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center text-primary bg-card/50 active:scale-[0.97] transition-transform"
@@ -557,16 +551,6 @@ function Create() {
       />
 
       <div className="px-5 pt-1 pb-[max(env(safe-area-inset-bottom),0.5rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
-        {items.length > 0 && items.length < PHOTO_MAX && (
-          <button
-            onClick={tryOpenPicker}
-            disabled={busy}
-            className="w-full rounded-full py-3 text-[14px] font-medium flex items-center justify-center gap-2 border-2 border-dashed border-primary/40 text-primary bg-card/50 active:scale-[0.98] transition-transform disabled:opacity-50"
-          >
-            <ImagePlus size={18} strokeWidth={1.8} />
-            {busy ? t.processing : t.addPhoto}
-          </button>
-        )}
         <button
           onClick={next}
           disabled={items.length < 1 || busy}
