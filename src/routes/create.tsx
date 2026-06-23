@@ -349,8 +349,8 @@ function Create() {
           </DndContext>
           <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
         </div>
-        <div ref={modeSectionRef} className="mt-6 mb-5">
-          <div className="text-[12px] font-medium warm-muted mb-2">
+        <div ref={modeSectionRef} className="mt-5 mb-5">
+          <div className="text-[13px] font-medium warm-muted mb-2">
             <b className="font-semibold">{t.chatMode}</b>
           </div>
           <div className="flex gap-1.5 mb-2">
@@ -378,7 +378,7 @@ function Create() {
           </div>
         </div>
         <div ref={toneSectionRef} className="mb-5">
-          <div className="text-[12px] font-medium warm-muted mb-2">
+          <div className="text-[13px] font-medium warm-muted mb-2">
             <b className="font-semibold">{t.toneSection}</b>
           </div>
           <div className="flex gap-1.5 mb-2">
@@ -407,7 +407,7 @@ function Create() {
         </div>
         <div ref={tagsSectionRef} className="mb-1">
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-[12px] font-medium warm-muted">
+            <span className="text-[13px] font-medium warm-muted">
               <b className="font-semibold">{t.tagsLabel}</b>
             </span>
             <span className="text-[12px] warm-muted">{t.tagsHint}</span>
