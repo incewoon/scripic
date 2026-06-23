@@ -1,0 +1,73 @@
+name: Build Android AAB (Scripic)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Node.js + Bun 함께 설정 (안정성 향상)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Java 명시적 설정 (Gradle 안정성)
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+
+      # 웹 빌드
+      - name: Install dependencies & Build web
+        run: |
+          bun install
+          bun run build
+
+      # Capacitor Sync (bunx 사용)
+      - name: Capacitor Sync Android
+        run: bunx cap sync android
+
+      # Keystore 복호화
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+
+      # Signed AAB 빌드
+      - name: Build Signed Release AAB
+        working-directory: android
+        run: |
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=app/release.keystore \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }} \
+            --no-daemon
+
+      # AAB 업로드
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Scripic-Android-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14
