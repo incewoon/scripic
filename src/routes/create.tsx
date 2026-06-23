@@ -311,7 +311,7 @@ function Create() {
         </header>
         <h1 className="font-display text-[28px] leading-tight warm-text mb-1">{t.pickPhotos}</h1>
         <p className="text-[15px] warm-muted mb-3 leading-relaxed">{t.pickHint}</p>
-        <div className="card-info mb-2 rounded-2xl px-3 py-2.5 flex items-start gap-2.5">
+        <div className="card-info mb-4 rounded-2xl px-3 py-2.5 flex items-start gap-2.5">
           <Info size={18} className="mt-0.5 flex-shrink-0" style={{ color: "var(--cta-accent)" }} />
           <div className="text-[13px] leading-snug">
             <b className="font-semibold">{t.photoMax3}</b>
