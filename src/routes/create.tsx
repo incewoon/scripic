@@ -319,7 +319,7 @@ function Create() {
           </div>
         </div>
         {/* 사진 그리드 */}
-        <div ref={photoSectionRef}>
+        <div ref={photoSectionRef} className="mb-5">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-3 gap-2.5 mb-1">
