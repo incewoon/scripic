@@ -551,16 +551,6 @@ function Create() {
       />
 
       <div className="px-5 pt-1 pb-[max(env(safe-area-inset-bottom),0.5rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
-        {items.length > 0 && items.length < PHOTO_MAX && (
-          <button
-            onClick={tryOpenPicker}
-            disabled={busy}
-            className="w-full rounded-full py-3 text-[14px] font-medium flex items-center justify-center gap-2 border-2 border-dashed border-primary/40 text-primary bg-card/50 active:scale-[0.98] transition-transform disabled:opacity-50"
-          >
-            <ImagePlus size={18} strokeWidth={1.8} />
-            {busy ? t.processing : t.addPhoto}
-          </button>
-        )}
         <button
           onClick={next}
           disabled={items.length < 1 || busy}
