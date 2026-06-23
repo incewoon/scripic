@@ -40,9 +40,7 @@ jobs:
           bun install
           bun run build
 
-      - name: Capacitor Add Android
-        run: bunx cap add android
-
+      # cap add 없이 cap sync만 실행 (더 안정적)
       - name: Capacitor Sync Android
         run: bunx cap sync android
 
