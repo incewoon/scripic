@@ -45,6 +45,12 @@ export default {
 };
 `,
               );
+              // Ensure `.js` is treated as ESM by Node's loader when
+              // the preview-server-plugin imports it during prerender.
+              const pkgPath = join(dir, "package.json");
+              if (!existsSync(pkgPath)) {
+                writeFileSync(pkgPath, `{ "type": "module" }\n`);
+              }
             }
           },
         },
