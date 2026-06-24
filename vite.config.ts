@@ -31,9 +31,19 @@ export default defineConfig({
             const target = join(dir, "server.js");
             const source = join(dir, "index.mjs");
             if (existsSync(source) && !existsSync(target)) {
+              // Wrap the Cloudflare handler so prerender (which calls
+              // `fetch(request)` with no env/ctx) doesn't crash on env.ASSETS.
               writeFileSync(
                 target,
-                `export { default } from "./index.mjs";\n`,
+                `import handler from "./index.mjs";
+const emptyEnv = {};
+const emptyCtx = { waitUntil() {}, passThroughOnException() {} };
+export default {
+  fetch(request, env, ctx) {
+    return handler.fetch(request, env ?? emptyEnv, ctx ?? emptyCtx);
+  },
+};
+`,
               );
             }
           },
