@@ -38,14 +38,29 @@ export default defineConfig({
                 `import handler from "./index.mjs";
 const emptyEnv = {};
 const emptyCtx = { waitUntil() {}, passThroughOnException() {} };
+// The Cloudflare handler tries to assign helper properties (\`ip\`, \`runtime\`,
+// \`waitUntil\`) directly onto the request object. Web \`Request\` instances have
+// read-only accessors, so wrap them in a Proxy that allows arbitrary writes.
+function wrapRequest(request) {
+  const extras = {};
+  return new Proxy(request, {
+    get(target, prop, receiver) {
+      if (prop in extras) return extras[prop];
+      const value = Reflect.get(target, prop, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+    set(_target, prop, value) {
+      extras[prop] = value;
+      return true;
+    },
+    has(target, prop) {
+      return prop in extras || prop in target;
+    },
+  });
+}
 export default {
   async fetch(request, env, ctx) {
-    try {
-      return await handler.fetch(request, env ?? emptyEnv, ctx ?? emptyCtx);
-    } catch (err) {
-      console.error("[ssr-wrapper] fetch threw:", err);
-      throw err;
-    }
+    return handler.fetch(wrapRequest(request), env ?? emptyEnv, ctx ?? emptyCtx);
   },
 };
 `,
