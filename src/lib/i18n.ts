@@ -359,7 +359,7 @@ const dict = {
     toneFriendly: "Friendly",
     toneShort: "Short",
     tonePolitelyDesc: "정중한 존댓말로 단정하게 정리해요.",
-    toneFriendlyDesc: "친한 친구에게 말하듯 편한 반말로 정리해요.",
+    toneFriendlyDesc: "친한 친구에게 말하듯 편한 말투로 정리해요.",
     toneShortDesc: "주어 생략, 짧고 무심한 음슴체로 정리해요.",
     laterCta: "다음에 할게요",
     // Permissions & notifications
