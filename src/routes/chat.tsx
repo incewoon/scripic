@@ -469,8 +469,9 @@ function Chat() {
         // 재시작 직전, 지금까지 누적된 input 값을 baseInputRef에 고정
         // (stale closure 방지를 위해 functional setState로 최신값을 읽음)
         setInput((cur) => {
-          baseInputRef.current = cur;
-          return cur;
+          const next = cur.replace(/\s*$/, "") + " ";
+          baseInputRef.current = next;
+          return next;
         });
         const fresh = createRecognition();
         if (fresh) {
