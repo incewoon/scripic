@@ -380,7 +380,7 @@ function AlbumView() {
           ))}
         </div>
 
-        <div className="px-6 mt-12 pb-14 text-center">
+        <div className="px-6 mt-12 pb-8 text-center">
           <EditableText
             editKey="closing"
             activeKey={activeKey}
@@ -393,9 +393,9 @@ function AlbumView() {
             placeholder={t.closing}
             highlightQuery={q}
           />
-<p className="text-[10px] warm-muted mt-10">
-    {new Date(album.createdAt).toLocaleDateString()} · {t.madeWith}
-  </p>
+          <p className="text-[10px] warm-muted mt-8">
+            {new Date(album.createdAt).toLocaleDateString()} · {t.madeWith}
+          </p>
         </div>
       </div>
 
