@@ -115,7 +115,7 @@ function Create() {
   const [tagDraft, setTagDraft] = useState("");
   const [myTags, setMyTags] = useState<string[]>([]);
   const [mode, setModeState] = useState<ChatMode>(() => loadDefault(MODE_KEY, VALID_MODES, "fact"));
-  const [tone, setToneState] = useState<ChatTone>(() => loadDefault(TONE_KEY, VALID_TONES, "politely"));
+  const [tone, setToneState] = useState<ChatTone>(() => loadDefault(TONE_KEY, VALID_TONES, "friendly"));
 
   const setMode = (m: ChatMode) => {
     setModeState(m);
