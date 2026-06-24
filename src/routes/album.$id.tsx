@@ -211,8 +211,6 @@ function AlbumView() {
       </div>
     );
 
-  const shareLink = typeof window !== "undefined" ? window.location.origin : "";
-
   return (
     <div className="mx-auto max-w-md min-h-screen pb-20">
       <header className="sticky top-0 z-10 glass flex items-center justify-between px-5 py-3 border-b border-border/40">
@@ -396,15 +394,8 @@ function AlbumView() {
             highlightQuery={q}
           />
           <p className="text-[10px] warm-muted mt-8">
-            {new Date(album.createdAt).toLocaleDateString()} · {t.onlyOnDevice}
+            {new Date(album.createdAt).toLocaleDateString()} · {t.madeWith}
           </p>
-        </div>
-
-        {/* Watermark — visible in downloaded image */}
-        <div className="mt-10 px-6 py-5 text-center border-t border-border/40">
-          <div className="font-display text-base text-foreground/80">Scripic</div>
-          <div className="text-[11px] warm-muted mt-1">{t.madeWith}</div>
-          <div className="text-[11px] text-primary mt-1 break-all">{shareLink}</div>
         </div>
       </div>
 
