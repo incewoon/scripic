@@ -39,8 +39,13 @@ export default defineConfig({
 const emptyEnv = {};
 const emptyCtx = { waitUntil() {}, passThroughOnException() {} };
 export default {
-  fetch(request, env, ctx) {
-    return handler.fetch(request, env ?? emptyEnv, ctx ?? emptyCtx);
+  async fetch(request, env, ctx) {
+    try {
+      return await handler.fetch(request, env ?? emptyEnv, ctx ?? emptyCtx);
+    } catch (err) {
+      console.error("[ssr-wrapper] fetch threw:", err);
+      throw err;
+    }
   },
 };
 `,
