@@ -211,8 +211,6 @@ function AlbumView() {
       </div>
     );
 
-  const shareLink = typeof window !== "undefined" ? window.location.origin : "";
-
   return (
     <div className="mx-auto max-w-md min-h-screen pb-20">
       <header className="sticky top-0 z-10 glass flex items-center justify-between px-5 py-3 border-b border-border/40">
