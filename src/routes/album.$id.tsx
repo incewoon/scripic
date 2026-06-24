@@ -396,15 +396,8 @@ function AlbumView() {
             highlightQuery={q}
           />
           <p className="text-[10px] warm-muted mt-8">
-            {new Date(album.createdAt).toLocaleDateString()} · {t.onlyOnDevice}
+            {new Date(album.createdAt).toLocaleDateString()} · {t.madeWith}
           </p>
-        </div>
-
-        {/* Watermark — visible in downloaded image */}
-        <div className="mt-10 px-6 py-5 text-center border-t border-border/40">
-          <div className="font-display text-base text-foreground/80">Scripic</div>
-          <div className="text-[11px] warm-muted mt-1">{t.madeWith}</div>
-          <div className="text-[11px] text-primary mt-1 break-all">{shareLink}</div>
         </div>
       </div>
 
