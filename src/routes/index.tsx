@@ -79,6 +79,11 @@ function Home() {
   const [inputValue, setInputValue] = useState(query);
   const isComposingRef = useRef(false);
   const debounceRef = useRef<number | null>(null);
+  const [epigraph, setEpigraph] = useState<string>("");
+
+  useEffect(() => {
+    setEpigraph(pickEpigraph(lang === "ko" ? "ko" : "en"));
+  }, [lang]);
 
   const syncToUrl = (v: string) => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
