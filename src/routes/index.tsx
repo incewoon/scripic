@@ -242,7 +242,7 @@ function Home() {
 
   return (
     <div className="mx-auto max-w-md min-h-screen px-5 pt-12 pb-44">
-      <header className="mb-8 text-center">
+      <header className="mb-4 text-center">
         <h1 className="text-[40px] font-display warm-text mb-3 leading-none">Scripic</h1>
         <p className="text-[14px] font-medium leading-relaxed mb-2 text-[#4B5563] dark:text-[#9CA3AF]">
           {t.brandSloganLine1}
