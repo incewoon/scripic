@@ -393,6 +393,27 @@ function Chat() {
       streamError: !!streamError,
     });
 
+    // Detect "incomplete" reply AFTER streaming finishes. Treat both stream
+    // errors (e.g. 503 ai_unavailable) and short/unterminated text as
+    // incomplete. Skip when we already triggered finish via [READY_TO_FINISH].
+    if (
+      !aiReady &&
+      !leavingRef.current &&
+      !errorToasted &&
+      (streamError || looksIncomplete(assistant))
+    ) {
+      // Strip the failed/partial assistant bubble from the visible thread.
+      setMessages(newMsgs);
+      setIncomplete({
+        lastUserText: text,
+        prior,
+        aiPhotos,
+        terminal: isRetry, // first failure → retry button; retry failure → terminal
+      });
+      return;
+    }
+
+
     if (aiReady && !finishingRef.current && !leavingRef.current && !streamError) {
       finishingRef.current = true;
       // 사용자가 마지막 "정리해드릴게요" 문구를 읽을 시간을 준 뒤 앨범 생성으로 이동.
