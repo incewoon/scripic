@@ -179,6 +179,17 @@ function Chat() {
   const micBtnRef = useRef<HTMLButtonElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
 
+  // Tracks an incomplete/cutoff assistant response so we can offer a
+  // single retry inline. `terminal` means the retry also failed — show
+  // the soft "try later" message without a retry button.
+  type IncompleteState = {
+    lastUserText: string;
+    prior: Msg[];
+    aiPhotos?: string[];
+    terminal: boolean;
+  };
+  const [incomplete, setIncomplete] = useState<IncompleteState | null>(null);
+
   useEffect(() => {
     if (shouldShowChatUsage()) setUsageOpen(true);
   }, []);
