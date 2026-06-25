@@ -15,6 +15,8 @@ export function getLang(): Lang {
 const dict = {
   en: {
     appTagline: "Every pic writes its own script.",
+    brandSloganLine1: "Photos capture moments.",
+    brandSloganLine2: "Scripic preserves the stories behind them.",
     appSubtitle: "Capture the moments you never want to forget",
     storedLocally: "Everything stays on this device",
     myAlbums: "My Albums",
