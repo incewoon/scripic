@@ -406,7 +406,7 @@ function Chat() {
       setMessages(newMsgs);
       setIncomplete({
         lastUserText: text,
-        prior,
+        prior: newMsgs, // already includes the user message
         aiPhotos,
         terminal: isRetry, // first failure → retry button; retry failure → terminal
       });
