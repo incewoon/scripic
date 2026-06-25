@@ -244,7 +244,7 @@ function Home() {
     <div className="mx-auto max-w-md min-h-screen px-5 pt-12 pb-44">
       <header className="mb-8 text-center">
         <h1 className="text-[40px] font-display warm-text mb-3 leading-none">Scripic</h1>
-        <p className="text-[14px] font-medium leading-relaxed text-[#4B5563] dark:text-[#9CA3AF]">
+        <p className="text-[14px] font-medium leading-relaxed mb-2 text-[#4B5563] dark:text-[#9CA3AF]">
           {t.brandSloganLine1}
           <br />
           {t.brandSloganLine2}
@@ -252,82 +252,82 @@ function Home() {
         {epigraph && (
           <p
             key={epigraph}
-            className="mt-6 mb-1 italic text-[13px] leading-relaxed text-[#6B7280] dark:text-[#9CA3AF] animate-fade-in"
+            className="mt-2 mb-1 italic text-[13px] leading-relaxed text-[#6B7280] dark:text-[#9CA3AF] animate-fade-in"
           >
             &ldquo;{epigraph}&rdquo;
           </p>
         )}
       </header>
       <div ref={searchRef}>
-      <div className="mb-3">
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none" />
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => {
-              const v = e.target.value;
-              setInputValue(v);
-              if (!isComposingRef.current) syncToUrl(v);
-            }}
-            onCompositionStart={() => {
-              isComposingRef.current = true;
-            }}
-            onCompositionEnd={(e) => {
-              isComposingRef.current = false;
-              syncToUrl((e.target as HTMLInputElement).value);
-            }}
-            placeholder={t.searchPlaceholder}
-            className="w-full h-10 rounded-full border border-border/60 bg-card/80 pl-9 pr-9 text-[13px] warm-text placeholder:warm-muted shadow-[var(--shadow-soft)] focus:outline-none focus:bg-card transition-colors"
-            aria-label={t.searchPlaceholder}
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full warm-muted hover:text-foreground transition-colors"
-              aria-label="Clear"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {allTags.length > 0 && (
-        <div className="mb-4 -mx-1">
-          <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-1 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none]">
-            {selectedTags.length > 0 && (
+        <div className="mb-3">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 warm-muted pointer-events-none" />
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => {
+                const v = e.target.value;
+                setInputValue(v);
+                if (!isComposingRef.current) syncToUrl(v);
+              }}
+              onCompositionStart={() => {
+                isComposingRef.current = true;
+              }}
+              onCompositionEnd={(e) => {
+                isComposingRef.current = false;
+                syncToUrl((e.target as HTMLInputElement).value);
+              }}
+              placeholder={t.searchPlaceholder}
+              className="w-full h-10 rounded-full border border-border/60 bg-card/80 pl-9 pr-9 text-[13px] warm-text placeholder:warm-muted shadow-[var(--shadow-soft)] focus:outline-none focus:bg-card transition-colors"
+              aria-label={t.searchPlaceholder}
+            />
+            {query && (
               <button
                 type="button"
-                onClick={clearTags}
-                className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-border/60 bg-card/80 text-[11px] warm-muted active:scale-[0.97]"
-                aria-label={t.clearTags}
+                onClick={() => setQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full warm-muted hover:text-foreground transition-colors"
+                aria-label="Clear"
               >
-                <X size={11} /> {t.clearTags}
+                <X size={14} />
               </button>
             )}
-            {allTags.map((tg) => {
-              const active = selectedTags.includes(tg);
-              return (
-                <button
-                  key={tg}
-                  type="button"
-                  onClick={() => toggleTag(tg)}
-                  className={`shrink-0 h-7 px-3 rounded-full text-[11.5px] font-medium transition-all active:scale-[0.97] ${
-                    active
-                      ? "text-primary-foreground shadow-[var(--shadow-warm)]"
-                      : "border border-border/60 warm-text bg-card/70"
-                  }`}
-                  style={active ? { background: "var(--gradient-warm)" } : undefined}
-                >
-                  #{tg}
-                </button>
-              );
-            })}
           </div>
         </div>
-      )}
+
+        {allTags.length > 0 && (
+          <div className="mb-4 -mx-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-1 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none]">
+              {selectedTags.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearTags}
+                  className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-border/60 bg-card/80 text-[11px] warm-muted active:scale-[0.97]"
+                  aria-label={t.clearTags}
+                >
+                  <X size={11} /> {t.clearTags}
+                </button>
+              )}
+              {allTags.map((tg) => {
+                const active = selectedTags.includes(tg);
+                return (
+                  <button
+                    key={tg}
+                    type="button"
+                    onClick={() => toggleTag(tg)}
+                    className={`shrink-0 h-7 px-3 rounded-full text-[11.5px] font-medium transition-all active:scale-[0.97] ${
+                      active
+                        ? "text-primary-foreground shadow-[var(--shadow-warm)]"
+                        : "border border-border/60 warm-text bg-card/70"
+                    }`}
+                    style={active ? { background: "var(--gradient-warm)" } : undefined}
+                  >
+                    #{tg}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mb-5 flex items-center justify-between px-1 gap-2">
@@ -350,44 +350,44 @@ function Home() {
             <Settings size={12} />
           </Link>
           <div ref={sortRef} className="flex items-center gap-1.5">
-          <div className="relative">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSortOpen((v) => !v)}
+                className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 pl-2 pr-2.5 h-7 text-[11px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
+                aria-label={t.sortBy}
+                title={t.sortBy}
+              >
+                <ArrowUpDown size={11} />
+                <span>{sortMode === "created" ? t.sortCreatedDate : t.sortPhotoDate}</span>
+              </button>
+              {sortOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                  <div className="absolute z-20 mt-1 right-0 min-w-[140px] rounded-xl border border-border/60 bg-card shadow-[var(--shadow-soft)] py-1">
+                    {(["created", "photo"] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => changeSort(m)}
+                        className={`block w-full text-left px-3 py-1.5 text-[12px] hover:bg-muted/60 transition-colors ${sortMode === m ? "warm-text font-semibold" : "warm-muted"}`}
+                      >
+                        {m === "created" ? t.sortCreatedDate : t.sortPhotoDate}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <button
               type="button"
-              onClick={() => setSortOpen((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/80 pl-2 pr-2.5 h-7 text-[11px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
-              aria-label={t.sortBy}
-              title={t.sortBy}
+              onClick={toggleDir}
+              className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 h-7 px-2 text-[11px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
+              aria-label={sortDir === "desc" ? t.sortDesc : t.sortAsc}
+              title={sortDir === "desc" ? t.sortDesc : t.sortAsc}
             >
-              <ArrowUpDown size={11} />
-              <span>{sortMode === "created" ? t.sortCreatedDate : t.sortPhotoDate}</span>
+              {sortDir === "desc" ? "↓" : "↑"}
             </button>
-            {sortOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
-                <div className="absolute z-20 mt-1 right-0 min-w-[140px] rounded-xl border border-border/60 bg-card shadow-[var(--shadow-soft)] py-1">
-                  {(["created", "photo"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => changeSort(m)}
-                      className={`block w-full text-left px-3 py-1.5 text-[12px] hover:bg-muted/60 transition-colors ${sortMode === m ? "warm-text font-semibold" : "warm-muted"}`}
-                    >
-                      {m === "created" ? t.sortCreatedDate : t.sortPhotoDate}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={toggleDir}
-            className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card/80 h-7 px-2 text-[11px] font-medium warm-muted hover:text-foreground hover:bg-card transition-colors active:scale-[0.96] shadow-[var(--shadow-soft)]"
-            aria-label={sortDir === "desc" ? t.sortDesc : t.sortAsc}
-            title={sortDir === "desc" ? t.sortDesc : t.sortAsc}
-          >
-            {sortDir === "desc" ? "↓" : "↑"}
-          </button>
           </div>
         </div>
       </div>
