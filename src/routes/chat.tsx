@@ -40,6 +40,19 @@ function sanitizeForDisplay(text: string) {
   return text.replace(TOKEN_RE, "").trim();
 }
 
+// True when the streamed assistant reply looks like it was cut off
+// (empty, too short, or doesn't end with sentence-final punctuation).
+// Checked AFTER streaming completes.
+function looksIncomplete(text: string): boolean {
+  const clean = sanitizeForDisplay(text || "");
+  if (!clean) return true;
+  if (clean.length < 12) return true;
+  const last = clean.slice(-1);
+  // Accept common sentence terminators (incl. Korean/Japanese fullwidth),
+  // ellipsis, closing quotes/brackets, and casual KO endings.
+  return !/[.?!。？！…~)\]」』"'""'']/.test(last);
+}
+
 const AFFIRMATIVE_EN =
   /\b(yes|yeah|yep|yup|sure|ok|okay|sounds good|let'?s|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
 const AFFIRMATIVE_KO =
