@@ -40,6 +40,19 @@ function sanitizeForDisplay(text: string) {
   return text.replace(TOKEN_RE, "").trim();
 }
 
+// True when the streamed assistant reply looks like it was cut off
+// (empty, too short, or doesn't end with sentence-final punctuation).
+// Checked AFTER streaming completes.
+function looksIncomplete(text: string): boolean {
+  const clean = sanitizeForDisplay(text || "");
+  if (!clean) return true;
+  if (clean.length < 12) return true;
+  const last = clean.slice(-1);
+  // Accept common sentence terminators (incl. Korean/Japanese fullwidth),
+  // ellipsis, closing quotes/brackets, and casual KO endings.
+  return !/[.?!。？！…~)\]」』"'""'']/.test(last);
+}
+
 const AFFIRMATIVE_EN =
   /\b(yes|yeah|yep|yup|sure|ok|okay|sounds good|let'?s|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
 const AFFIRMATIVE_KO =
@@ -166,6 +179,17 @@ function Chat() {
   const micBtnRef = useRef<HTMLButtonElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
 
+  // Tracks an incomplete/cutoff assistant response so we can offer a
+  // single retry inline. `terminal` means the retry also failed — show
+  // the soft "try later" message without a retry button.
+  type IncompleteState = {
+    lastUserText: string;
+    prior: Msg[];
+    aiPhotos?: string[];
+    terminal: boolean;
+  };
+  const [incomplete, setIncomplete] = useState<IncompleteState | null>(null);
+
   useEffect(() => {
     if (shouldShowChatUsage()) setUsageOpen(true);
   }, []);
@@ -274,14 +298,24 @@ function Chat() {
     el.style.height = Math.min(el.scrollHeight, 140) + "px";
   }, [input]);
 
-  async function send(text: string, ph = photos, prior = messages, aiPhotos?: string[]) {
+  async function send(
+    text: string,
+    ph = photos,
+    prior = messages,
+    aiPhotos?: string[],
+    isRetry = false,
+  ) {
     if (!authReady || !user) {
       toast.error(t.connectionError);
       return;
     }
 
+    // A fresh user-initiated send clears any pending incomplete banner.
+    if (!isRetry) setIncomplete(null);
+
     const userMsg: Msg = { role: "user", content: text };
-    const newMsgs = [...prior, userMsg];
+    // On retry, the user message is already in `prior` — don't duplicate.
+    const newMsgs = isRetry ? [...prior] : [...prior, userMsg];
     setMessages(newMsgs);
     setBusy(true);
 
@@ -293,6 +327,10 @@ function Chat() {
 
     let assistant = "";
     let streamError: any = null;
+    // True when the error already produced enough user feedback that the
+    // inline "incomplete" banner would be redundant (quota, daily limit,
+    // auth). Network/unavailable errors fall through to the banner.
+    let errorToasted = false;
     try {
       setMessages((m) => [...m, { role: "assistant", content: "" }]);
 
@@ -312,13 +350,21 @@ function Chat() {
       streamError = err;
       const code = err?.code ?? "";
       const kind = err?.details?.kind;
-      if (kind === "ai_unavailable" || code === "functions/unavailable") toast.error(t.aiBusy);
-      else if (kind === "ai_quota") toast.error(t.aiQuota);
-      else if (kind === "daily_limit") toast.error(t.dailyLimitBody);
-      else if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
-      else if (code === "functions/unauthenticated" || code === "functions/permission-denied")
+      if (kind === "ai_quota") {
+        toast.error(t.aiQuota);
+        errorToasted = true;
+      } else if (kind === "daily_limit") {
+        toast.error(t.dailyLimitBody);
+        errorToasted = true;
+      } else if (code === "functions/resource-exhausted") {
+        toast.error(t.rateLimit);
+        errorToasted = true;
+      } else if (code === "functions/unauthenticated" || code === "functions/permission-denied") {
         toast.error(t.connectionError);
-      else toast.error(t.connectionError);
+        errorToasted = true;
+      }
+      // ai_unavailable / functions/unavailable / generic network: fall
+      // through to the inline incomplete banner — no toast needed.
     } finally {
       setBusy(false);
     }
@@ -346,6 +392,27 @@ function Chat() {
       totalMessages: finalMsgs.length,
       streamError: !!streamError,
     });
+
+    // Detect "incomplete" reply AFTER streaming finishes. Treat both stream
+    // errors (e.g. 503 ai_unavailable) and short/unterminated text as
+    // incomplete. Skip when we already triggered finish via [READY_TO_FINISH].
+    if (
+      !aiReady &&
+      !leavingRef.current &&
+      !errorToasted &&
+      (streamError || looksIncomplete(assistant))
+    ) {
+      // Strip the failed/partial assistant bubble from the visible thread.
+      setMessages(newMsgs);
+      setIncomplete({
+        lastUserText: text,
+        prior: newMsgs, // already includes the user message
+        aiPhotos,
+        terminal: isRetry, // first failure → retry button; retry failure → terminal
+      });
+      return;
+    }
+
 
     if (aiReady && !finishingRef.current && !leavingRef.current && !streamError) {
       finishingRef.current = true;
@@ -384,8 +451,19 @@ function Chat() {
     if (!v || busy) return;
     inputRef.current?.blur();
     setInput("");
+    // Typing a new message clears any incomplete-response banner.
+    setIncomplete(null);
     await send(v);
   }
+
+  async function onRetryIncomplete() {
+    if (!incomplete || incomplete.terminal || busy) return;
+    const { lastUserText, prior, aiPhotos } = incomplete;
+    // `prior` already includes the failed user message; pass isRetry=true
+    // so send() doesn't duplicate it.
+    await send(lastUserText, photos, prior, aiPhotos, true);
+  }
+
 
   function moveCursorEnd() {
     const el = inputRef.current;
@@ -725,8 +803,27 @@ function Chat() {
             <div className="glass px-4 py-2.5 rounded-2xl text-sm border border-border/50">...</div>
           </div>
         )}
+        {incomplete && !busy && (
+          <div className="flex justify-start">
+            <div className="max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed glass border border-border/50 warm-muted">
+              <div>
+                {incomplete.terminal ? t.incompleteResponseFinal : t.incompleteResponse}
+              </div>
+              {!incomplete.terminal && (
+                <button
+                  type="button"
+                  onClick={() => void onRetryIncomplete()}
+                  className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs"
+                >
+                  <Sparkles size={12} /> {t.incompleteRetry}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} aria-hidden="true" className="h-px" />
       </div>
+
 
       <div className="px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-gradient-to-t from-background to-transparent">
         <div ref={composerRef} className="flex gap-2 items-center glass rounded-full px-2 py-1.5 border border-border/50">
