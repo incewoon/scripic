@@ -16,17 +16,17 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-  buildTypes {
-      release {
-          minifyEnabled true
-          shrinkResources true
-          proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-  
-          ndk {
-              debugSymbolLevel 'FULL'
-          }
-      }
-  }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    
+            ndk {
+                debugSymbolLevel 'FULL'
+            }
+        }
+    }
 }
 
 repositories {
