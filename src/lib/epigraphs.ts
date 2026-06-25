@@ -1,26 +1,27 @@
 export const EPIGRAPHS_KO: string[] = [
-  "기억은 기록될 때 더 오래 남습니다.",
-  "사진은 순간을 담고, 이야기는 삶을 남깁니다.",
   "사진에 담기지 않은 세밀한 기억까지.",
+  "기억은 기록될 때 더 오래 남습니다.",
+  "시간은 지나가지만 이야기는 남습니다.",
+  "기억은 생각보다 빨리 흐려집니다.",
   "모든 사진에는 이야기가 있습니다.",
-  "오늘의 평범함이 내일의 추억이 됩니다.",
+  "당신의 하루를 이야기로 남겨보세요.",
+  "모든 기억은 사소한 순간에서 시작됩니다.",
+  "기록은 기억을 고정시켜 줍니다.",
+  "추억은 영원히 남지 않습니다.",
   "잊기 전에 남겨두세요.",
+  "지금 이 순간도 언젠가 그리워질지 모릅니다.",
+  "사진은 시작일 뿐입니다.",
+  "오늘을 미래의 나에게 선물하세요.",
+  "오늘은 언젠가 추억이 됩니다.",
+  "기억은 우리를 우리답게 만듭니다.",
+  "오늘의 평범함이 내일의 추억이 됩니다.",
   "한 장의 사진이 기억의 문을 엽니다.",
   "삶은 순간으로 이루어지고, 기억은 이야기로 남습니다.",
-  "당신의 하루를 이야기로 남겨보세요.",
-  "기억은 생각보다 빨리 흐려집니다.",
-  "사진은 시작일 뿐입니다.",
   "당신만 알고 있는 이야기를 남겨보세요.",
   "평범한 하루도 기록할 가치가 있습니다.",
   "기억은 쌓이고, 삶의 기록이 됩니다.",
-  "지금 이 순간도 언젠가 그리워질지 모릅니다.",
-  "오늘을 미래의 나에게 선물하세요.",
   "사진보다 오래 남는 것은 이야기입니다.",
   "당신의 삶은 기록할 가치가 있습니다.",
-  "모든 기억은 사소한 순간에서 시작됩니다.",
-  "기록은 기억을 고정시켜 줍니다.",
-  "추억은 우연히 남지 않습니다.",
-  "시간은 지나가지만 이야기는 남습니다.",
   "사진 속 그날을 다시 만나보세요.",
   "기억을 모으면 인생이 보입니다.",
   "당신의 이야기를 잊지 마세요.",
@@ -57,7 +58,6 @@ export const EPIGRAPHS_KO: string[] = [
   "사소한 기억이 가장 오래 남기도 합니다.",
   "잊었다고 생각한 기억도 다시 찾아옵니다.",
   "기억은 과거를 현재로 데려옵니다.",
-  "기억은 우리를 우리답게 만듭니다.",
   "모든 기억에는 그날의 감정이 담겨 있습니다.",
   "기억은 시간이 지나도 마음속에 머뭅니다.",
   "좋은 기억은 다시 꺼내볼수록 따뜻해집니다.",
@@ -76,7 +76,6 @@ export const EPIGRAPHS_KO: string[] = [
   "오늘의 기억은 미래의 선물이 됩니다.",
   "시간은 흐르지만 이야기는 남습니다.",
   "시간은 모든 것을 바꾸지만 기억은 흔적을 남깁니다.",
-  "오늘은 언젠가 추억이 됩니다.",
   "시간은 멈출 수 없지만 기록은 남길 수 있습니다.",
   "모든 순간은 시간의 선물입니다.",
   "시간은 지나가고 삶은 이야기가 됩니다.",
@@ -102,16 +101,21 @@ export const EPIGRAPHS_KO: string[] = [
 ];
 
 export const EPIGRAPHS_EN: string[] = [
-  "Memories stay longer when they're recorded.",
-  "Photos capture moments, stories preserve lives.",
   "Beyond what's captured in the photo.",
+  "Memories stay longer when they're recorded.",
+  "Time passes, stories remain.",
+  "Memories fade faster than we think.",
   "Every photo has a story behind it.",
+  "Leave traces of your journey.",
+  "Every memory begins with a small moment.",
+  "Recording helps memories stay.",
+  "Memories don't last forever.",
+  "Preserve the day you don't want to forget.",
   "Today's ordinary moments become tomorrow's memories.",
   "Capture it before it fades.",
   "A single photo opens the door to memory.",
   "Life is made of moments, memories live as stories.",
   "Turn your day into a story.",
-  "Memories fade faster than we think.",
   "A photo is only the beginning.",
   "Preserve the story only you can tell.",
   "Even ordinary days deserve to be remembered.",
@@ -120,10 +124,6 @@ export const EPIGRAPHS_EN: string[] = [
   "Give today's memories to your future self.",
   "Stories outlast photographs.",
   "Your life is worth preserving.",
-  "Every memory begins with a small moment.",
-  "Recording helps memories stay.",
-  "Memories don't preserve themselves.",
-  "Time passes, stories remain.",
   "Reconnect with the day behind the photo.",
   "Collect memories, discover a life.",
   "Don't lose your story.",
@@ -132,7 +132,6 @@ export const EPIGRAPHS_EN: string[] = [
   "Your story is your most valuable record.",
   "Today's routine becomes tomorrow's treasure.",
   "Memories return, records remain.",
-  "Leave traces of your journey.",
   "Give forgotten moments a name.",
   "Another story is being written today.",
   "Photos are keys that awaken memories.",
@@ -142,7 +141,6 @@ export const EPIGRAPHS_EN: string[] = [
   "Every photo is a story waiting to be told.",
   "Your memories are your personal history.",
   "Memories become clearer when recorded.",
-  "Preserve the day you don't want to forget.",
   "Gather the pieces of your life.",
   "Your story continues.",
   "Today's scene becomes tomorrow's smile.",
@@ -208,20 +206,46 @@ export function pickEpigraph(lang: "ko" | "en"): string {
   const list = lang === "ko" ? EPIGRAPHS_KO : EPIGRAPHS_EN;
   if (list.length === 0) return "";
   if (list.length === 1) return list[0];
-  const key = `scripic_last_epigraph_idx_${lang}`;
-  let lastIdx = -1;
+
+  const key = `scripic_remaining_indices_${lang}`;
+  let remainingIndices: number[] = [];
+
   try {
-    const v = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(key) : null;
-    if (v !== null) lastIdx = Number(v);
+    if (typeof sessionStorage !== "undefined") {
+      const stored = sessionStorage.getItem(key);
+      if (stored) remainingIndices = JSON.parse(stored);
+    }
   } catch {}
-  let idx = Math.floor(Math.random() * list.length);
-  let guard = 0;
-  while (idx === lastIdx && guard < 5) {
-    idx = Math.floor(Math.random() * list.length);
-    guard++;
+
+  // 제한 구역(인덱스 10번부터 끝까지) 기록이 없거나 다 소진했다면 새로 초기화
+  if (remainingIndices.length === 0) {
+    remainingIndices = Array.from({ length: list.length - 10 }, (_, i) => i + 10);
   }
-  try {
-    if (typeof sessionStorage !== "undefined") sessionStorage.setItem(key, String(idx));
-  } catch {}
-  return list[idx];
+
+  // 전체 리스트 크기(100) 중 하나를 무작위로 선택하기 위한 총 가중치 계산
+  // 0~9번(10개) + 현재 남아있는 제한 구역 문장 수
+  const totalPoolSize = 10 + remainingIndices.length;
+  const luckyNumber = Math.floor(Math.random() * totalPoolSize);
+
+  let selectedIdx: number;
+
+  if (luckyNumber < 10) {
+    // 1. 프리패스 구역 당첨 (0~9) -> 이 구역은 소진되지 않고 언제든 다시 나올 수 있음
+    selectedIdx = luckyNumber;
+  } else {
+    // 2. 제한 구역 당첨 (10~99 중 남은 것)
+    const remainingArrayIndex = luckyNumber - 10;
+    selectedIdx = remainingIndices[remainingArrayIndex];
+
+    // 이번에 뽑힌 인덱스는 남은 목록에서 제거해서 중복 방지
+    remainingIndices.splice(remainingArrayIndex, 1);
+
+    try {
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem(key, JSON.stringify(remainingIndices));
+      }
+    } catch {}
+  }
+
+  return list[selectedIdx];
 }
