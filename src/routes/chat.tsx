@@ -298,14 +298,24 @@ function Chat() {
     el.style.height = Math.min(el.scrollHeight, 140) + "px";
   }, [input]);
 
-  async function send(text: string, ph = photos, prior = messages, aiPhotos?: string[]) {
+  async function send(
+    text: string,
+    ph = photos,
+    prior = messages,
+    aiPhotos?: string[],
+    isRetry = false,
+  ) {
     if (!authReady || !user) {
       toast.error(t.connectionError);
       return;
     }
 
+    // A fresh user-initiated send clears any pending incomplete banner.
+    if (!isRetry) setIncomplete(null);
+
     const userMsg: Msg = { role: "user", content: text };
-    const newMsgs = [...prior, userMsg];
+    // On retry, the user message is already in `prior` — don't duplicate.
+    const newMsgs = isRetry ? [...prior] : [...prior, userMsg];
     setMessages(newMsgs);
     setBusy(true);
 
@@ -317,6 +327,10 @@ function Chat() {
 
     let assistant = "";
     let streamError: any = null;
+    // True when the error already produced enough user feedback that the
+    // inline "incomplete" banner would be redundant (quota, daily limit,
+    // auth). Network/unavailable errors fall through to the banner.
+    let errorToasted = false;
     try {
       setMessages((m) => [...m, { role: "assistant", content: "" }]);
 
@@ -336,13 +350,21 @@ function Chat() {
       streamError = err;
       const code = err?.code ?? "";
       const kind = err?.details?.kind;
-      if (kind === "ai_unavailable" || code === "functions/unavailable") toast.error(t.aiBusy);
-      else if (kind === "ai_quota") toast.error(t.aiQuota);
-      else if (kind === "daily_limit") toast.error(t.dailyLimitBody);
-      else if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
-      else if (code === "functions/unauthenticated" || code === "functions/permission-denied")
+      if (kind === "ai_quota") {
+        toast.error(t.aiQuota);
+        errorToasted = true;
+      } else if (kind === "daily_limit") {
+        toast.error(t.dailyLimitBody);
+        errorToasted = true;
+      } else if (code === "functions/resource-exhausted") {
+        toast.error(t.rateLimit);
+        errorToasted = true;
+      } else if (code === "functions/unauthenticated" || code === "functions/permission-denied") {
         toast.error(t.connectionError);
-      else toast.error(t.connectionError);
+        errorToasted = true;
+      }
+      // ai_unavailable / functions/unavailable / generic network: fall
+      // through to the inline incomplete banner — no toast needed.
     } finally {
       setBusy(false);
     }
