@@ -283,6 +283,8 @@ const dict = {
 
   ko: {
     appTagline: "사진 한 장이 한 편의 스크립트가 돼요.",
+    brandSloganLine1: "사진은 순간을 담고,",
+    brandSloganLine2: "Scripic은 이야기를 남깁니다.",
     appSubtitle: "잊고 싶지 않은 순간들을 담아두세요",
     storedLocally: "모든 데이터는 이 기기에만 저장돼요",
     myAlbums: "내 앨범",

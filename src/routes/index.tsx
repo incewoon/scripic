@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { pickEpigraph } from "@/lib/epigraphs";
 import { getAlbums, subscribeAlbums, updateAlbum, type Album } from "@/lib/storage";
 import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles, Search, Star } from "lucide-react";
 import { useT } from "@/lib/i18n";
