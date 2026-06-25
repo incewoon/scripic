@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { pickEpigraph } from "@/lib/epigraphs";
 import { getAlbums, subscribeAlbums, updateAlbum, type Album } from "@/lib/storage";
 import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles, Search, Star } from "lucide-react";
 import { useT } from "@/lib/i18n";
@@ -78,6 +79,11 @@ function Home() {
   const [inputValue, setInputValue] = useState(query);
   const isComposingRef = useRef(false);
   const debounceRef = useRef<number | null>(null);
+  const [epigraph, setEpigraph] = useState<string>("");
+
+  useEffect(() => {
+    setEpigraph(pickEpigraph(lang === "ko" ? "ko" : "en"));
+  }, [lang]);
 
   const syncToUrl = (v: string) => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
@@ -236,9 +242,21 @@ function Home() {
 
   return (
     <div className="mx-auto max-w-md min-h-screen px-5 pt-12 pb-44">
-      <header className="mb-6 text-center">
-        <h1 className="text-[40px] font-display warm-text mb-1 leading-none">Scripic</h1>
-        <p className="text-[13px] warm-muted">{t.appTagline}</p>
+      <header className="mb-8 text-center">
+        <h1 className="text-[40px] font-display warm-text mb-3 leading-none">Scripic</h1>
+        <p className="text-[14px] font-medium leading-relaxed text-[#4B5563] dark:text-[#9CA3AF]">
+          {t.brandSloganLine1}
+          <br />
+          {t.brandSloganLine2}
+        </p>
+        {epigraph && (
+          <p
+            key={epigraph}
+            className="mt-6 mb-1 italic text-[13px] leading-relaxed text-[#6B7280] dark:text-[#9CA3AF] animate-fade-in"
+          >
+            &ldquo;{epigraph}&rdquo;
+          </p>
+        )}
       </header>
       <div ref={searchRef}>
       <div className="mb-3">
