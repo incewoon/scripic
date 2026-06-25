@@ -451,8 +451,19 @@ function Chat() {
     if (!v || busy) return;
     inputRef.current?.blur();
     setInput("");
+    // Typing a new message clears any incomplete-response banner.
+    setIncomplete(null);
     await send(v);
   }
+
+  async function onRetryIncomplete() {
+    if (!incomplete || incomplete.terminal || busy) return;
+    const { lastUserText, prior, aiPhotos } = incomplete;
+    // `prior` already includes the failed user message; pass isRetry=true
+    // so send() doesn't duplicate it.
+    await send(lastUserText, photos, prior, aiPhotos, true);
+  }
+
 
   function moveCursorEnd() {
     const el = inputRef.current;
