@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scripic Privacy Policy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', 'Inter', system-ui, sans-serif; }
+        .section-title { position: relative; padding-left: 1rem; }
+        .section-title::before {
+            content: ''; position: absolute; left: 0; top: 0.45rem;
+            width: 4px; height: 1.1rem; background: linear-gradient(#f59e0b, #d97706); border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-zinc-50 text-zinc-800">
+    <!-- 헤더 -->
+    <div class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <div class="w-9 h-9 bg-amber-500 rounded-2xl flex items-center justify-center">
+                    <i class="fa-solid fa-shield-halved text-white text-xl"></i>
+                </div>
+                <div>
+                    <span class="font-bold text-2xl tracking-tighter">scripic</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-3xl mx-auto px-6 pt-8 pb-16">
+
+        <!-- English Version -->
+        <div>
+            <div class="flex items-center gap-x-2 mb-6">
+                <span class="px-3 py-1 bg-zinc-200 text-zinc-600 text-xs font-semibold rounded-full">ENGLISH</span>
+                <h2 class="text-3xl font-bold tracking-tighter">Privacy Policy</h2>
+            </div>
+            <p class="text-sm text-zinc-500 mb-8">Last updated: June 21, 2026</p>
+
+            <div class="bg-zinc-100 border border-zinc-200 rounded-3xl p-6 mb-8 text-sm">
+                This app sends photos to <strong>Google Gemini API</strong> for AI analysis.<br>
+                Analysis results are stored <strong>only on the user's device</strong>.
+            </div>
+
+            <div class="space-y-6 text-sm">
+                <div class="bg-white rounded-3xl border p-7">
+                    <h3 class="font-bold mb-3">1. Information We Collect</h3>
+                    <div class="text-zinc-600 space-y-2">
+                        <div>• <strong>Photos</strong> uploaded by the user — processed in server memory only, never stored.</div>
+                        <div>• <strong>Device ID</strong> (automatically generated UUID stored on the device) – used for daily album creation limits.</div>
+                        <div>• <strong>Perceptual Hash of review screenshots</strong> (256-bit numeric fingerprint) – stored permanently on the server to prevent duplicate SNS review submissions. The original image cannot be reconstructed from this value.</div>
+                        <div>• AI-generated summaries and comments (stored locally on device).</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl border p-7">
+                    <h3 class="font-bold mb-3">2. Purpose of Collection</h3>
+                    <div class="text-zinc-600 space-y-1">
+                        <div>• AI photo analysis and smart album generation.</div>
+                        <div>• <strong>Device ID</strong>: Managing daily creation limits (1 album per day, +1 with SNS review verification) and preventing abuse.</div>
+                        <div>• <strong>Perceptual Hash</strong>: Preventing repeated use of the same review screenshot.</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl border p-7">
+                    <h3 class="font-bold mb-3">3. Photo Processing &amp; Transmission</h3>
+                    <div class="text-zinc-600 leading-relaxed space-y-2">
+                        <div>Uploaded photos are converted to base64 on the device and sent to Google Gemini API via Firebase Cloud Function (processed in-memory only).</div>
+                        <div>Photos are <strong>not stored</strong> on Scripic's servers.</div>
+                        <div>Gemini processes images only for the request and deletes them after analysis. Images are not used for model training under Google's paid Gemini API policy.</div>
+                        <div class="pt-1"><strong>For SNS review screenshots:</strong> the image is processed in server memory only and is not stored. Only a 256-bit perceptual hash (numeric fingerprint) is permanently stored to prevent duplicate submissions. The original image cannot be recovered from this hash.</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl border p-7">
+                    <h3 class="font-bold mb-3">4. Retention Period</h3>
+                    <div class="text-zinc-600 space-y-1">
+                        <div>• Device ID is retained until the user deletes the app or the limitation management purpose ends.</div>
+                        <div>• Perceptual hashes of review images are retained permanently for duplicate prevention purposes.</div>
+                        <div>• Photos and conversation data are not stored on Scripic's servers.</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl border p-7">
+                    <h3 class="font-bold mb-3">5. Third-Party Sharing &amp; Processing</h3>
+                    <div class="text-zinc-600 space-y-3">
+                        <div>
+                            <strong>① Google Gemini API</strong><br>
+                            Processor: Google LLC — Purpose: Image analysis and AI content generation.<br>
+                            <a href="https://policies.google.com/privacy" class="text-amber-600 underline" target="_blank">Google Privacy Policy</a>
+                        </div>
+                        <div>
+                            <strong>② Firebase / Firestore (Google LLC)</strong><br>
+                            Processor: Google LLC — Purpose: Storage and management of Device ID, daily usage limits, and review image perceptual hashes.<br>
+                            <a href="https://firebase.google.com/support/privacy" class="text-amber-600 underline" target="_blank">Firebase Privacy Policy</a>
+                        </div>
+                        <div>No personal information other than Device ID and perceptual hashes is shared with any third party.</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl border p-7">
+                    <h3 class="font-bold mb-3">6. Your Rights</h3>
+                    <div class="text-zinc-600 space-y-1">
+                        <div>• You can delete photos and generated content anytime within the app.</div>
+                        <div>• To request deletion of server-stored data (Device ID, usage records, or perceptual hashes), please contact the developer by email.</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl border p-7">
+                    <h3 class="font-bold mb-3">7. Contact</h3>
+                    <div class="text-zinc-600">Developer: <strong>scripichelp@gmail.com</strong></div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 구분선 -->
+        <div class="border-t my-10"></div>
+        <!-- 한국어 버전 -->
+        <div class="mb-12">
+            <div class="flex items-center gap-x-2 mb-6">
+                <span class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">한국어</span>
+                <h1 class="text-3xl font-bold tracking-tighter">개인정보처리방침</h1>
+            </div>
+            <p class="text-sm text-zinc-500 mb-8">최종 수정일: 2026년 6월 21일</p>
+
+            <!-- 중요 안내 -->
+            <div class="bg-amber-50 border border-amber-200 rounded-3xl p-6 mb-8 text-sm">
+                본 앱은 사진 분석을 위해 <strong>Google Gemini API</strong>를 사용합니다.<br>
+                분석 결과는 <strong>사용자 기기에만 저장</strong>되며, 스크립픽 서버에는 저장되지 않습니다.
+            </div>
+
+            <div class="space-y-6">
+
+                <!-- 1. 수집하는 개인정보 -->
+                <div class="bg-white rounded-3xl border p-7">
+                    <h2 class="section-title text-xl font-bold mb-4">1. 수집하는 개인정보 항목</h2>
+                    <div class="text-zinc-600 space-y-4 text-[15px]">
+                        <div>
+                            <strong class="text-zinc-800">• 업로드된 사진</strong><br>
+                            <span class="text-sm">AI 앨범 생성 및 분석을 위해 사용자가 업로드한 이미지 파일. 사진은 서버 메모리에서만 처리되며 저장되지 않습니다.</span>
+                        </div>
+                        <div>
+                            <strong class="text-zinc-800">• 기기 식별자 (Device ID)</strong><br>
+                            <span class="text-sm">사용자의 기기에 자동 생성·저장되는 고유 식별자(UUID)를 수집합니다. 이 정보는 사용자가 직접 제공하는 것이 아니라 앱 사용 과정에서 자동으로 생성됩니다.</span>
+                        </div>
+                        <div>
+                            <strong class="text-zinc-800">• 후기 이미지 수치 지문 (Perceptual Hash)</strong><br>
+                            <span class="text-sm">SNS 후기 인증 시 중복 방지를 위해 이미지의 64bit 수치 지문(해시값)만 서버에 영구 보관합니다. 이 값으로는 원본 이미지 복원이 불가능합니다.</span>
+                        </div>
+                        <div>
+                            <strong class="text-zinc-800">• AI 분석 결과</strong><br>
+                            <span class="text-sm">Gemini API를 통해 생성된 대화 요약, 코멘트 등 (기기 내 저장)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 수집 및 이용 목적 -->
+                <div class="bg-white rounded-3xl border p-7">
+                    <h2 class="section-title text-xl font-bold mb-4">2. 개인정보의 수집 및 이용 목적</h2>
+                    <div class="text-zinc-600 text-[15px] space-y-2">
+                        <div>• AI를 활용한 사진 분석 및 스마트 앨범 자동 생성</div>
+                        <div>• <strong>기기 식별자</strong>: 일일 앨범 생성 제한 관리 및 부정 이용 방지 (하루 1회 제한, SNS 후기 인증 시 추가 1회 제공)</div>
+                        <div>• <strong>후기 이미지 수치 지문</strong>: 동일한 후기 스크린샷의 반복 인증 방지</div>
+                    </div>
+                </div>
+
+                <!-- 3. 사진의 처리 및 전송 -->
+                <div class="bg-white rounded-3xl border p-7">
+                    <h2 class="section-title text-xl font-bold mb-4">3. 사진의 처리 및 전송</h2>
+                    <div class="text-sm text-zinc-600 leading-relaxed space-y-2">
+                        사용자가 업로드한 사진은 다음과 같은 경로로 처리됩니다:<br><br>
+                        • 기기에서 base64 형식으로 변환된 후 Firebase Cloud Function을 경유하여 Google Gemini API로 전송됩니다.<br>
+                        • <strong>Scripic 서버에는 사진이 저장되지 않습니다.</strong><br>
+                        • Gemini API는 요청 처리 목적으로만 이미지를 사용하며, 분석이 완료되면 해당 이미지는 Gemini 서버에서 삭제됩니다.<br>
+                        • Google의 Gemini Developer API(유료) 정책에 따라, 전송된 사진은 모델 학습에 사용되지 않습니다.<br><br>
+                        <strong>SNS 후기 인증 사진의 경우:</strong><br>
+                        • 업로드된 이미지는 서버 메모리에서만 처리되며 저장되지 않습니다.<br>
+                        • 중복 인증 방지를 위해 이미지의 수치 지문(Perceptual Hash, 256bit)만 서버에 영구 보관됩니다. 이 값으로는 원본 이미지 복원이 불가능합니다.
+                    </div>
+                </div>
+
+                <!-- 4. 개인정보의 보유 및 이용 기간 -->
+                <div class="bg-white rounded-3xl border p-7">
+                    <h2 class="section-title text-xl font-bold mb-4">4. 개인정보의 보유 및 이용 기간</h2>
+                    <div class="text-sm text-zinc-600 space-y-1">
+                        <div>• 기기 식별자는 사용자가 앱을 삭제하거나, 일일 제한 관리 목적이 소멸될 때까지 보유합니다.</div>
+                        <div>• 후기 이미지 수치 지문(Perceptual Hash)은 중복 방지 목적이 소멸될 때까지 영구 보관됩니다.</div>
+                        <div>• 사진 및 대화 내용은 Gemini API 요청 처리 후 즉시 삭제되며, Scripic 서버에는 저장되지 않습니다.</div>
+                    </div>
+                </div>
+
+                <!-- 5. 제3자 제공 및 위탁 -->
+                <div class="bg-white rounded-3xl border p-7">
+                    <h2 class="section-title text-xl font-bold mb-4">5. 제3자 제공 및 처리 위탁</h2>
+                    <div class="text-sm text-zinc-600 space-y-3">
+                        <div>
+                            <strong class="text-zinc-800">① Google Gemini API</strong><br>
+                            • 위탁 받는 자: Google LLC<br>
+                            • 위탁 업무: 이미지 분석 및 AI 요약 생성<br>
+                            • Google의 개인정보처리방침:
+                            <a href="https://policies.google.com/privacy" class="text-amber-600 underline" target="_blank">policies.google.com/privacy</a>
+                        </div>
+                        <div>
+                            <strong class="text-zinc-800">② Firebase / Firestore (Google LLC)</strong><br>
+                            • 위탁 받는 자: Google LLC<br>
+                            • 위탁 업무: 기기 식별자, 일일 이용 제한 정보 및 후기 이미지 수치 지문(Perceptual Hash) 저장·관리<br>
+                            • Firebase 개인정보처리방침:
+                            <a href="https://firebase.google.com/support/privacy" class="text-amber-600 underline" target="_blank">firebase.google.com/support/privacy</a>
+                        </div>
+                        <div class="pt-1">기기 식별자 및 수치 지문 외의 개인정보는 제3자에게 제공되지 않습니다.</div>
+                    </div>
+                </div>
+
+                <!-- 6. 이용자의 권리 -->
+                <div class="bg-white rounded-3xl border p-7">
+                    <h2 class="section-title text-xl font-bold mb-4">6. 이용자의 권리</h2>
+                    <div class="text-sm text-zinc-600 space-y-1">
+                        <div>• 앱 내에서 언제든지 사진 및 생성된 분석 결과를 삭제할 수 있습니다.</div>
+                        <div>• 서버에 저장된 기기 식별자, 일일 이용 정보 및 후기 이미지 수치 지문 삭제를 원하시면 아래 개발자 이메일로 요청하실 수 있습니다.</div>
+                    </div>
+                </div>
+
+                <!-- 7. 연락처 -->
+                <div class="bg-white rounded-3xl border p-7">
+                    <h2 class="section-title text-xl font-bold mb-4">7. 개인정보 보호책임자</h2>
+                    <div class="text-sm">
+                        개발자: <strong>scripichelp@gmail.com</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 하단 푸터 -->
+    <div class="border-t py-8 bg-white text-center text-xs text-zinc-400">
+        © 2026 ince. All rights reserved.<br>
+        scripic - AI 기반 스마트 앨범 생성 앱
+    </div>
+</body>
+</html>
