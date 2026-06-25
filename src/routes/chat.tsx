@@ -803,8 +803,27 @@ function Chat() {
             <div className="glass px-4 py-2.5 rounded-2xl text-sm border border-border/50">...</div>
           </div>
         )}
+        {incomplete && !busy && (
+          <div className="flex justify-start">
+            <div className="max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed glass border border-border/50 warm-muted">
+              <div>
+                {incomplete.terminal ? t.incompleteResponseFinal : t.incompleteResponse}
+              </div>
+              {!incomplete.terminal && (
+                <button
+                  type="button"
+                  onClick={() => void onRetryIncomplete()}
+                  className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs"
+                >
+                  <Sparkles size={12} /> {t.incompleteRetry}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} aria-hidden="true" className="h-px" />
       </div>
+
 
       <div className="px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-gradient-to-t from-background to-transparent">
         <div ref={composerRef} className="flex gap-2 items-center glass rounded-full px-2 py-1.5 border border-border/50">
