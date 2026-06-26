@@ -10,7 +10,12 @@ import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 export default defineConfig({
-  nitro: false,
+  nitro: {
+    preset: "static",          // Cloudflare 대신 완전 정적 출력
+    output: {
+      publicDir: "dist/client", // 정적 산출물을 여기로
+    },
+  },
   tanstackStart: {
     spa: {
       enabled: true,
