@@ -10,6 +10,7 @@ import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 export default defineConfig({
+  nitro: false,
   tanstackStart: {
     spa: {
       enabled: true,
