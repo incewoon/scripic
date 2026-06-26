@@ -383,7 +383,7 @@ function Create() {
             })}
           </div>
           <div className="text-[12px] warm-muted leading-relaxed">
-            {mode === "creative" ? t.modeCreativeDesc : mode === "fact" ? t.modeFactDesc : t.modeBriefDesc}
+            {mode === "story" ? t.modeStoryDesc : mode === "journal" ? t.modeJournalDesc : t.modeSummaryDesc}
           </div>
         </div>
         <div ref={toneSectionRef} className="mb-5">
