@@ -10,18 +10,16 @@ import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 export default defineConfig({
-  nitro: {
-    preset: "static",          // Cloudflare 대신 완전 정적 출력
-    output: {
-      publicDir: "dist/client", // 정적 산출물을 여기로
-    },
-  },
+  nitro: false,
   tanstackStart: {
     spa: {
       enabled: true,
+      prerender: {
+        enabled: false,   // ★ Nitro 크롤러를 거치지 않고 셸을 직접 씀
+      },
     },
   },
-  vite: {
+/* vite: {
     plugins: [
       {
         // The TanStack Start preview-server-plugin (used during prerender)
@@ -83,4 +81,5 @@ export default {
       },
     ],
   },
+  */
 });
