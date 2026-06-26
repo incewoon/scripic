@@ -1,8 +1,9 @@
 name: Build Android AAB (Scripic)
 
 on:
-  push:
-    branches: [ main ]
+  #자동실행 방지
+  #push:
+  #  branches: [ main ]
   workflow_dispatch:
 
 jobs:
