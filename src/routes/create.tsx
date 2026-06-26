@@ -363,8 +363,8 @@ function Create() {
             <b className="font-semibold">{t.chatMode}</b>
           </div>
           <div className="flex gap-1.5 mb-2">
-            {(["creative", "fact", "brief"] as ChatMode[]).map((m) => {
-              const label = m === "creative" ? t.modeCreative : m === "fact" ? t.modeFact : t.modeBrief;
+            {(["story", "journal", "summary"] as ChatMode[]).map((m) => {
+              const label = m === "story" ? t.modeStory : m === "journal" ? t.modeJournal : t.modeSummary;
               const active = mode === m;
               return (
                 <button
