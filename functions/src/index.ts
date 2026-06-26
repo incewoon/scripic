@@ -369,7 +369,7 @@ export const generateAlbum = onCall(
       lang = "en",
       period,
       location,
-      mode = "creative",
+      mode = "story",
       tone = "politely",
     } = (req.data ?? {}) as {
       messages: { role: string; content: any }[];
