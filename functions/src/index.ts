@@ -145,7 +145,7 @@ export const chat = onCall(
       photos,
       photoCount: pcFromClient,
       lang = "en",
-      mode = "creative",
+      mode = "story",
       maxTurnsPerPhoto: rawCap,
     } = (request.data ?? {}) as {
       messages: OpenAIMessage[];
@@ -190,7 +190,7 @@ export const chat = onCall(
       }
     }
 
-    const m: Mode = mode === "fact" || mode === "brief" ? mode : "creative";
+    const m: Mode = mode === "journal" || mode === "summary" ? mode : "story";
     const maxTurnsPerPhoto = typeof rawCap === "number" && rawCap > 0 ? Math.min(20, Math.floor(rawCap)) : 3;
     const photoCount = typeof pcFromClient === "number" && pcFromClient > 0 ? pcFromClient : (photos?.length ?? 0);
 
@@ -369,7 +369,7 @@ export const generateAlbum = onCall(
       lang = "en",
       period,
       location,
-      mode = "creative",
+      mode = "story",
       tone = "politely",
     } = (req.data ?? {}) as {
       messages: { role: string; content: any }[];
@@ -406,7 +406,7 @@ export const generateAlbum = onCall(
     }
     if (!photoCount || photoCount < 1) throw new HttpsError("invalid-argument", "photoCount required");
 
-    const m: AlbumMode = mode === "fact" || mode === "brief" ? mode : "creative";
+    const m: AlbumMode = mode === "journal" || mode === "summary" ? mode : "story";
     const tn: Tone = tone === "friendly" || tone === "short" ? tone : "politely";
 
     // Enforce 1 album / day BEFORE we burn a Gemini call.

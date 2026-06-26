@@ -1,7 +1,7 @@
 // Prompts for the album generation function. Ported from the original
 // Supabase edge function.
 
-export type Mode = "creative" | "fact" | "brief";
+export type Mode = "story" | "journal" | "summary";
 export type Tone = "politely" | "friendly" | "short";
 
 export function toneInstruction(lang: string, tone: Tone) {
@@ -20,7 +20,7 @@ export function toneInstruction(lang: string, tone: Tone) {
 
 export function albumSystem(lang: string, mode: Mode) {
   const ko = lang === "ko";
-  if (mode === "fact") {
+  if (mode === "journal") {
     if (ko) return `당신은 대화에서 확인된 사실만으로 앨범 텍스트를 정리하는 기록자입니다.
 [이 지침은 내용의 사실성을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
 - 허구·상상·추정 절대 금지. 사용자가 대화에서 직접 말한 내용만 사용하세요.
@@ -32,7 +32,7 @@ export function albumSystem(lang: string, mode: Mode) {
 - No fiction, imagination, or guessing. Use only what the user explicitly said. (※ Tone adjustments per the tone instruction are permitted.)
 - Captions count must exactly match photo count.`;
   }
-  if (mode === "brief") {
+  if (mode === "summary") {
     if (ko) return `당신은 대화 내용을 핵심만 추려 간결하게 정리하는 작가입니다.
 [이 지침은 내용의 간결함을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
 - 불필요한 세부 내용은 생략하고 핵심 사실만 담으세요.
@@ -54,7 +54,7 @@ export function albumSystem(lang: string, mode: Mode) {
 }
 
 function modeSpec(ko: boolean, mode: Mode, photoCount: number, period?: string, location?: string) {
-  if (mode === "fact") {
+  if (mode === "journal") {
     return ko
       ? `- title: 10자 이내, 사실적
 - subtitle: 20자 이내
@@ -71,7 +71,7 @@ function modeSpec(ko: boolean, mode: Mode, photoCount: number, period?: string, 
 - captions: exactly ${photoCount}, 12–20 words each, no guessing
 - closing: 2–3 neutral sentences`;
   }
-  if (mode === "brief") {
+  if (mode === "summary") {
     return ko
       ? `- title: 8자 이내, 사실적
 - subtitle: 15자 이내

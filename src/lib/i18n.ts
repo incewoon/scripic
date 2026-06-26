@@ -87,12 +87,12 @@ const dict = {
     weaving: "Weaving your album…",
     weavingDesc: "Reading the conversation and arranging your photos.",
     chatMode: "Summary type",
-    modeCreative: "Creative",
-    modeFact: "Fact",
-    modeBrief: "Brief",
-    modeCreativeDesc: "Warm, story-rich conversation that weaves feelings into prose.",
-    modeFactDesc: "Asks only what's visible in the photo; keeps the conversation as-is.",
-    modeBriefDesc: "Short, simple questions and a brief album summary.",
+    modeStory: "Story",
+    modeJournal: "Journal",
+    modeSummary: "Summary",
+    modeStoryDesc: "Weaves feelings and mood into a story-like narrative.",
+    modeJournalDesc: "Organizes the photos and conversation objectively.",
+    modeSummaryDesc: "Keeps only the essentials, short and concise.",
     toneSection: "Summary tone",
     tonePolitely: "Politely",
     toneFriendly: "Friendly",
@@ -358,12 +358,12 @@ const dict = {
     weaving: "앨범을 엮는 중…",
     weavingDesc: "대화를 읽고 사진을 정리하고 있어요.",
     chatMode: "정리 타입",
-    modeCreative: "Creative",
-    modeFact: "Fact",
-    modeBrief: "Brief",
-    modeCreativeDesc: "감정을 담아 풍부한 산문으로 엮는 따뜻한 대화 모드예요.",
-    modeFactDesc: "사진에서 객관적으로 보이는 것만 묻고, 대화 그대로 정리해요.",
-    modeBriefDesc: "간단히 묻고 앨범도 짧게 요약해요.",
+    modeStory: "Story",
+    modeJournal: "Journal",
+    modeSummary: "Summary",
+    modeStoryDesc: "감정과 분위기를 살려 이야기처럼 정리합니다.",
+    modeJournalDesc: "사진과 대화 내용을 객관적으로 정리합니다.",
+    modeSummaryDesc: "핵심만 짧고 간결하게 정리합니다.",
     toneSection: "정리 어조",
     tonePolitely: "Politely",
     toneFriendly: "Friendly",
@@ -522,7 +522,7 @@ const dict = {
     // 앨범 편집 코치마크 (2단계)
     editCoachPencilTitle: "내용을 수정해요",
     editCoachPencilBody:
-      "상단에 연필 버튼을 누르면 제목·소제목·본문 등을 직접 수정할 수 있어요. \nAI가 정리한 내용이 맞는지 확인해보세요 \n(creative모드로 생성한 경우 AI가 상상한 내용이 많이 가미될 수 있습니다.)",
+      "상단에 연필 버튼을 누르면 제목·소제목·본문 등을 직접 수정할 수 있어요. \nAI가 정리한 내용이 맞는지 확인해보세요 \n(Story 모드로 생성한 경우 AI가 상상한 내용이 많이 가미될 수 있습니다.)",
     editCoachLocationTitle: "장소를 추가해요",
     editCoachLocationBody:
       "여기를 눌러 사진이 찍힌 장소를 지도에서 검색하거나 핀으로 찍을 수 있어요. \n지도에 기억된 장소를 모두 연결해보세요\n(현재는 구글맵만 지원합니다)",
@@ -555,7 +555,7 @@ const dict = {
   },
 } as const;
 
-export type ChatMode = "creative" | "fact" | "brief";
+export type ChatMode = "story" | "journal" | "summary";
 export type ChatTone = "politely" | "friendly" | "short";
 
 export function useT() {

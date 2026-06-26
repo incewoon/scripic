@@ -1,7 +1,7 @@
 // Prompts for the chat (interview) function. Ported 1:1 from the original
 // Supabase edge function so behavior stays identical.
 
-export type Mode = "creative" | "fact" | "brief";
+export type Mode = "story" | "journal" | "summary";
 
 export function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPhoto: number) {
   const rawCap = Math.max(1, photoCount * maxTurnsPerPhoto);

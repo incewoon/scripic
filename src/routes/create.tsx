@@ -94,14 +94,23 @@ function SortablePhoto({ item, index, onRemove }: { item: Item; index: number; o
 
 const MODE_KEY = "scripic_default_mode";
 const TONE_KEY = "scripic_default_tone";
-const VALID_MODES: ChatMode[] = ["creative", "fact", "brief"];
+const VALID_MODES: ChatMode[] = ["story", "journal", "summary"];
 const VALID_TONES: ChatTone[] = ["politely", "friendly", "short"];
+
+// Legacy → new mode migration for stored defaults.
+const LEGACY_MODE_MAP: Record<string, ChatMode> = {
+  creative: "story",
+  fact: "journal",
+  brief: "summary",
+};
 
 function loadDefault<T extends string>(key: string, allowed: T[], fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
-    const v = window.localStorage.getItem(key) as T | null;
-    return v && allowed.includes(v) ? v : fallback;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    const migrated = (LEGACY_MODE_MAP[raw] as T | undefined) ?? (raw as T);
+    return allowed.includes(migrated) ? migrated : fallback;
   } catch {
     return fallback;
   }
@@ -114,7 +123,7 @@ function Create() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagDraft, setTagDraft] = useState("");
   const [myTags, setMyTags] = useState<string[]>([]);
-  const [mode, setModeState] = useState<ChatMode>(() => loadDefault(MODE_KEY, VALID_MODES, "fact"));
+  const [mode, setModeState] = useState<ChatMode>(() => loadDefault(MODE_KEY, VALID_MODES, "journal"));
   const [tone, setToneState] = useState<ChatTone>(() => loadDefault(TONE_KEY, VALID_TONES, "friendly"));
 
   const setMode = (m: ChatMode) => {
@@ -354,8 +363,8 @@ function Create() {
             <b className="font-semibold">{t.chatMode}</b>
           </div>
           <div className="flex gap-1.5 mb-2">
-            {(["creative", "fact", "brief"] as ChatMode[]).map((m) => {
-              const label = m === "creative" ? t.modeCreative : m === "fact" ? t.modeFact : t.modeBrief;
+            {(["story", "journal", "summary"] as ChatMode[]).map((m) => {
+              const label = m === "story" ? t.modeStory : m === "journal" ? t.modeJournal : t.modeSummary;
               const active = mode === m;
               return (
                 <button
@@ -374,7 +383,7 @@ function Create() {
             })}
           </div>
           <div className="text-[12px] warm-muted leading-relaxed">
-            {mode === "creative" ? t.modeCreativeDesc : mode === "fact" ? t.modeFactDesc : t.modeBriefDesc}
+            {mode === "story" ? t.modeStoryDesc : mode === "journal" ? t.modeJournalDesc : t.modeSummaryDesc}
           </div>
         </div>
         <div ref={toneSectionRef} className="mb-5">
