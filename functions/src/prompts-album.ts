@@ -1,7 +1,7 @@
 // Prompts for the album generation function. Ported from the original
 // Supabase edge function.
 
-export type Mode = "creative" | "fact" | "brief";
+export type Mode = "story" | "journal" | "summary";
 export type Tone = "politely" | "friendly" | "short";
 
 export function toneInstruction(lang: string, tone: Tone) {
