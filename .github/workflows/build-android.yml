@@ -39,7 +39,7 @@ jobs:
       - name: Install dependencies & Build web
         run: |
           bun install
-          bun run build:dev
+          bun run build
           if [ ! -f "dist/client/index.html" ]; then
             echo "❌ prerender failed to produce index.html — see build log above for the real error"
             exit 1
