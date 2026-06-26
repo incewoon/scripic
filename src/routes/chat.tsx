@@ -310,8 +310,10 @@ function Chat() {
       return;
     }
 
-    // A fresh user-initiated send clears any pending incomplete banner.
-    if (!isRetry) setIncomplete(null);
+    // Clear any pending incomplete banner — both for fresh sends and
+    // retries. If the new attempt itself fails, the branch below will
+    // re-set `incomplete` (with terminal=true on retry failure).
+    setIncomplete(null);
 
     const userMsg: Msg = { role: "user", content: text };
     // On retry, the user message is already in `prior` — don't duplicate.
