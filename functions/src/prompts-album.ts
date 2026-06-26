@@ -32,7 +32,7 @@ export function albumSystem(lang: string, mode: Mode) {
 - No fiction, imagination, or guessing. Use only what the user explicitly said. (※ Tone adjustments per the tone instruction are permitted.)
 - Captions count must exactly match photo count.`;
   }
-  if (mode === "brief") {
+  if (mode === "summary") {
     if (ko) return `당신은 대화 내용을 핵심만 추려 간결하게 정리하는 작가입니다.
 [이 지침은 내용의 간결함을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
 - 불필요한 세부 내용은 생략하고 핵심 사실만 담으세요.
