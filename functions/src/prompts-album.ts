@@ -20,7 +20,7 @@ export function toneInstruction(lang: string, tone: Tone) {
 
 export function albumSystem(lang: string, mode: Mode) {
   const ko = lang === "ko";
-  if (mode === "fact") {
+  if (mode === "journal") {
     if (ko) return `당신은 대화에서 확인된 사실만으로 앨범 텍스트를 정리하는 기록자입니다.
 [이 지침은 내용의 사실성을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
 - 허구·상상·추정 절대 금지. 사용자가 대화에서 직접 말한 내용만 사용하세요.
