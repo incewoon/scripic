@@ -42,11 +42,11 @@ jobs:
           bun run build
 
           # dist/client에 index.html이 없으면 간단한 shell을 만들어줌 (임시 방편)
-      - name: Ensure index.html for Capacitor
-        run: |
-          if [ ! -f "dist/client/index.html" ]; then
-            echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Scripic</title></head><body><div id="root"></div><script type="module" src="/assets/index-*.js"></script></body></html>' > dist/client/index.html
-          fi
+    #  - name: Ensure index.html for Capacitor
+    #    run: |
+    #      if [ ! -f "dist/client/index.html" ]; then
+    #        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Scripic</title></head><body><div id="root"></div><script type="module" src="/assets/index-*.js"></script></body></html>' > dist/client/index.html
+    #      fi
 
       # cap add 없이 cap sync만 실행 (더 안정적)
       - name: Capacitor Sync Android
