@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && node scripts/write-spa-shell.mjs",
-    "build:dev": "vite build --mode development && node scripts/write-spa-shell.mjst",
+    "build:dev": "vite build --mode development && node scripts/write-spa-shell.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
