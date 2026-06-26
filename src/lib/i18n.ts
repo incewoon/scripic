@@ -555,7 +555,7 @@ const dict = {
   },
 } as const;
 
-export type ChatMode = "creative" | "fact" | "brief";
+export type ChatMode = "story" | "journal" | "summary";
 export type ChatTone = "politely" | "friendly" | "short";
 
 export function useT() {
