@@ -253,7 +253,7 @@ const dict = {
       "Switch between created date and photo date, and tap the arrow to flip between newest-first and oldest-first.",
     // Album edit coachmark (2 steps)
     editCoachPencilTitle: "Edit anything",
-    editCoachPencilBody: "Tap this pencil to edit the title, subtitle, and body of your album.",
+    editCoachPencilBody: "Tap this pencil to edit the title, subtitle, and body of your stories. \nYou can edit AI-generated scripts yourself at any time.\n(In Story mode, AI-created content may be added.)",
     editCoachLocationTitle: "Add a location",
     editCoachLocationBody: "Tap here to pick where these photos were taken — search or drop a pin on the map.",
     // Create-screen coachmark (4 steps)
@@ -262,12 +262,12 @@ const dict = {
       "Pick up to 3 photos from one moment. Long-press to drag and reorder; the first one becomes the cover.",
     createCoachModeTitle: "Story type",
     createCoachModeBody:
-      'choose how the album should be written. "Creative" weaves a literary scene, "Factual" sticks to what\'s in the conversation, and "Brief" keeps it short.',
+      "AI chooses how to organize the script. 'Story' crafts a narrative highlighting emotions and atmosphere. 'Journal' objectively compiles photos and conversations. 'Summary' provides a short, concise overview of the core points.",
     createCoachToneTitle: "Tone",
-    createCoachToneBody: "Pick the voice of the writing — polite, friendly, or short.",
+    createCoachToneBody: "You can change the tone of voice even with the same message.",
     createCoachTagsTitle: "Tags",
     createCoachTagsBody:
-      "Tap a preset or add your own. Custom tags you create stay available the next time you make an album.",
+      "Connect memories through meaningful tags. You can choose from default tags or create your own, and they will appear the next time as well.",
     // Chat-screen coachmark (4 steps)
     chatCoachIntroTitle: "AI conversation Tips",
     chatCoachIntroBody:
@@ -277,7 +277,7 @@ const dict = {
     chatCoachTurnsBody:
       "You get about 3 turns per photo, and after roughly 9 total turns the conversation wraps up on its own.",
     chatCoachFinishTitle: "Finish anytime",
-    chatCoachFinishBody: 'Tap "Finish" at the top right to stop the chat and create the album right away.',
+    chatCoachFinishBody: 'Tap "Finish" at the top right to stop the chat and AI will organize it into a single story.',
     chatCoachMicTitle: "Talk instead of typing",
     chatCoachMicBody: "Tap the mic button to speak — your voice is transcribed into the input.",
     saveImageCoachTitle: "Save as image",
@@ -363,7 +363,7 @@ const dict = {
     modeSummary: "Summary",
     modeStoryDesc: "감정과 분위기를 살려 이야기처럼 정리합니다.",
     modeJournalDesc: "사진과 대화 내용을 객관적으로 정리합니다.",
-    modeSummaryDesc: "핵심만 짧고 간결하게 정리합니다.",
+    modeSummaryDesc: "핵심만 짧고 간결하게 요약합니다.",
     toneSection: "정리 어조",
     tonePolitely: "Politely",
     toneFriendly: "Friendly",
@@ -512,7 +512,7 @@ const dict = {
     coachNext: "다음",
     coachDone: "확인",
     // 메인 화면 코치마크 (3단계)
-    homeCoachSearchTitle: "앨범을 빠르게 찾아요",
+    homeCoachSearchTitle: "오래된 기억을 쉽게 찾아요",
     homeCoachSearchBody:
       "제목·장소·본문·사진 캡션까지 한 번에 검색돼요. \n태그를 추가했다면 칩을 눌러 태그로 필터할 수도 있고, 여러 개를 함께 골라 좁힐 수도 있어요.",
     homeCoachSettingsTitle: "설정",
@@ -522,7 +522,7 @@ const dict = {
     // 앨범 편집 코치마크 (2단계)
     editCoachPencilTitle: "내용을 수정해요",
     editCoachPencilBody:
-      "상단에 연필 버튼을 누르면 제목·소제목·본문 등을 직접 수정할 수 있어요. \nAI가 정리한 내용이 맞는지 확인해보세요 \n(Story 모드로 생성한 경우 AI가 상상한 내용이 많이 가미될 수 있습니다.)",
+      "상단에 연필 버튼을 누르면 제목·소제목·본문 등을 직접 수정할 수 있어요. \nAI가 작성한 이야기는 언제든 직접 수정할수 있어요. \n(Story 모드로 생성한 경우 AI가 창작한 내용이 가미될 수 있습니다.)",
     editCoachLocationTitle: "장소를 추가해요",
     editCoachLocationBody:
       "여기를 눌러 사진이 찍힌 장소를 지도에서 검색하거나 핀으로 찍을 수 있어요. \n지도에 기억된 장소를 모두 연결해보세요\n(현재는 구글맵만 지원합니다)",
@@ -532,13 +532,13 @@ const dict = {
       "기억하고 싶은 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 앨범 대표 사진이 돼요.",
     createCoachModeTitle: "정리 타입",
     createCoachModeBody:
-      "AI에게 앨범을 어떻게 정리시킬지 선택해요. 'Creative'은 한 편의 소설처럼 상상을 더해 이야기를 엮어주고, 'Fact'은 대화에 있는 사실 내용을 그대로, 'Brief'는 대화내용을 짧게 요약해요.",
+      "AI가 어떤 방식으로 이야기를 정리할지 선택해요. \n'Story'는 감정과 분위기를 살려 이야기처럼 정리해요. \n'Journal'은 사진과 대화 내용을 객관적으로 정리해요. \n'Summary'는 핵심만 짧게 요약해요.",
     createCoachToneTitle: "정리 어조",
     createCoachToneBody:
-      "앨범을 쓸때의 문체를 골라요. \n(Politely 공손한 표현으로 · Friendly 친구에게 말할때처럼 · Short 짧게 문서처럼)",
+      "같은 내용이도 말투를 바꿀 수 있어요. \n(Politely 격식있게 · Friendly 친근하게 · Short 간결하게)",
     createCoachTagsTitle: "태그",
     createCoachTagsBody:
-      "기본설정된 태그를 선택하거나 직접 만들 수 있어요. 직접 만든 태그는 다음 앨범 만들 때도 계속 나타나요.",
+      "비슷한 추억을 하나로 이어보세요. \n기본설정된 태그를 선택하거나 직접 만들 수 있고 다음에도 계속 나타나요.",
     // AI 대화 코치마크 (4단계)
     chatCoachIntroTitle: "AI 대화 팁",
     chatCoachIntroBody:
@@ -546,7 +546,7 @@ const dict = {
     chatCoachTurnsTitle: "대화는 이만큼 가능해요",
     chatCoachTurnsBody: "사진 한 장당 약 3번 정도 대화할 수 있고, 전체 9번 정도가 되면 대화는 자동으로 마무리돼요.",
     chatCoachFinishTitle: "언제든 완성할 수 있어요",
-    chatCoachFinishBody: "우측 상단의 '완성하기' 버튼을 누르면 대화를 끝내고 바로 앨범을 만들어요.",
+    chatCoachFinishBody: "우측 상단의 '완성하기' 버튼을 누르면 대화를 끝내고 AI가 하나의 이야기로 정리합니다.",
     chatCoachMicTitle: "말로 입력할 수 있어요",
     chatCoachMicBody: "마이크 버튼을 누르면 음성으로 입력할 수 있어요.",
     saveImageCoachTitle: "이미지로 저장하기",
