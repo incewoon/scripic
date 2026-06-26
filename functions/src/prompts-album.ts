@@ -54,7 +54,7 @@ export function albumSystem(lang: string, mode: Mode) {
 }
 
 function modeSpec(ko: boolean, mode: Mode, photoCount: number, period?: string, location?: string) {
-  if (mode === "fact") {
+  if (mode === "journal") {
     return ko
       ? `- title: 10자 이내, 사실적
 - subtitle: 20자 이내
