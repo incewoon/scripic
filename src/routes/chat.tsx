@@ -137,9 +137,15 @@ function Chat() {
   const photoMetasRef = useRef<PhotoMeta[]>([]);
   const metaRef = useRef<{ period?: string; location?: string }>({});
   const [mode] = useState<ChatMode>(() => {
-    if (typeof sessionStorage === "undefined") return "creative";
-    const m = sessionStorage.getItem("memori_mode");
-    return m === "fact" || m === "brief" ? m : "creative";
+    if (typeof sessionStorage === "undefined") return "story";
+    const raw = sessionStorage.getItem("memori_mode");
+    // Migrate legacy values (creative/fact/brief) → new (story/journal/summary).
+    const migrated =
+      raw === "creative" ? "story" :
+      raw === "fact" ? "journal" :
+      raw === "brief" ? "summary" :
+      raw;
+    return migrated === "story" || migrated === "journal" || migrated === "summary" ? migrated : "story";
   });
   const [tone] = useState<ChatTone>(() => {
     if (typeof sessionStorage === "undefined") return "politely";
