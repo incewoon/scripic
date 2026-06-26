@@ -12,13 +12,13 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   nitro: false,
-//  tanstackStart: {
-//    spa: {
-//      enabled: true,
+  tanstackStart: {
+    spa: {
+      enabled: true,
 //      prerender: {
 //        enabled: false,   // ★ Nitro 크롤러를 거치지 않고 셸을 직접 씀
-//      },
-//    },
+    },
+  },
 //  },
 /* vite: {
     plugins: [
