@@ -190,7 +190,7 @@ export const chat = onCall(
       }
     }
 
-    const m: Mode = mode === "fact" || mode === "brief" ? mode : "creative";
+    const m: Mode = mode === "journal" || mode === "summary" ? mode : "story";
     const maxTurnsPerPhoto = typeof rawCap === "number" && rawCap > 0 ? Math.min(20, Math.floor(rawCap)) : 3;
     const photoCount = typeof pcFromClient === "number" && pcFromClient > 0 ? pcFromClient : (photos?.length ?? 0);
 
