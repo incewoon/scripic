@@ -406,7 +406,7 @@ export const generateAlbum = onCall(
     }
     if (!photoCount || photoCount < 1) throw new HttpsError("invalid-argument", "photoCount required");
 
-    const m: AlbumMode = mode === "fact" || mode === "brief" ? mode : "creative";
+    const m: AlbumMode = mode === "journal" || mode === "summary" ? mode : "story";
     const tn: Tone = tone === "friendly" || tone === "short" ? tone : "politely";
 
     // Enforce 1 album / day BEFORE we burn a Gemini call.
