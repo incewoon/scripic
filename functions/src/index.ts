@@ -145,7 +145,7 @@ export const chat = onCall(
       photos,
       photoCount: pcFromClient,
       lang = "en",
-      mode = "creative",
+      mode = "story",
       maxTurnsPerPhoto: rawCap,
     } = (request.data ?? {}) as {
       messages: OpenAIMessage[];
