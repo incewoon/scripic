@@ -159,6 +159,36 @@ export const chat = onCall(
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
     }
+    // Size limits to prevent cost amplification via oversized payloads.
+    if (messages.length > 20) {
+      throw new HttpsError("invalid-argument", "too many messages (max 20)");
+    }
+    for (const msg of messages) {
+      if (typeof msg?.content === "string") {
+        if (msg.content.length > 4000) {
+          throw new HttpsError("invalid-argument", "message too long (max 4000 chars)");
+        }
+      } else if (Array.isArray(msg?.content)) {
+        for (const part of msg.content) {
+          if (part?.type === "text" && typeof part.text === "string" && part.text.length > 4000) {
+            throw new HttpsError("invalid-argument", "message text too long (max 4000 chars)");
+          }
+          if (part?.type === "image_url" && typeof part?.image_url?.url === "string" && part.image_url.url.length > 1_500_000) {
+            throw new HttpsError("invalid-argument", "embedded image too large (max 1.5MB)");
+          }
+        }
+      }
+    }
+    if (Array.isArray(photos)) {
+      if (photos.length > 5) {
+        throw new HttpsError("invalid-argument", "too many photos (max 5)");
+      }
+      for (const url of photos) {
+        if (typeof url !== "string" || url.length > 1_500_000) {
+          throw new HttpsError("invalid-argument", "photo too large (max 1.5MB)");
+        }
+      }
+    }
 
     const m: Mode = mode === "fact" || mode === "brief" ? mode : "creative";
     const maxTurnsPerPhoto = typeof rawCap === "number" && rawCap > 0 ? Math.min(20, Math.floor(rawCap)) : 3;
@@ -353,6 +383,26 @@ export const generateAlbum = onCall(
 
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
+    }
+    if (messages.length > 20) {
+      throw new HttpsError("invalid-argument", "too many messages (max 20)");
+    }
+    for (const msg of messages) {
+      if (typeof msg?.content === "string" && msg.content.length > 4000) {
+        throw new HttpsError("invalid-argument", "message too long (max 4000 chars)");
+      } else if (Array.isArray(msg?.content)) {
+        for (const part of msg.content) {
+          if (part?.type === "text" && typeof part.text === "string" && part.text.length > 4000) {
+            throw new HttpsError("invalid-argument", "message text too long (max 4000 chars)");
+          }
+        }
+      }
+    }
+    if (typeof period === "string" && period.length > 100) {
+      throw new HttpsError("invalid-argument", "period too long (max 100 chars)");
+    }
+    if (typeof location === "string" && location.length > 200) {
+      throw new HttpsError("invalid-argument", "location too long (max 200 chars)");
     }
     if (!photoCount || photoCount < 1) throw new HttpsError("invalid-argument", "photoCount required");
 
