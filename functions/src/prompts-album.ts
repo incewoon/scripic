@@ -71,7 +71,7 @@ function modeSpec(ko: boolean, mode: Mode, photoCount: number, period?: string, 
 - captions: exactly ${photoCount}, 12–20 words each, no guessing
 - closing: 2–3 neutral sentences`;
   }
-  if (mode === "brief") {
+  if (mode === "summary") {
     return ko
       ? `- title: 8자 이내, 사실적
 - subtitle: 15자 이내
