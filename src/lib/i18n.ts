@@ -253,7 +253,8 @@ const dict = {
       "Switch between created date and photo date, and tap the arrow to flip between newest-first and oldest-first.",
     // Album edit coachmark (2 steps)
     editCoachPencilTitle: "Edit anything",
-    editCoachPencilBody: "Tap this pencil to edit the title, subtitle, and body of your stories. You can edit AI-generated scripts yourself at any time. (In Story mode, AI created content may be added.)",
+    editCoachPencilBody:
+      "Tap this pencil to edit the title, subtitle, and body of your stories. You can edit AI-generated scripts yourself at any time. (In Story mode, AI created content may be added.)",
     editCoachLocationTitle: "Add a location",
     editCoachLocationBody: "Tap here to pick where these photos were taken — search or drop a pin on the map.",
     // Create-screen coachmark (4 steps)
@@ -289,7 +290,7 @@ const dict = {
     brandSloganLine1: "사진은 순간을 담고,",
     brandSloganLine2: "Scripic은 이야기를 남깁니다.",
     appSubtitle: "잊고 싶지 않은 순간들을 담아두세요",
-    storedLocally: "모든 데이터는 이 기기에만 저장돼요",
+    storedLocally: "모든 데이터는 이 기기에만 저장돼요.",
     myAlbums: "내 앨범",
     loading: "불러오는 중…",
     firstMemoryTitle: "첫 이야기를 남겨보세요",
