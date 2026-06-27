@@ -254,7 +254,7 @@ const dict = {
     // Album edit coachmark (2 steps)
     editCoachPencilTitle: "Edit anything",
     editCoachPencilBody:
-      "Tap this pencil to edit the title, subtitle, and body of your stories. You can edit AI-generated scripts yourself at any time. (In Story mode, AI created content may be added.)",
+      "Tap this pencil to edit the title, subtitle, and body of your stories. You can edit AI generated scripts yourself at any time. (In Story mode, AI created content may be added.)",
     editCoachLocationTitle: "Add a location",
     editCoachLocationBody: "Tap here to pick where these photos were taken — search or drop a pin on the map.",
     // Create-screen coachmark (4 steps)
