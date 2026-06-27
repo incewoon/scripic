@@ -40,17 +40,14 @@ function sanitizeForDisplay(text: string) {
   return text.replace(TOKEN_RE, "").trim();
 }
 
-// True when the streamed assistant reply looks like it was cut off
-// (empty, too short, or doesn't end with sentence-final punctuation).
-// Checked AFTER streaming completes.
+// True only when the streamed assistant reply is effectively empty.
+// Earlier heuristics (length < 12, missing sentence terminator) caused
+// false positives that stripped perfectly valid replies (short KO endings,
+// emoji, markdown) and made the chat feel broken/slow. The server already
+// enforces token caps, so we now trust any non-empty stream.
 function looksIncomplete(text: string): boolean {
   const clean = sanitizeForDisplay(text || "");
-  if (!clean) return true;
-  if (clean.length < 12) return true;
-  const last = clean.slice(-1);
-  // Accept common sentence terminators (incl. Korean/Japanese fullwidth),
-  // ellipsis, closing quotes/brackets, and casual KO endings.
-  return !/[.?!。？！…~)\]」』"'""'']/.test(last);
+  return clean.length === 0;
 }
 
 const AFFIRMATIVE_EN =
