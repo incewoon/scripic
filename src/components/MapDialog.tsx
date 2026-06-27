@@ -31,7 +31,7 @@ function loadGoogleMaps(): Promise<void> {
   if (window.__scripicMapsLoading) return window.__scripicMapsLoading;
 
   window.__scripicMapsLoading = new Promise<void>((resolve, reject) => {
-    const key = (import.meta as any).env?.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
+    const key = "AIzaSyCP6-MMvXhjdFjSRtorzJASt3fM3mybazQ"; //(import.meta as any).env?.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
     const channel = (import.meta as any).env?.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID;
     if (!key) {
       reject(new Error("Maps key missing"));
