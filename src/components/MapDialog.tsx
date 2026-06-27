@@ -211,7 +211,9 @@ export function MapDialog({
           location: { lat: picked.lat, lng: picked.lng },
           language: lang,
         });
-  
+        
+        console.log("[Geocode Status]", status, results);
+        
         if (status === "OK" && results && results.length > 0) {
           const result = results[0];
           const addressComponents = result.address_components || [];
