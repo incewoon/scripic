@@ -11,7 +11,7 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 //import { join } from "node:path";
 
 export default defineConfig({
- // nitro: false,
+  nitro: false,
   tanstackStart: {
     spa: {
       enabled: true,
