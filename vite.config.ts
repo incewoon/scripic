@@ -4,7 +4,7 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 const isCapacitorBuild = process.env.CAPACITOR_BUILD === "true";
 
 export default defineConfig({
-  nitro: isCapacitorBuild ? false : undefined,   // ← 핵심 변경
+  nitro: isCapacitorBuild ? false : undefined,  
   tanstackStart: {
     spa: {
       enabled: true,
