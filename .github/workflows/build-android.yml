@@ -37,6 +37,8 @@ jobs:
           build-tools: 34.0.0
 
       - name: Install dependencies & Build web
+        env:
+          CAPACITOR_BUILD: "true"
         run: |
           bun install
           bun run build:dev
