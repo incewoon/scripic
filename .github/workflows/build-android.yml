@@ -37,52 +37,10 @@ jobs:
           build-tools: 34.0.0
 
       - name: Install dependencies & Build web
-        env:
-          CAPACITOR_BUILD: "true"
         run: |
           bun install
-          bun run build:dev
-          if [ ! -f "dist/client/index.html" ]; then
-            echo "❌ prerender failed to produce index.html — see build log above for the real error"
-            exit 1
-          fi
+          bun run build:capacitor
           
-   # dist/client에 index.html이 없으면 간단한 shell을 만들어줌 (임시 방편)
-   #   - name: Ensure index.html for Capacitor
-   #     run: |
-   #       if [ ! -f "dist/client/index.html" ]; then
-   #             echo "⚠️ dist/client/index.html not found. Creating fallback..."
-   #             
-   #             # 실제 빌드된 JS 파일 찾기
-   #             JS_FILE=$(ls dist/client/assets/index-*.js 2>/dev/null | head -n 1 | xargs basename)
-   #             
-   #             if [ -z "$JS_FILE" ]; then
-   #               echo "❌ ERROR: No index-*.js file found in dist/client/assets/"
-   #               exit 1
-   #             fi
-   #       
-   #             cat > dist/client/index.html << EOF
-   #       <!DOCTYPE html>
-   #       <html lang="ko">
-   #       <head>
-   #         <meta charset="UTF-8">
-   #         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   #         <title>Scripic</title>
-   #         <link rel="icon" href="/favicon.ico">
-   #       </head>
-   #       <body>
-   #         <div id="root"></div>
-   #         <script type="module" src="/assets/${JS_FILE}"></script>
-   #       </body>
-   #       </html>
-   #       EOF
-   #       
-   #             echo "✅ Fallback index.html created with ${JS_FILE}"
-   #           else
-   #             echo "✅ dist/client/index.html already exists (from Vite build)"
-   #           fi
-
-      # cap add 없이 cap sync만 실행 (더 안정적)
       - name: Capacitor Sync Android
         run: bunx cap sync android
 
