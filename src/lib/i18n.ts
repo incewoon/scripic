@@ -253,7 +253,7 @@ const dict = {
       "Switch between created date and photo date, and tap the arrow to flip between newest-first and oldest-first.",
     // Album edit coachmark (2 steps)
     editCoachPencilTitle: "Edit anything",
-    editCoachPencilBody: "Tap this pencil to edit the title, subtitle, and body of your stories. \nYou can edit AI-generated scripts yourself at any time.\n(In Story mode, AI-created content may be added.)",
+    editCoachPencilBody: "Tap this pencil to edit the title, subtitle, and body of your stories. You can edit AI-generated scripts yourself at any time. (In Story mode, AI created content may be added.)",
     editCoachLocationTitle: "Add a location",
     editCoachLocationBody: "Tap here to pick where these photos were taken — search or drop a pin on the map.",
     // Create-screen coachmark (4 steps)
@@ -262,7 +262,7 @@ const dict = {
       "Pick up to 3 photos from one moment. Long-press to drag and reorder; the first one becomes the cover.",
     createCoachModeTitle: "Story type",
     createCoachModeBody:
-      "AI chooses how to organize the script. 'Story' crafts a narrative highlighting emotions and atmosphere. 'Journal' objectively compiles photos and conversations. 'Summary' provides a short, concise overview of the core points.",
+      'AI chooses how to organize the script. "Story" crafts a narrative highlighting emotions and atmosphere. "Journal" objectively compiles photos and conversations. "Summary" provides a short, concise overview of the core points.',
     createCoachToneTitle: "Tone",
     createCoachToneBody: "You can change the tone of voice even with the same message.",
     createCoachTagsTitle: "Tags",
@@ -532,13 +532,13 @@ const dict = {
       "기억하고 싶은 순간을 담은 사진을 최대 3장까지 골라주세요. 길게 눌러 드래그하면 순서를 바꿀 수 있고, 첫 번째 사진이 앨범 대표 사진이 돼요.",
     createCoachModeTitle: "정리 타입",
     createCoachModeBody:
-      "AI가 어떤 방식으로 이야기를 정리할지 선택해요. \n'Story'는 감정과 분위기를 살려 이야기처럼 정리해요. \n'Journal'은 사진과 대화 내용을 객관적으로 정리해요. \n'Summary'는 핵심만 짧게 요약해요.",
+      "AI가 어떤 방식으로 이야기를 정리할지 선택해요. 'Story'는 감정과 분위기를 살려 이야기처럼 정리해요. 'Journal'은 사진과 대화 내용을 객관적으로 정리해요. 'Summary'는 핵심만 짧게 요약해요.",
     createCoachToneTitle: "정리 어조",
     createCoachToneBody:
       "같은 내용이도 말투를 바꿀 수 있어요. \n(Politely 격식있게 · Friendly 친근하게 · Short 간결하게)",
     createCoachTagsTitle: "태그",
     createCoachTagsBody:
-      "비슷한 추억을 하나로 이어보세요. \n기본설정된 태그를 선택하거나 직접 만들 수 있고 다음에도 계속 나타나요.",
+      "비슷한 추억을 하나로 이어보세요. 기본설정된 태그를 선택하거나 직접 만들 수 있고 다음에도 계속 나타나요.",
     // AI 대화 코치마크 (4단계)
     chatCoachIntroTitle: "AI 대화 팁",
     chatCoachIntroBody:
