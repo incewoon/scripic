@@ -13,9 +13,8 @@ const candidates = [
 const source = candidates.find((p) => existsSync(p));
 
 if (!source) {
-  console.error("❌ TanStack Start가 생성한 _shell.html 파일을 찾을 수 없습니다.");
-  console.error("dist/client 폴더 내용을 확인해주세요.");
-  process.exit(1);
+  console.log("ℹ️  _shell.html 없음 — Nitro SSR 모드로 간주하고 스킵합니다.");
+  process.exit(0);
 }
 
 const destination = join(clientDir, "index.html");
