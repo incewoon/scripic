@@ -37,6 +37,8 @@ jobs:
           build-tools: 34.0.0
 
       - name: Install dependencies & Build web
+        env:
+          VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY: ${{ secrets.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY }}
         run: |
           bun install
           bun run build:capacitor
