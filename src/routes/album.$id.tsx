@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Hl } from "@/lib/highlight";
 import { MapDialog } from "@/components/MapDialog";
 import { EditCoachmark, shouldShowEditCoach } from "@/components/EditCoachmark";
+import { TagPickerDialog } from "@/components/TagPickerDialog";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
