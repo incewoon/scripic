@@ -320,6 +320,12 @@
     font-size: 16px;
     line-height: 1.6;
     color: var(--foreground);
+    /* Safe-area insets for Capacitor / edge-to-edge native shells.
+       In normal browsers these env() values are 0, so the web layout is unchanged. */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   h1, h2, h3, .font-display { font-family: var(--font-display-theme, 'Cormorant Garamond', 'Gowun Batang', serif); letter-spacing: -0.01em; }
   ::selection { background: color-mix(in oklab, var(--primary) 35%, transparent); }

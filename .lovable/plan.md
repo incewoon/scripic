@@ -1,50 +1,35 @@
-# 앨범 수정 모드에서 태그 편집 기능 추가
+## 문제
+Capacitor 빌드에서 WebView가 상태바·네비게이션바 영역까지 풀스크린으로 깔리면서, 페이지 상단의 백버튼/카운터, 하단의 CTA 버튼이 시스템 UI에 가려짐. 웹브라우저에서는 Chrome 자체 chrome이 inset을 만들어줘서 문제가 없었음.
 
-## 목표
-앨범 상세보기에서 **수정 모드(연필 아이콘 ON)** 일 때만 태그를 편집할 수 있게 한다.
-- 기존 태그: 클릭 시 검색 이동이 아니라 제거(또는 편집)로 동작
-- 새 태그 추가: 사진 추가 버튼과 동일한 **점선 테두리 타원형 버튼**(`+ 태그`)을 두고, 누르면 태그 선택 팝업이 뜬다
-- 보기 모드(현재 동작)는 그대로 유지: 태그 클릭 → 홈으로 검색 이동
+## 해결 방향
+Capacitor 공식 권장대로 **safe-area inset CSS 변수**를 전역으로 적용. 두 가지를 함께 처리:
 
-## UI 변경 (`src/routes/album.$id.tsx`)
+1. **WebView가 safe area를 인식하도록 설정**
+   - `capacitor.config.ts`: `android.adjustMarginsForEdgeToEdge: "auto"` 추가 (Capacitor 7+ 표준), 또는 `@capacitor-community/safe-area` 플러그인 사용
+   - `MainActivity.java`에서 `WindowCompat.setDecorFitsSystemWindows(window, false)` + status bar/nav bar 투명 처리 → `env(safe-area-inset-*)` 값이 채워짐
+   - `<meta name="viewport" content="viewport-fit=cover">` 확인 (TanStack `__root.tsx` head)
 
-태그 영역(`album.tags` 렌더링하는 블록)을 `editMode` 분기로 둘로 나눈다.
+2. **앱 전역에 safe-area padding 적용**
+   - `src/styles.css`의 `body`(또는 루트 `#app` 컨테이너)에:
+     ```css
+     padding-top: env(safe-area-inset-top);
+     padding-bottom: env(safe-area-inset-bottom);
+     padding-left: env(safe-area-inset-left);
+     padding-right: env(safe-area-inset-right);
+     ```
+   - 모든 페이지(`index.tsx`, `create.tsx`, `album.$id.tsx`, `chat.tsx`, `settings.tsx`, `easter.tsx`)에 별도 수정 없이 일괄 적용됨
+   - **하단 고정 CTA 버튼**(`create.tsx`의 "사진을 한 장 이상 골라주세요", `index.tsx`의 "새 이야기 만들기", `album.$id.tsx`의 이미지로 저장)은 `position: sticky/fixed`라면 별도로 `padding-bottom: env(safe-area-inset-bottom)` 또는 `bottom: env(safe-area-inset-bottom)` 추가 필요 — 확인 후 처리
 
-- **보기 모드 (현재 그대로)**: `<Link to="/" search={{ tags: [tag] }}>` 칩
-- **수정 모드**:
-  - 각 태그 칩은 우측에 작은 × 아이콘이 붙은 **버튼**으로 렌더 (클릭 시 해당 태그 제거 → `patch({ tags: next })`)
-  - 마지막에 점선 테두리의 타원형 **`+ 태그`** 버튼 (create.tsx의 사진 추가 슬롯과 동일한 dashed border 스타일)
-  - 태그가 하나도 없는 앨범에서도 수정 모드면 이 점선 버튼만 단독으로 노출
+3. **웹앱은 영향 없음**
+   - 브라우저에서는 `env(safe-area-inset-*)`가 0이므로 기존 레이아웃 그대로
 
-## 태그 선택 팝업 (`src/components/TagPickerDialog.tsx` 신규)
+## 변경 파일
+- `capacitor.config.ts` — edge-to-edge 옵션 추가
+- `android/app/src/main/java/app/lovable/aialbum/MainActivity.java` — 시스템 바 투명/inset 활성화
+- `src/styles.css` — 전역 safe-area padding
+- `src/routes/__root.tsx` — viewport meta에 `viewport-fit=cover` 확인/추가
+- `src/routes/index.tsx`, `src/routes/create.tsx`, `src/routes/album.$id.tsx` — 하단 고정 버튼이 있을 경우 bottom inset 보정
 
-shadcn `Dialog` 기반 재사용 컴포넌트:
-
-```
-props: {
-  open, onOpenChange,
-  value: string[],          // 현재 앨범 태그
-  onChange: (next: string[]) => void,
-}
-```
-
-내용 구성 (create.tsx의 태그 섹션 로직 재사용):
-1. **프리셋 칩** — `t.tagPresetTravel` 등 6개 (i18n 기존 키)
-2. **내 태그 칩 가로 스크롤** — 다른 앨범에서 수집한 사용자 정의 태그 (`getAlbums()`로 수집, create.tsx의 로직과 동일)
-3. **직접 입력** — `tagDraft` + 추가 버튼, Enter 동작, `#` 접두/공백/20자 제한 등 create.tsx와 동일 규칙
-4. 선택 토글 즉시 `onChange`로 상위에 반영 (앨범에는 `patch({ tags })`로 즉시 저장)
-5. 하단 닫기 버튼
-
-별도 "저장" 단계 없이 토글 즉시 반영(편집 UX 일관성). `toast.success(t.saved)`는 닫을 때 한 번만.
-
-## 상태/연결
-
-`album.$id.tsx`에 `tagPickerOpen` 상태 추가, 점선 버튼이 이를 연다. `onChange`에서 `patch({ tags: next })` 호출. 보기 모드의 `<Link>` 동작은 변경하지 않는다.
-
-## 영향 받는 파일
-- `src/routes/album.$id.tsx` — 태그 영역 분기, 다이얼로그 연결
-- `src/components/TagPickerDialog.tsx` — 신규
-- i18n 키는 기존(`tagsLabel`, `tagPreset*`, `tagAdd`, `tagAddPlaceholder`) 재사용. 별도 추가 없음.
-
-## 변경하지 않는 것
-- create.tsx 태그 로직, 보기 모드 칩 동작, 다른 편집 가능 필드(EditableText)들
+## 확인 사항
+- Capacitor 버전(7+ 인지) 확인 후 `adjustMarginsForEdgeToEdge` vs `@capacitor-community/safe-area` 중 선택
+- 다음 빌드는 `bun run build:capacitor && npx cap sync android` 후 Android Studio에서 재빌드 필요(코드 변경만으로는 APK 갱신 안 됨)
