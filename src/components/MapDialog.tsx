@@ -207,18 +207,21 @@ export function MapDialog({
       if (window.google?.maps) {
         const geocoder = new window.google.maps.Geocoder();
         
+        let label = `${picked.lat.toFixed(3)}, ${picked.lng.toFixed(3)}`;
+        
         try {
-          const response = await geocoder.geocode({
+          const geocodeResult = await geocoder.geocode({
             location: { lat: picked.lat, lng: picked.lng },
             language: lang,
           });
         
-          const results = response?.results;
-          const status = response?.status;
+          // Google Maps Geocoder 응답 구조를 안전하게 처리
+          const results = geocodeResult?.results ?? [];
+          const status = geocodeResult?.status ?? "";
         
           console.log("[Geocode Status]", status, results);
         
-          if (status === "OK" && results && results.length > 0) {
+          if (status === "OK" && results.length > 0) {
             const result = results[0];
             const addressComponents = result.address_components || [];
         
@@ -240,7 +243,7 @@ export function MapDialog({
               shortLabel = `${city} ${district}`;
             } else if (city) {
               shortLabel = city;
-            } else {
+            } else if (result.formatted_address) {
               shortLabel = result.formatted_address.split(",").slice(0, 2).join(", ");
             }
         
@@ -251,10 +254,10 @@ export function MapDialog({
         } catch (error) {
           console.warn("클라이언트 역지오코딩 실패:", error);
         }
-  
-    onPick?.({ lat: picked.lat, lng: picked.lng, label });
-    setSaving(false);
-    onOpenChange(false);
+        
+        onPick?.({ lat: picked.lat, lng: picked.lng, label });
+        setSaving(false);
+        onOpenChange(false);
   }
   // Move the map + marker to a coordinate and treat it as the user's pick.
   function moveTo(lat: number, lng: number, zoom = 15) {
