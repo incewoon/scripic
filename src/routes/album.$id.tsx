@@ -321,21 +321,48 @@ function AlbumView() {
               </button>
             )}
           </div>
-          {album.tags && album.tags.length > 0 && (
+          {editMode ? (
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-              {album.tags.map((tag) => (
-                <Link
+              {(album.tags ?? []).map((tag) => (
+                <button
                   key={tag}
-                  to="/"
-                  search={{ q, tags: [tag] }}
+                  type="button"
+                  onClick={() => patch({ tags: (album.tags ?? []).filter((x) => x !== tag) })}
                   className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] text-primary-foreground shadow-sm transition-transform active:scale-95"
                   style={{ background: "var(--gradient-warm)" }}
+                  aria-label={`${t.delete} #${tag}`}
                 >
                   <Tag size={10} />
                   {tag}
-                </Link>
+                  <X size={10} strokeWidth={2.5} className="opacity-90" />
+                </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setTagPickerOpen(true)}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] border border-dashed border-primary/50 text-primary bg-card/50 active:scale-95 transition-transform"
+              >
+                <Plus size={10} />
+                {t.tagsLabel}
+              </button>
             </div>
+          ) : (
+            album.tags && album.tags.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                {album.tags.map((tag) => (
+                  <Link
+                    key={tag}
+                    to="/"
+                    search={{ q, tags: [tag] }}
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] text-primary-foreground shadow-sm transition-transform active:scale-95"
+                    style={{ background: "var(--gradient-warm)" }}
+                  >
+                    <Tag size={10} />
+                    {tag}
+                  </Link>
+                ))}
+              </div>
+            )
           )}
         </div>
 
