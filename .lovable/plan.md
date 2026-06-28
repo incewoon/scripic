@@ -1,56 +1,50 @@
-# Scripic 홈 화면 브랜드 강화 계획
+# 앨범 수정 모드에서 태그 편집 기능 추가
 
 ## 목표
-홈 화면 상단을 "삶의 아카이브/기록장" 느낌으로 강화. 로고 아래 고정 슬로건 + 그 아래 랜덤 Epigraph 한 줄 추가.
+앨범 상세보기에서 **수정 모드(연필 아이콘 ON)** 일 때만 태그를 편집할 수 있게 한다.
+- 기존 태그: 클릭 시 검색 이동이 아니라 제거(또는 편집)로 동작
+- 새 태그 추가: 사진 추가 버튼과 동일한 **점선 테두리 타원형 버튼**(`+ 태그`)을 두고, 누르면 태그 선택 팝업이 뜬다
+- 보기 모드(현재 동작)는 그대로 유지: 태그 클릭 → 홈으로 검색 이동
 
-## 변경 위치
-`src/routes/index.tsx`의 `<header>` 영역만 수정. 검색/정렬/리스트/CTA는 그대로 둠.
+## UI 변경 (`src/routes/album.$id.tsx`)
 
-## 1. 문장 데이터 파일 신규 생성
-`src/lib/epigraphs.ts`
-- `EPIGRAPHS_KO: string[]` (50문장), `EPIGRAPHS_EN: string[]` (50문장) — 사용자가 제공한 문장 그대로.
-- `pickEpigraph(lang: "ko" | "en"): string` — `sessionStorage`에 직전 인덱스를 저장해 연속 중복 방지하고 랜덤 1개 반환.
+태그 영역(`album.tags` 렌더링하는 블록)을 `editMode` 분기로 둘로 나눈다.
 
-## 2. i18n에 고정 슬로건 추가
-`src/lib/i18n.ts`에 `brandSloganLine1`, `brandSloganLine2` 키 추가:
-- KO: "사진은 순간을 담고," / "Scripic은 이야기를 남깁니다."
-- EN: "Photos capture moments." / "Scripic preserves the stories behind them."
+- **보기 모드 (현재 그대로)**: `<Link to="/" search={{ tags: [tag] }}>` 칩
+- **수정 모드**:
+  - 각 태그 칩은 우측에 작은 × 아이콘이 붙은 **버튼**으로 렌더 (클릭 시 해당 태그 제거 → `patch({ tags: next })`)
+  - 마지막에 점선 테두리의 타원형 **`+ 태그`** 버튼 (create.tsx의 사진 추가 슬롯과 동일한 dashed border 스타일)
+  - 태그가 하나도 없는 앨범에서도 수정 모드면 이 점선 버튼만 단독으로 노출
 
-## 3. 홈 헤더 리디자인 (`src/routes/index.tsx`)
-현재:
+## 태그 선택 팝업 (`src/components/TagPickerDialog.tsx` 신규)
+
+shadcn `Dialog` 기반 재사용 컴포넌트:
+
 ```
-<h1>Scripic</h1>
-<p>{t.appTagline}</p>
+props: {
+  open, onOpenChange,
+  value: string[],          // 현재 앨범 태그
+  onChange: (next: string[]) => void,
+}
 ```
-변경 후 구조:
-```
-<h1>Scripic</h1>                          ← 유지
-<p class="brand-slogan">                  ← 신규: 고정 슬로건, 2줄, 중앙정렬
-  사진은 순간을 담고,
-  Scripic은 이야기를 남깁니다.
-</p>
-<p class="epigraph">                      ← 신규: 랜덤 Epigraph
-  "사진에 담기지 않은 기억까지."
-</p>
-```
-- 기존 `appTagline`(p) 제거.
-- 슬로건: 다크 그레이(#374151~#4B5563 레벨), Medium weight, 로고보다 작고 본문보다 약간 큼(약 14~15px), `leading-relaxed`.
-- Epigraph:
-  - 따옴표(") 포함, `italic`, 회색(#6B7280), 약 13px, 중앙정렬
-  - 카드/배경/테두리 없음, 위아래 충분한 여백(예: `mt-5 mb-2`)
-  - 진입 시/언어 변경 시 한 번 랜덤 선택, 500~800ms fade-in (`animate-fade-in` 또는 CSS opacity transition)
-  - 언어별 단일 표시 (현재 `useT()`의 `lang`으로 분기)
 
-## 4. 동작 로직
-- `useState`로 현재 epigraph 보관, `useEffect([lang])`에서 `pickEpigraph(lang)` 호출.
-- 같은 문장 연속 방지: `sessionStorage["scripic_last_epigraph_idx_<lang>"]`와 다른 인덱스가 나올 때까지 재추첨(최대 몇 회).
-- Fade: key 변경 시 `animate-fade-in` 재실행되도록 `key={epigraph}` 적용.
+내용 구성 (create.tsx의 태그 섹션 로직 재사용):
+1. **프리셋 칩** — `t.tagPresetTravel` 등 6개 (i18n 기존 키)
+2. **내 태그 칩 가로 스크롤** — 다른 앨범에서 수집한 사용자 정의 태그 (`getAlbums()`로 수집, create.tsx의 로직과 동일)
+3. **직접 입력** — `tagDraft` + 추가 버튼, Enter 동작, `#` 접두/공백/20자 제한 등 create.tsx와 동일 규칙
+4. 선택 토글 즉시 `onChange`로 상위에 반영 (앨범에는 `patch({ tags })`로 즉시 저장)
+5. 하단 닫기 버튼
 
-## 영향 범위
-- 추가/수정: `src/lib/epigraphs.ts`(신규), `src/lib/i18n.ts`(슬로건 키), `src/routes/index.tsx`(header만).
-- 다른 화면(create/chat/album/settings) 영향 없음.
-- 기존 `t.appTagline`은 다른 곳에서 사용되지 않으면 제거, 사용 중이면 유지하고 홈에서만 미표시.
+별도 "저장" 단계 없이 토글 즉시 반영(편집 UX 일관성). `toast.success(t.saved)`는 닫을 때 한 번만.
 
-## 비목표
-- 로고/검색바/정렬/앨범 카드/CTA/푸터 다이얼로그 등은 변경하지 않음.
-- 색상 토큰 체계 변경 없음 (필요 시 인라인 색상 또는 기존 `warm-muted` 활용).
+## 상태/연결
+
+`album.$id.tsx`에 `tagPickerOpen` 상태 추가, 점선 버튼이 이를 연다. `onChange`에서 `patch({ tags: next })` 호출. 보기 모드의 `<Link>` 동작은 변경하지 않는다.
+
+## 영향 받는 파일
+- `src/routes/album.$id.tsx` — 태그 영역 분기, 다이얼로그 연결
+- `src/components/TagPickerDialog.tsx` — 신규
+- i18n 키는 기존(`tagsLabel`, `tagPreset*`, `tagAdd`, `tagAddPlaceholder`) 재사용. 별도 추가 없음.
+
+## 변경하지 않는 것
+- create.tsx 태그 로직, 보기 모드 칩 동작, 다른 편집 가능 필드(EditableText)들
