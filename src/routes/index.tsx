@@ -490,7 +490,7 @@ function Home() {
         </div>
       )}
 
-      <div className="fixed bottom-6 left-0 right-0 px-5 mx-auto max-w-md z-30">
+      <div className="fixed left-0 right-0 px-5 mx-auto max-w-md z-30 bottom-[calc(1.5rem+env(safe-area-inset-bottom))]">
         <button
           onClick={onCreate}
           className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
