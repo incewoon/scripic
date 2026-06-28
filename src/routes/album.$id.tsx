@@ -120,6 +120,7 @@ function AlbumView() {
   const [downloading, setDownloading] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [mapMode, setMapMode] = useState<"view" | "pick">("view");
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
