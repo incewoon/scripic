@@ -206,59 +206,57 @@ export function MapDialog({
     try {
       if (window.google?.maps) {
         const geocoder = new window.google.maps.Geocoder();
-        
-        let label = `${picked.lat.toFixed(3)}, ${picked.lng.toFixed(3)}`;
-        
-        try {
-          const geocodeResult = await geocoder.geocode({
-            location: { lat: picked.lat, lng: picked.lng },
-            language: lang,
-          });
-        
-          // Google Maps Geocoder 응답 구조를 안전하게 처리
-          const results = geocodeResult?.results ?? [];
-          const status = geocodeResult?.status ?? "";
-        
-          console.log("[Geocode Status]", status, results);
-        
-          if (status === "OK" && results.length > 0) {
-            const result = results[0];
-            const addressComponents = result.address_components || [];
-        
-            let city = "";
-            let district = "";
-        
-            for (const comp of addressComponents) {
-              const types = comp.types || [];
-              if (types.includes("locality") || types.includes("administrative_area_level_1")) {
-                city = comp.long_name;
-              }
-              if (types.includes("sublocality_level_1") || types.includes("sublocality")) {
-                district = comp.long_name;
-              }
+  
+        const geocodeResult = await geocoder.geocode({
+          location: { lat: picked.lat, lng: picked.lng },
+          language: lang,
+        });
+  
+        const results = geocodeResult?.results ?? [];
+        const status = geocodeResult?.status ?? "";
+  
+        console.log("[Geocode Status]", status, results);
+  
+        if (status === "OK" && results.length > 0) {
+          const result = results[0];
+          const addressComponents = result.address_components || [];
+  
+          let city = "";
+          let district = "";
+  
+          for (const comp of addressComponents) {
+            const types = comp.types || [];
+            if (types.includes("locality") || types.includes("administrative_area_level_1")) {
+              city = comp.long_name;
             }
-        
-            let shortLabel = "";
-            if (city && district) {
-              shortLabel = `${city} ${district}`;
-            } else if (city) {
-              shortLabel = city;
-            } else if (result.formatted_address) {
-              shortLabel = result.formatted_address.split(",").slice(0, 2).join(", ");
-            }
-        
-            if (shortLabel) {
-              label = shortLabel;
+            if (types.includes("sublocality_level_1") || types.includes("sublocality")) {
+              district = comp.long_name;
             }
           }
-        } catch (error) {
-          console.warn("클라이언트 역지오코딩 실패:", error);
+  
+          let shortLabel = "";
+          if (city && district) {
+            shortLabel = `${city} ${district}`;
+          } else if (city) {
+            shortLabel = city;
+          } else if (result.formatted_address) {
+            shortLabel = result.formatted_address.split(",").slice(0, 2).join(", ");
+          }
+  
+          if (shortLabel) {
+            label = shortLabel;
+          }
         }
-        
-        onPick?.({ lat: picked.lat, lng: picked.lng, label });
-        setSaving(false);
-        onOpenChange(false);
+      }
+    } catch (error) {
+      console.warn("클라이언트 역지오코딩 실패:", error);
+    }
+  
+    onPick?.({ lat: picked.lat, lng: picked.lng, label });
+    setSaving(false);
+    onOpenChange(false);
   }
+  
   // Move the map + marker to a coordinate and treat it as the user's pick.
   function moveTo(lat: number, lng: number, zoom = 15) {
     const map = mapInstanceRef.current;
