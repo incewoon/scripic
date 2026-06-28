@@ -206,49 +206,51 @@ export function MapDialog({
     try {
       if (window.google?.maps) {
         const geocoder = new window.google.maps.Geocoder();
-  
-        const { results, status } = await geocoder.geocode({
-          location: { lat: picked.lat, lng: picked.lng },
-          language: lang,
-        });
         
-        console.log("[Geocode Status]", status, results);
+        try {
+          const response = await geocoder.geocode({
+            location: { lat: picked.lat, lng: picked.lng },
+            language: lang,
+          });
         
-        if (status === "OK" && results && results.length > 0) {
-          const result = results[0];
-          const addressComponents = result.address_components || [];
-  
-          let city = "";
-          let district = "";
-  
-          for (const comp of addressComponents) {
-            const types = comp.types || [];
-            if (types.includes("locality") || types.includes("administrative_area_level_1")) {
-              city = comp.long_name;
+          const results = response?.results;
+          const status = response?.status;
+        
+          console.log("[Geocode Status]", status, results);
+        
+          if (status === "OK" && results && results.length > 0) {
+            const result = results[0];
+            const addressComponents = result.address_components || [];
+        
+            let city = "";
+            let district = "";
+        
+            for (const comp of addressComponents) {
+              const types = comp.types || [];
+              if (types.includes("locality") || types.includes("administrative_area_level_1")) {
+                city = comp.long_name;
+              }
+              if (types.includes("sublocality_level_1") || types.includes("sublocality")) {
+                district = comp.long_name;
+              }
             }
-            if (types.includes("sublocality_level_1") || types.includes("sublocality")) {
-              district = comp.long_name;
+        
+            let shortLabel = "";
+            if (city && district) {
+              shortLabel = `${city} ${district}`;
+            } else if (city) {
+              shortLabel = city;
+            } else {
+              shortLabel = result.formatted_address.split(",").slice(0, 2).join(", ");
+            }
+        
+            if (shortLabel) {
+              label = shortLabel;
             }
           }
-  
-          let shortLabel = "";
-          if (city && district) {
-            shortLabel = `${city} ${district}`;
-          } else if (city) {
-            shortLabel = city;
-          } else {
-            shortLabel = result.formatted_address.split(",").slice(0, 2).join(", ");
-          }
-  
-          if (shortLabel) {
-            label = shortLabel;
-          }
+        } catch (error) {
+          console.warn("클라이언트 역지오코딩 실패:", error);
         }
-      }
-    } catch (error) {
-      console.warn("클라이언트 역지오코딩 실패:", error);
-      // 실패하면 label은 위에서 설정한 좌표 문자열 그대로 유지됨
-    }
   
     onPick?.({ lat: picked.lat, lng: picked.lng, label });
     setSaving(false);
