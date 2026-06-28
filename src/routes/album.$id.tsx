@@ -461,6 +461,13 @@ function AlbumView() {
         locationRef={locationChipRef}
         downloadRef={downloadRef}
       />
+
+      <TagPickerDialog
+        open={tagPickerOpen}
+        onOpenChange={setTagPickerOpen}
+        value={album.tags ?? []}
+        onChange={(next) => patch({ tags: next })}
+      />
     </div>
   );
 }
