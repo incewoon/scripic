@@ -15,8 +15,9 @@ import { useT } from "@/lib/i18n";
 import { useServerFn } from "@tanstack/react-start";
 import { geocodeLocation } from "@/lib/geocode.functions";
 import { type PlaceSearchResult } from "@/lib/places.functions"; // 타입만 유지
-import { getApp, getApps, initializeApp } from "firebase/app";
-import { getFunctions, httpsCallable } from "firebase/functions";
+//import { getApp, getApps, initializeApp } from "firebase/app";
+//import { getFunctions, httpsCallable } from "firebase/functions";
+import { getFns } from '@/integrations/firebase/client';
 import { toast } from "sonner";
 
 declare global {
@@ -300,26 +301,18 @@ export function MapDialog({
       try {
         const lang =
           typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
-      // Firebase 앱이 초기화되지 않았으면 강제로 초기화 시도 (Lovable 환경 대응)
-          if (getApps().length === 0) {
-            // Lovable이 자동으로 config를 제공하는 경우를 대비한 안전 장치
-            // (실제 config가 필요하면 Lovable 환경변수에서 가져와야 함)
-            console.warn("Firebase 앱이 초기화되지 않아 강제 초기화를 시도합니다.");
-          }
-        const functions = getFunctions(getApp());
+    
+        // 올바른 방식: 이미 초기화된 Functions 인스턴스 재사용
+        const functions = getFns();
         const searchPlacesFn = httpsCallable<{ query: string; lang?: string }, PlaceSearchResult[]>(
           functions,
           "searchPlaces"
         );
+    
         const result = await searchPlacesFn({ query: q, lang });
-        const r = result.data;       
-        setResults(r);
-        } catch (error: any) {
-           console.error("searchPlacesFn 호출 에러 상세:", {
-           message: error?.message,
-           code: error?.code,
-           stack: error?.stack,
-        });
+        setResults(result.data);
+      } catch (error) {
+        console.error("searchPlacesFn 호출 에러:", error);
         setResults([]);
       } finally {
         setSearching(false);
