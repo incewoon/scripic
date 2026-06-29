@@ -215,33 +215,47 @@ export function MapDialog({
         const results = geocodeResult?.results ?? [];
 
         console.log("[Geocode Results]", results);
-  
+
         if (results.length > 0) {
           const result = results[0];
           const addressComponents = result.address_components || [];
-  
-          let city = "";
-          let district = "";
-  
+
+          console.log("[Address Components]", results[0].address_components);
+          
+          let sido = "";      // 시/도
+          let sigungu = "";   // 시/군/구
+          let dong = "";      // 동/리
+        
           for (const comp of addressComponents) {
             const types = comp.types || [];
-            if (types.includes("locality") || types.includes("administrative_area_level_1")) {
-              city = comp.long_name;
+        
+            // 시/도
+            if (!sido && (types.includes("administrative_area_level_1") || types.includes("locality"))) {
+              sido = comp.long_name;
             }
-            if (types.includes("sublocality_level_1") || types.includes("sublocality")) {
-              district = comp.long_name;
+            // 시/군/구
+            if (!sigungu && types.includes("sublocality_level_1")) {
+              sigungu = comp.long_name;
+            }
+            // 동/리
+            if (!dong && (types.includes("sublocality_level_2") || types.includes("neighborhood"))) {
+              dong = comp.long_name;
             }
           }
-  
+        
           let shortLabel = "";
-          if (city && district) {
-            shortLabel = `${city} ${district}`;
-          } else if (city) {
-            shortLabel = city;
-          } else if (result.formatted_address) {
+        
+          if (sido && sigungu && dong) {
+            shortLabel = `${sido} ${sigungu} ${dong}`;
+          } else if (sido && sigungu) {
+            shortLabel = `${sido} ${sigungu}`;
+          } else if (sido) {
+            shortLabel = sido;
+          } else {
+            // fallback
             shortLabel = result.formatted_address.split(",").slice(0, 2).join(", ");
           }
-  
+        
           if (shortLabel) {
             label = shortLabel;
           }
