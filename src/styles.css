@@ -320,10 +320,10 @@
     font-size: 16px;
     line-height: 1.6;
     color: var(--foreground);
-    /* Safe-area insets for Capacitor / edge-to-edge native shells.
-       In normal browsers these env() values are 0, so the web layout is unchanged. */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    /* Horizontal safe-area insets for Capacitor / edge-to-edge native shells.
+       Top/bottom insets are applied per-route (headers and fixed bottom bars)
+       so that h-[100dvh] containers and scrollable pages don't get a global
+       bottom gap. In normal browsers env() values are 0, so the web layout is unchanged. */
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
