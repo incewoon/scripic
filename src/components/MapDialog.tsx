@@ -31,21 +31,27 @@ function loadGoogleMaps(): Promise<void> {
   if (window.__scripicMapsLoading) return window.__scripicMapsLoading;
 
   window.__scripicMapsLoading = new Promise<void>((resolve, reject) => {
-    const key = "AIzaSyCP6-MMvXhjdFjSRtorzJASt3fM3mybazQ"; //(import.meta as any).env?.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
-    const channel = (import.meta as any).env?.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID;
+    const key = (import.meta as any).env?.VITE_GOOGLE_MAPS_BROWSER_KEY;
+
     if (!key) {
-      reject(new Error("Maps key missing"));
+      reject(new Error("VITE_GOOGLE_MAPS_BROWSER_KEY가 설정되지 않았습니다."));
       return;
     }
+
+    const channel = (import.meta as any).env?.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID;
+
     window.__scripicMapsInit = () => resolve();
+
     const s = document.createElement("script");
     s.async = true;
     s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&loading=async&callback=__scripicMapsInit${channel ? `&channel=${encodeURIComponent(channel)}` : ""}`;
     s.onerror = () => reject(new Error("Maps script failed"));
     document.head.appendChild(s);
   });
+
   return window.__scripicMapsLoading;
 }
+
 
 export function MapDialog({
   open,
