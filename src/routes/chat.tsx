@@ -348,7 +348,13 @@ function Chat() {
         mode,
         maxTurnsPerPhoto: 4,
       })) {
-        assistant += delta;
+        // Server may send a sentinel-prefixed string telling us to REPLACE
+        // the entire accumulated text (after post-processing on the server).
+        if (delta.startsWith("\x00REPLACE\x00")) {
+          assistant = delta.slice("\x00REPLACE\x00".length);
+        } else {
+          assistant += delta;
+        }
         setMessages((m) => m.map((x, i) => (i === m.length - 1 ? { ...x, content: assistant } : x)));
       }
     } catch (err: any) {
