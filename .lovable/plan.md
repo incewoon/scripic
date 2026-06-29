@@ -1,35 +1,43 @@
-## 문제
-Capacitor 빌드에서 WebView가 상태바·네비게이션바 영역까지 풀스크린으로 깔리면서, 페이지 상단의 백버튼/카운터, 하단의 CTA 버튼이 시스템 UI에 가려짐. 웹브라우저에서는 Chrome 자체 chrome이 inset을 만들어줘서 문제가 없었음.
+## 문제 진단
+
+어제 작업에서 `body`에 `padding-top/bottom: env(safe-area-inset-*)`를 일괄 적용했지만, 이 방식이 두 가지 부작용을 만들고 있습니다.
+
+1. **하단 버튼이 네비게이션 바와 겹침 (chat, create)**
+   - `chat.tsx`, `create.tsx`의 루트 컨테이너가 `h-[100dvh]`. 100dvh는 시스템 바 영역을 포함한 풀 뷰포트 높이입니다.
+   - `body`에 `padding-bottom: env(safe-area-inset-bottom)`이 더해지면서, 컨테이너 전체가 위로 밀려나는 게 아니라, **컨테이너 내부의 하단 입력바/CTA가 가시 영역 밖(네비게이션 바 뒤)으로 밀려나** 결과적으로 겹쳐 보입니다.
+   - 두 화면의 하단 바는 이미 자체적으로 `pb-[max(env(safe-area-inset-bottom), …)]`를 가지고 있어서 — body padding과 이중으로 적용되는 게 진짜 원인.
+
+2. **메인 외 화면에서 위로 스와이프 시 하단에 빈 공간**
+   - `album.$id.tsx`, `settings.tsx`, `easter.tsx` 등은 `min-h-screen`(또는 일반 흐름) 구조.
+   - `body` 하단 padding이 콘텐츠 끝에 빈 영역으로 더해져, 스크롤 끝에 “많은 공간”으로 보임.
+   - 메인은 `fixed` CTA가 자기 위치를 `bottom-[calc(1.5rem+env(...))]`로 잡고 있어서 영향이 없는 것처럼 보임.
 
 ## 해결 방향
-Capacitor 공식 권장대로 **safe-area inset CSS 변수**를 전역으로 적용. 두 가지를 함께 처리:
 
-1. **WebView가 safe area를 인식하도록 설정**
-   - `capacitor.config.ts`: `android.adjustMarginsForEdgeToEdge: "auto"` 추가 (Capacitor 7+ 표준), 또는 `@capacitor-community/safe-area` 플러그인 사용
-   - `MainActivity.java`에서 `WindowCompat.setDecorFitsSystemWindows(window, false)` + status bar/nav bar 투명 처리 → `env(safe-area-inset-*)` 값이 채워짐
-   - `<meta name="viewport" content="viewport-fit=cover">` 확인 (TanStack `__root.tsx` head)
+`body`의 상하 inset을 **제거**하고, inset이 정말 필요한 지점에만 명시적으로 적용합니다(좌우 inset은 안전하니 유지).
 
-2. **앱 전역에 safe-area padding 적용**
-   - `src/styles.css`의 `body`(또는 루트 `#app` 컨테이너)에:
-     ```css
-     padding-top: env(safe-area-inset-top);
-     padding-bottom: env(safe-area-inset-bottom);
-     padding-left: env(safe-area-inset-left);
-     padding-right: env(safe-area-inset-right);
-     ```
-   - 모든 페이지(`index.tsx`, `create.tsx`, `album.$id.tsx`, `chat.tsx`, `settings.tsx`, `easter.tsx`)에 별도 수정 없이 일괄 적용됨
-   - **하단 고정 CTA 버튼**(`create.tsx`의 "사진을 한 장 이상 골라주세요", `index.tsx`의 "새 이야기 만들기", `album.$id.tsx`의 이미지로 저장)은 `position: sticky/fixed`라면 별도로 `padding-bottom: env(safe-area-inset-bottom)` 또는 `bottom: env(safe-area-inset-bottom)` 추가 필요 — 확인 후 처리
+### 변경 사항
 
-3. **웹앱은 영향 없음**
-   - 브라우저에서는 `env(safe-area-inset-*)`가 0이므로 기존 레이아웃 그대로
+1. **`src/styles.css`**
+   - `body`에서 `padding-top: env(safe-area-inset-top)`, `padding-bottom: env(safe-area-inset-bottom)` 제거.
+   - `padding-left/right: env(safe-area-inset-left/right)`만 유지 (가로 노치 대응).
 
-## 변경 파일
-- `capacitor.config.ts` — edge-to-edge 옵션 추가
-- `android/app/src/main/java/app/lovable/aialbum/MainActivity.java` — 시스템 바 투명/inset 활성화
-- `src/styles.css` — 전역 safe-area padding
-- `src/routes/__root.tsx` — viewport meta에 `viewport-fit=cover` 확인/추가
-- `src/routes/index.tsx`, `src/routes/create.tsx`, `src/routes/album.$id.tsx` — 하단 고정 버튼이 있을 경우 bottom inset 보정
+2. **상단 inset — 각 라우트 헤더 영역에 적용**
+   - `src/routes/index.tsx`: 루트 컨테이너 `pt-12` → `pt-[calc(3rem+env(safe-area-inset-top))]`.
+   - `src/routes/create.tsx`: 첫 헤더 블록(`px-5 pt-6` 부근)에 `pt-[calc(1.5rem+env(safe-area-inset-top))]`.
+   - `src/routes/chat.tsx`: sticky 헤더(`px-5 pt-6`)에 `pt-[calc(1.5rem+env(safe-area-inset-top))]`.
+   - `src/routes/album.$id.tsx`: sticky 헤더(`px-5 py-3`)에 `pt-[calc(0.75rem+env(safe-area-inset-top))]`.
+   - `src/routes/settings.tsx`, `src/routes/easter.tsx`도 같은 패턴으로 헤더에 top inset 추가.
 
-## 확인 사항
-- Capacitor 버전(7+ 인지) 확인 후 `adjustMarginsForEdgeToEdge` vs `@capacitor-community/safe-area` 중 선택
-- 다음 빌드는 `bun run build:capacitor && npx cap sync android` 후 Android Studio에서 재빌드 필요(코드 변경만으로는 APK 갱신 안 됨)
+3. **하단 inset — 이미 처리된 것 + 누락분만 보강**
+   - `chat.tsx`, `create.tsx`의 하단 입력/CTA 바는 기존 `pb-[max(env(safe-area-inset-bottom), …)]` 유지 (이제 body 중복 없음).
+   - `album.$id.tsx`의 하단 “이미지로 저장” 버튼 래퍼(`px-6 mt-6`)에 `pb-[calc(1.5rem+env(safe-area-inset-bottom))]` 추가.
+   - 그 외 `min-h-screen` 화면(`settings.tsx`, `easter.tsx`)의 최하단 컨테이너 또는 푸터에 `pb-[env(safe-area-inset-bottom)]`만 추가.
+
+4. **`h-[100dvh]` 컨테이너 보정 (chat, create)**
+   - body padding이 제거되므로, `h-[100dvh]`는 그대로 풀 뷰포트를 차지하고, 내부 하단 바의 자체 inset이 정확히 네비게이션 바 위에 정렬됩니다. 별도 수정 없음.
+
+### 확인
+- 웹에서는 `env(safe-area-inset-*)`가 0이라 시각 변화 없음.
+- Capacitor 빌드는 `bun run build:capacitor && npx cap sync android` 후 Android Studio 재빌드 필요.
+- 확인 포인트: ① chat/create 하단 버튼이 네비게이션 바 바로 위에 정확히 안착, ② album/settings 등에서 스크롤 끝에 빈 공간 없음, ③ 모든 화면 상단 헤더/버튼이 상태바에 가려지지 않음.
