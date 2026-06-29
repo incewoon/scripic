@@ -21,6 +21,8 @@ import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
 import { albumSystem, albumUserPrompt, toneInstruction, type Mode as AlbumMode, type Tone } from "./prompts-album";
 import { computePHash, minHammingDistance } from "./phash";
 
+import { searchPlaces } from "./places";
+
 // pHash duplicate detection thresholds for review screenshots.
 // 256-bit dHash: ~11% threshold. Legacy 64-bit hashes auto-skip via length mismatch.
 const PHASH_DUP_DISTANCE = 28;
