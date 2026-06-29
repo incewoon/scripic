@@ -799,7 +799,7 @@ function Chat() {
           .map((m, i) => (
             <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
               <div
-                className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap [word-break:keep-all] [overflow-wrap:anywhere] ${
                   m.role === "user"
                     ? "bg-primary text-primary-foreground rounded-br-sm"
                     : "glass text-foreground rounded-bl-sm border border-border/50"
