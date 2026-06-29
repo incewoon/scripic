@@ -18,6 +18,7 @@ import { type PlaceSearchResult } from "@/lib/places.functions"; // 타입만 �
 //import { getApp, getApps, initializeApp } from "firebase/app";
 //import { getFunctions, httpsCallable } from "firebase/functions";
 import { getFns } from '@/integrations/firebase/client';
+import { httpsCallable } from 'firebase/functions';
 import { toast } from "sonner";
 
 declare global {
@@ -302,10 +303,10 @@ export function MapDialog({
         const lang =
           typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
     
-        // 올바른 방식: 이미 초기화된 Functions 인스턴스 재사용
-        const functions = getFns();
+        // 올바른 방식
+        const functionsInstance = getFns();
         const searchPlacesFn = httpsCallable<{ query: string; lang?: string }, PlaceSearchResult[]>(
-          functions,
+          functionsInstance,
           "searchPlaces"
         );
     
