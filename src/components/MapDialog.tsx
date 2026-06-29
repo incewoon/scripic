@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useT } from "@/lib/i18n";
 import { useServerFn } from "@tanstack/react-start";
-import { geocodeLocation, reverseGeocodeCoords } from "@/lib/geocode.functions";
+import { geocodeLocation } from "@/lib/geocode.functions";
 import { searchPlaces, type PlaceSearchResult } from "@/lib/places.functions";
 import { toast } from "sonner";
 
@@ -78,7 +78,6 @@ export function MapDialog({
   const [saving, setSaving] = useState(false);
   const markerRef = useRef<any>(null);
   const geocode = useServerFn(geocodeLocation);
-  const revGeocode = useServerFn(reverseGeocodeCoords);
   const placeSearch = useServerFn(searchPlaces);
 
   // Place search (pick mode only)
@@ -213,8 +212,6 @@ export function MapDialog({
         });
   
         const results = geocodeResult?.results ?? [];
-
-        console.log("[Geocode Results]", results);
 
         if (results.length > 0) {
           const result = results[0];
