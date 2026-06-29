@@ -214,8 +214,9 @@ function AlbumView() {
     );
 
   return (
-    <div className="mx-auto max-w-md min-h-screen pb-20">
-      <header className="sticky top-0 z-10 glass flex items-center justify-between px-5 py-3 border-b border-border/40">
+    <div className="mx-auto max-w-md min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))]">
+      <header className="sticky top-0 z-10 glass flex items-center justify-between px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 border-b border-border/40">
+
         <Link to="/" search={{ q, tags: searchTags }} className="p-2 -ml-2 text-foreground/70">
           <ArrowLeft size={20} />
         </Link>
