@@ -213,11 +213,10 @@ export function MapDialog({
         });
   
         const results = geocodeResult?.results ?? [];
-        const status = geocodeResult?.status ?? "";
+
+        console.log("[Geocode Results]", results);
   
-        console.log("[Geocode Status]", status, results);
-  
-        if (status === "OK" && results.length > 0) {
+        if (results.length > 0) {
           const result = results[0];
           const addressComponents = result.address_components || [];
   
