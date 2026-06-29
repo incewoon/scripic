@@ -10,7 +10,7 @@ setGlobalOptions({
   maxInstances: 10,
 });
 
-const GOOGLE_MAPS_API_KEY = defineSecret("Scripic-Maps-Browser-Key");
+const GOOGLE_MAPS_API_KEY = defineSecret("Scripic-Maps-Server-Key");
 
 interface SearchPlacesInput {
   query: string;
