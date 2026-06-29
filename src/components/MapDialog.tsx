@@ -315,7 +315,7 @@ export function MapDialog({
       }
     }, 300);
     return () => clearTimeout(id);
-  }, [query, mode, open, placeSearch]);
+  }, [query, mode, open]);
 
   function pickResult(r: PlaceSearchResult) {
     moveTo(r.lat, r.lng, 16);
