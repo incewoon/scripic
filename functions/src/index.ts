@@ -271,7 +271,9 @@ export const chat = onCall(
     try {
       for await (const delta of geminiStreamText(body)) {
         full += delta;
-        // 스트리밍 중에는 클라이언트로 전송 안 함
+        // Forward raw model output to the client in real time so the user
+        // sees text appear immediately instead of waiting for full generation.
+        if (response?.sendChunk) response.sendChunk({ delta });
       }
     } catch (e: any) {
       if (e instanceof GeminiUnavailableError) {
@@ -283,18 +285,17 @@ export const chat = onCall(
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
 
+    // Capture the raw streamed text (what the client has accumulated) so we
+    // can decide whether to issue a final "replace" reconciliation chunk.
+    const streamed = full;
+
     // AI 생성 토큰 제거 후 서버 로직으로만 주입
     full = full.replace(/\[(READY_TO_FINISH|PROPOSE_FINISH)\]/g, "").trimEnd();
 
     const stripWrapSentences = (s: string) =>
       s.replace(WRAP_SENT_KO, "").replace(WRAP_SENT_EN, "").replace(/\n{3,}/g, "\n\n").trim();
 
-    // 우선순위:
-    //  0) 사용자가 부정 응답 → 어떤 강제 토큰도 붙이지 않음 (캡 강제도 무시)
-    //  1) 직전이 마무리 제안 + (긍정 OR 명시적 종료) → READY (앨범 생성 트리거)
-    //  2) 사용자가 명시적 종료 요청 (처음) → PROPOSE (한 번 더 확인)
-    //  3) 캡 초과 → READY (안전망)
-    //  4) 마지막 허용 턴 → PROPOSE
+    // 우선순위 (unchanged)
     if (userNegative) {
       // 일반 대화 진행 — 모델 응답 그대로 사용
     } else if (wrapProposedPrev && (userPositive || userExplicitFinish)) {
@@ -327,8 +328,12 @@ export const chat = onCall(
       full = full ? `${full}\n\n${tail}` : tail;
     }
 
-    // 항상 한 번만 전송 (일반 턴 포함)
-    if (response?.sendChunk) response.sendChunk({ delta: full });
+    // If post-processing changed the text (stripped wrap sentence or appended
+    // a server-injected tail), reconcile the client by sending a final
+    // replacement chunk. The client treats `replace` as the authoritative full text.
+    if (response?.sendChunk && full !== streamed) {
+      response.sendChunk({ replace: full });
+    }
     return { text: full };
   },
 );
