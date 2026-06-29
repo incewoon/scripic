@@ -218,41 +218,40 @@ export function MapDialog({
 
         if (results.length > 0) {
           const result = results[0];
-          const addressComponents = result.address_components || [];
-
-          console.log("[Address Components]", results[0].address_components);
-          
-          let sido = "";      // 시/도
-          let sigungu = "";   // 시/군/구
-          let dong = "";      // 동/리
+          const components = result.address_components || [];
         
-          for (const comp of addressComponents) {
-            const types = comp.types || [];
+          // 3단계 주소 추출 (간단 버전)
+          const levels: string[] = [];
         
-            // 시/도
-            if (!sido && (types.includes("administrative_area_level_1") || types.includes("locality"))) {
-              sido = comp.long_name;
-            }
-            // 시/군/구
-            if (!sigungu && types.includes("sublocality_level_1")) {
-              sigungu = comp.long_name;
-            }
-            // 동/리
-            if (!dong && (types.includes("sublocality_level_2") || types.includes("neighborhood"))) {
-              dong = comp.long_name;
-            }
+          // 1단계: 시/도
+          const level1 = components.find((c: any) =>
+            c.types.includes("administrative_area_level_1") ||
+            c.types.includes("locality")
+          );
+          if (level1) levels.push(level1.long_name);
+        
+          // 2단계: 시/군/구
+          const level2 = components.find((c: any) =>
+            c.types.includes("sublocality_level_1") ||
+            c.types.includes("locality")
+          );
+          if (level2 && level2.long_name !== levels[0]) {
+            levels.push(level2.long_name);
           }
         
-          let shortLabel = "";
+          // 3단계: 읍/면/동
+          const level3 = components.find((c: any) =>
+            c.types.includes("sublocality_level_2") ||
+            c.types.includes("sublocality") ||
+            c.types.includes("neighborhood")
+          );
+          if (level3) levels.push(level3.long_name);
         
-          if (sido && sigungu && dong) {
-            shortLabel = `${sido} ${sigungu} ${dong}`;
-          } else if (sido && sigungu) {
-            shortLabel = `${sido} ${sigungu}`;
-          } else if (sido) {
-            shortLabel = sido;
-          } else {
-            // fallback
+          // 3개까지만 사용
+          let shortLabel = levels.slice(0, 3).join(" ");
+        
+          // 3개가 안 되면 formatted_address 앞부분 사용
+          if (levels.length < 2 && result.formatted_address) {
             shortLabel = result.formatted_address.split(",").slice(0, 2).join(", ");
           }
         
@@ -260,6 +259,7 @@ export function MapDialog({
             label = shortLabel;
           }
         }
+              
       }
     } catch (error) {
       console.warn("클라이언트 역지오코딩 실패:", error);
