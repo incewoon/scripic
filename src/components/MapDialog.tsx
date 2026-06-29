@@ -86,11 +86,6 @@ export function MapDialog({
   const [saving, setSaving] = useState(false);
   const markerRef = useRef<any>(null);
   const geocode = useServerFn(geocodeLocation);
-  const functions = getFunctions(getApp());
-  const searchPlacesFn = httpsCallable<{ query: string; lang?: string }, PlaceSearchResult[]>(
-    functions,
-    "searchPlaces"
-  );
 
   // Place search (pick mode only)
   const [query, setQuery] = useState("");
@@ -305,6 +300,12 @@ export function MapDialog({
       try {
         const lang =
           typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
+
+        const functions = getFunctions(getApp());
+        const searchPlacesFn = httpsCallable<{ query: string; lang?: string }, PlaceSearchResult[]>(
+          functions,
+          "searchPlaces"
+        );
         const result = await searchPlacesFn({ query: q, lang });
         const r = result.data;       
         setResults(r);
