@@ -14,7 +14,8 @@ import {
 import { useT } from "@/lib/i18n";
 import { useServerFn } from "@tanstack/react-start";
 import { geocodeLocation } from "@/lib/geocode.functions";
-import { searchPlaces, type PlaceSearchResult } from "@/lib/places.functions";
+import { type PlaceSearchResult } from "@/lib/places.functions"; // 타입만 유지
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { toast } from "sonner";
 
 declare global {
@@ -84,7 +85,11 @@ export function MapDialog({
   const [saving, setSaving] = useState(false);
   const markerRef = useRef<any>(null);
   const geocode = useServerFn(geocodeLocation);
-  const placeSearch = useServerFn(searchPlaces);
+  const functions = getFunctions();
+  const searchPlacesFn = httpsCallable<{ query: string; lang?: string }, PlaceSearchResult[]>(
+    functions,
+    "searchPlaces"
+  );
 
   // Place search (pick mode only)
   const [query, setQuery] = useState("");
@@ -299,7 +304,8 @@ export function MapDialog({
       try {
         const lang =
           typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
-        const r = await placeSearch({ data: { query: q, lang } });
+        const result = await searchPlacesFn({ query: q, lang });
+        const r = result.data;
         setResults(r);
       } catch {
         setResults([]);
