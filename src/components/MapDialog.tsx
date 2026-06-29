@@ -309,8 +309,12 @@ export function MapDialog({
         const result = await searchPlacesFn({ query: q, lang });
         const r = result.data;       
         setResults(r);
-      } catch (error) {
-        console.error("searchPlacesFn 호출 에러:", error);
+        } catch (error: any) {
+           console.error("searchPlacesFn 호출 에러 상세:", {
+           message: error?.message,
+           code: error?.code,
+           stack: error?.stack,
+        });
         setResults([]);
       } finally {
         setSearching(false);
