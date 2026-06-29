@@ -348,7 +348,13 @@ function Chat() {
         mode,
         maxTurnsPerPhoto: 4,
       })) {
-        assistant += delta;
+        // Server may send a sentinel-prefixed string telling us to REPLACE
+        // the entire accumulated text (after post-processing on the server).
+        if (delta.startsWith("\x00REPLACE\x00")) {
+          assistant = delta.slice("\x00REPLACE\x00".length);
+        } else {
+          assistant += delta;
+        }
         setMessages((m) => m.map((x, i) => (i === m.length - 1 ? { ...x, content: assistant } : x)));
       }
     } catch (err: any) {
@@ -793,7 +799,7 @@ function Chat() {
           .map((m, i) => (
             <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
               <div
-                className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap [word-break:keep-all] [overflow-wrap:anywhere] ${
                   m.role === "user"
                     ? "bg-primary text-primary-foreground rounded-br-sm"
                     : "glass text-foreground rounded-bl-sm border border-border/50"

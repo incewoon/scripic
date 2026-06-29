@@ -47,7 +47,7 @@ export async function* aiChatStream(payload: {
 
   await ensureFirebaseUser(); // anonymous sign-in (also ensures App Check is initialized)
 
-  const call = httpsCallable<any, { text: string }, { delta?: string }>(
+  const call = httpsCallable<any, { text: string }, { delta?: string; replace?: string }>(
     getFns(),
     "chat",
   );
@@ -66,15 +66,20 @@ export async function* aiChatStream(payload: {
 
     let firstChunkAt: number | null = null;
     for await (const chunk of stream) {
-      const delta = chunk?.delta;
-      if (typeof delta === "string" && delta.length > 0) {
-        if (firstChunkAt == null) {
-          firstChunkAt = performance.now();
-          console.log(
-            `[AI Client] aiChatStream 첫 토큰 - ${(firstChunkAt - startTime).toFixed(0)}ms`,
-          );
-        }
-        yield delta;
+      if (firstChunkAt == null) {
+        firstChunkAt = performance.now();
+        console.log(
+          `[AI Client] aiChatStream 첫 토큰 - ${(firstChunkAt - startTime).toFixed(0)}ms`,
+        );
+      }
+      // Server may send either an incremental `delta` or a full `replace`
+      // (after post-processing strips wrap sentences / appends server-injected tails).
+      if (typeof chunk?.replace === "string") {
+        // Sentinel-prefixed string tells the consumer to reset accumulated text.
+        yield `\x00REPLACE\x00${chunk.replace}`;
+      } else {
+        const delta = chunk?.delta;
+        if (typeof delta === "string" && delta.length > 0) yield delta;
       }
     }
     await data; // surface server-side errors that fire after streaming begins

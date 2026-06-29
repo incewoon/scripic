@@ -48,6 +48,13 @@ export function toGeminiRequest(messages: OpenAIMessage[], opts?: { tools?: any[
   if (systemTexts.length) body.systemInstruction = { parts: [{ text: systemTexts.join("\n\n") }] };
   if (opts?.tools) body.tools = opts.tools;
   if (opts?.toolConfig) body.toolConfig = opts.toolConfig;
+  // Disable Gemini 2.5 "thinking" tokens — huge latency reduction for both
+  // chat turns and album JSON generation. We don't need chain-of-thought
+  // for these conversational / structured-output tasks.
+  body.generationConfig = {
+    ...(body.generationConfig ?? {}),
+    thinkingConfig: { thinkingBudget: 0 },
+  };
   return body;
 }
 

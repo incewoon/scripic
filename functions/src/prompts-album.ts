@@ -21,15 +21,18 @@ export function toneInstruction(lang: string, tone: Tone) {
 export function albumSystem(lang: string, mode: Mode) {
   const ko = lang === "ko";
   if (mode === "journal") {
-    if (ko) return `당신은 대화에서 확인된 사실만으로 앨범 텍스트를 정리하는 기록자입니다.
+    if (ko) return `당신은 대화에서 확인된 사실만으로 앨범 텍스트를 정리하는 '기록자'입니다. 소설가가 아닙니다.
 [이 지침은 내용의 사실성을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
-- 허구·상상·추정 절대 금지. 사용자가 대화에서 직접 말한 내용만 사용하세요.
-- 없는 내용을 부풀리거나 추가하지 마세요. (※ 어조 지침에 따른 말투 변화는 허용)
-- 사용자의 표현을 그대로 옮기되 자연스럽게 다듬으세요.
+- 절대 금지: 허구·상상·추정·은유·시적 표현·감성적 묘사·미사여구.
+- 사용자가 대화에서 직접 언급한 사실만 사용. 대화에 없는 디테일을 만들어 채우지 마세요.
+- 형용사·부사·감탄사를 최소화하고, 간결하고 담백한 기록 문체로 작성.
+- 사용자의 표현을 그대로 옮기되 자연스럽게 다듬으세요. 새 이야기를 만들지 마세요.
 - 캡션 개수는 정확히 사진 개수와 같아야 합니다.`;
-    return `You are a recorder organizing album text using only facts from the conversation.
+    return `You are a 'recorder' organizing album text using only facts from the conversation. You are NOT a novelist.
 [This prompt defines content fidelity only. Tone and style follow the separate tone instruction below.]
-- No fiction, imagination, or guessing. Use only what the user explicitly said. (※ Tone adjustments per the tone instruction are permitted.)
+- STRICTLY FORBIDDEN: fiction, imagination, guessing, metaphor, poetic phrasing, emotional embellishment, flowery language.
+- Use only facts the user explicitly stated. Do not invent details not present in the conversation.
+- Minimize adjectives/adverbs. Write in a plain, factual record style.
 - Captions count must exactly match photo count.`;
   }
   if (mode === "summary") {
@@ -42,14 +45,15 @@ export function albumSystem(lang: string, mode: Mode) {
 - Omit unnecessary detail; keep only the key facts.
 - Captions count must match photo count exactly.`;
   }
-  if (ko) return `당신은 추억을 풍부한 산문으로 엮는 작가입니다.
+  if (ko) return `당신은 추억을 풍부한 산문으로 엮는 '이야기 작가'입니다.
 [이 지침은 내용의 풍부함을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
-- 대화의 디테일을 최대한 담고, 사실을 바탕으로 감성적 묘사를 자유롭게 더하세요.
+- 대화의 디테일을 최대한 담고, 사실을 바탕으로 감성적 묘사와 비유를 자유롭게 더하세요.
+- 분위기·감정·장면을 풍성하게 그려내세요.
 - 캡션 개수는 정확히 사진 개수와 같아야 합니다.
 - 한국어로 작성하세요.`;
-  return `You are a writer weaving memories into rich prose.
+  return `You are a 'story writer' weaving memories into rich prose.
 [This prompt defines content richness only. Tone and style follow the separate tone instruction below.]
-- Pack in concrete details from the conversation; add evocative, expressive language freely.
+- Pack in concrete details from the conversation; add evocative, expressive language and imagery freely.
 - Captions count must exactly match photo count.`;
 }
 
