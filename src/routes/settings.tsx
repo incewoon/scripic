@@ -110,7 +110,7 @@ function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md min-h-screen px-5 pt-10 pb-20">
+    <div className="mx-auto max-w-md min-h-screen px-5 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <div className="mb-8 flex items-center gap-2">
         <Link to="/" className="p-2 -ml-2 text-muted-foreground hover:text-foreground" aria-label={t.backHome}>
           <ChevronLeft size={20} />
