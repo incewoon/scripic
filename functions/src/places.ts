@@ -1,5 +1,6 @@
 // functions/src/places.ts
-import { onCall, HttpsError, defineSecret } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
 
 setGlobalOptions({
@@ -66,14 +67,16 @@ export const searchPlaces = onCall(
       }
 
       const data: any = await response.json();
-      const places = data.places || [];
+      const places: any[] = data.places || [];
 
       return places
         .map((place: any) => {
           const lat = place?.location?.latitude;
           const lng = place?.location?.longitude;
 
-          if (typeof lat !== "number" || typeof lng !== "number") return null;
+          if (typeof lat !== "number" || typeof lng !== "number") {
+            return null;
+          }
 
           return {
             id: String(place.id ?? ""),
@@ -81,7 +84,7 @@ export const searchPlaces = onCall(
             address: String(place.formattedAddress ?? ""),
             lat,
             lng,
-          } satisfies PlaceSearchResult;
+          } as PlaceSearchResult;
         })
         .filter((p): p is PlaceSearchResult => p !== null);
     } catch (error) {
