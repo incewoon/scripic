@@ -220,24 +220,23 @@ export function MapDialog({
           const result = results[0];
           const components = result.address_components || [];
         
-          // 3단계 주소 추출 (간단 버전)
           const levels: string[] = [];
         
-          // 1단계: 시/도
-          const level1 = components.find((c: any) =>
-            c.types.includes("administrative_area_level_1") ||
+          // 1단계: 시/도 (administrative_area_level_1 우선)
+          const level1 = components.find((c: any) => 
+            c.types.includes("administrative_area_level_1")
+          ) || components.find((c: any) => 
             c.types.includes("locality")
           );
           if (level1) levels.push(level1.long_name);
         
           // 2단계: 시/군/구
-          const level2 = components.find((c: any) =>
-            c.types.includes("sublocality_level_1") ||
-            c.types.includes("locality")
+          const level2 = components.find((c: any) => 
+            c.types.includes("sublocality_level_1")
+          ) || components.find((c: any) => 
+            c.types.includes("locality") && c.long_name !== levels[0]
           );
-          if (level2 && level2.long_name !== levels[0]) {
-            levels.push(level2.long_name);
-          }
+          if (level2) levels.push(level2.long_name);
         
           // 3단계: 읍/면/동
           const level3 = components.find((c: any) =>
@@ -247,10 +246,10 @@ export function MapDialog({
           );
           if (level3) levels.push(level3.long_name);
         
-          // 3개까지만 사용
+          // 최대 3단계까지만 사용
           let shortLabel = levels.slice(0, 3).join(" ");
         
-          // 3개가 안 되면 formatted_address 앞부분 사용
+          // 2단계 미만이면 formatted_address로 fallback
           if (levels.length < 2 && result.formatted_address) {
             shortLabel = result.formatted_address.split(",").slice(0, 2).join(", ");
           }
