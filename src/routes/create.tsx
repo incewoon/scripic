@@ -565,8 +565,9 @@ function Create() {
       <div className="px-5 pt-1 pb-[max(env(safe-area-inset-bottom),0.5rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
         <button
           onClick={next}
-          disabled={items.length < 1 || busy}
-          className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
+          disabled={items.length < 1 || busy || !online}
+          title={!online ? t.offlineNotice : undefined}
+          className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {items.length < 1 ? (
             t.pickAtLeastOne
