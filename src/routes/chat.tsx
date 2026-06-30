@@ -13,6 +13,7 @@ import { aiChatStream, aiGenerateAlbum } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 import { useAuthReady } from "@/lib/useAuthReady";
 import { ChatUsageCoachmark, shouldShowChatUsage } from "@/components/ChatUsageCoachmark";
+import { useOnlineStatus, requireOnline } from "@/lib/network";
 
 
 export const ssr = false;
@@ -612,6 +613,10 @@ function Chat() {
   }
 
   async function finish(messagesOverride?: Msg[]) {
+    if (!requireOnline(t.offlineNotice)) {
+      finishingRef.current = false;
+      return;
+    }
     const msgs = messagesOverride ?? messages;
     const activePhotos = photosRef.current.length ? photosRef.current : photos;
     const activeMeta = Object.keys(metaRef.current).length ? metaRef.current : meta;
