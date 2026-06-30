@@ -97,7 +97,7 @@ export const searchPlaces = onCall(
 export const reverseGeocode = onCall(
   {
     enforceAppCheck: true,
-    secrets: [Scripic-Maps-Server-Key], // 기존에 사용하던 secret 변수명에 맞춰주세요
+    secrets: [GOOGLE_MAPS_API_KEY], 
   },
   async (request): Promise<{ label: string }> => {
     const { lat, lng, lang = "ko" } = request.data as {
@@ -162,7 +162,7 @@ export const reverseGeocode = onCall(
 export const geocodeLocation = onCall(
   {
     enforceAppCheck: true,
-    secrets: [Scripic-Maps-Server-Key], // 기존에 사용 중인 secret 변수명으로 맞춰주세요
+    secrets: [GOOGLE_MAPS_API_KEY], // 기존에 사용 중인 secret 변수명으로 맞춰주세요
   },
   async (request) => {
     const { query, lang = "ko" } = request.data as { query: string; lang?: string };
