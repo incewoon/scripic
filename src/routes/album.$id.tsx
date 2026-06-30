@@ -9,6 +9,7 @@ import { Hl } from "@/lib/highlight";
 import { MapDialog } from "@/components/MapDialog";
 import { EditCoachmark, shouldShowEditCoach } from "@/components/EditCoachmark";
 import { TagPickerDialog } from "@/components/TagPickerDialog";
+import { useOnlineStatus, requireOnline } from "@/lib/network";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
