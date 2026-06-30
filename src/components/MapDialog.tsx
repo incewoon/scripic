@@ -15,7 +15,7 @@ import { useT } from "@/lib/i18n";
 import { getFns } from '@/integrations/firebase/client';
 import { httpsCallable } from 'firebase/functions';
 import { toast } from "sonner";
-import { Geolocation } from '@capacitor/geolocation';
+import { Capacitor } from '@capacitor/core';
 
 declare global {
   interface Window {
@@ -320,48 +320,53 @@ export function MapDialog({
     if (locating) return;
     setLocating(true);
   
-    (async () => {
+    const getLocation = async () => {
       try {
-        // Capacitor 플러그인으로 먼저 시도
-        const permissionStatus = await Geolocation.requestPermissions();
-        
-        if (permissionStatus.location === 'denied' || permissionStatus.coarseLocation === 'denied') {
-          toast(t.locationPermissionDenied);
-          setLocating(false);
-          return;
-        }
-  
-        const position = await Geolocation.getCurrentPosition({
-          enableHighAccuracy: true,
-          timeout: 10000,
-        });
-  
-        moveTo(position.coords.latitude, position.coords.longitude, 16);
-      } catch (error) {
-        // Capacitor 실패 시 브라우저 Geolocation으로 fallback (웹 환경 대비)
-        try {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                moveTo(pos.coords.latitude, pos.coords.longitude, 16);
-              },
-              () => {
-                toast(t.locationPermissionDenied);
-              },
-              { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
-            );
-          } else {
+        if (Capacitor.isNativePlatform()) {
+          // 네이티브 앱(Capacitor)일 경우
+          const { Geolocation } = await import('@capacitor/geolocation');
+          
+          const permission = await Geolocation.requestPermissions();
+          if (permission.location === 'denied' || permission.coarseLocation === 'denied') {
             toast(t.locationPermissionDenied);
+            setLocating(false);
+            return;
           }
-        } catch {
-          toast(t.locationPermissionDenied);
+  
+          const position = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
+  
+          moveTo(position.coords.latitude, position.coords.longitude, 16);
+        } else {
+          // 웹 환경일 경우 (Lovable)
+          if (!navigator.geolocation) {
+            toast(t.locationPermissionDenied);
+            setLocating(false);
+            return;
+          }
+  
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              moveTo(pos.coords.latitude, pos.coords.longitude, 16);
+            },
+            () => {
+              toast(t.locationPermissionDenied);
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+          );
         }
+      } catch (error) {
+        console.error("위치 가져오기 실패:", error);
+        toast(t.locationPermissionDenied);
       } finally {
         setLocating(false);
       }
-    })();
+    };
+  
+    getLocation();
   }
-
   const isPick = mode === "pick";
 
   return (
