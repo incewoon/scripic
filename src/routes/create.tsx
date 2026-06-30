@@ -121,6 +121,7 @@ function Create() {
   const { t } = useT();
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
+  const online = useOnlineStatus();
   const [tags, setTags] = useState<string[]>([]);
   const [tagDraft, setTagDraft] = useState("");
   const [myTags, setMyTags] = useState<string[]>([]);
