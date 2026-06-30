@@ -121,7 +121,19 @@ export function MapDialog({
       let c: { lat: number; lng: number } | undefined = initialCoords;
       if (mode === "view" && !c) {
         try {
-          const r = await geocode({ data: { query: location } });
+          const functions = getFns();
+          const geocodeFn = httpsCallable<
+            { query: string; lang?: string }, 
+            any   // 필요에 따라 타입을 더 정확히 정의할 수 있음
+          >(functions, "geocodeLocation");   // ← Firebase에 만들 함수 이름
+          
+          const result = await geocodeFn({ 
+            query: location, 
+            lang: typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en"
+          });
+          
+          const r = result.data;
+          
           if (cancelled) return;
           if (r) {
             c = r;
