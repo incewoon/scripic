@@ -455,7 +455,7 @@ export function MapDialog({
                     {!searching &&
                       results?.map((r) => (
                         <button
-                          key={r.id}
+                          key={r.placeId ?? `${r.lat},${r.lng}`}
                           type="button"
                           onClick={() => pickResult(r)}
                           className="w-full text-left px-3 py-2 hover:bg-muted/60 border-b last:border-b-0"
