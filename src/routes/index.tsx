@@ -234,12 +234,14 @@ function Home() {
   })();
 
   const onCreate = () => {
+    if (!requireOnline(t.offlineNotice)) return;
     if (!canCreateAlbumToday()) {
       setLimitOpen(true);
       return;
     }
     navigate({ to: "/create" });
   };
+
 
   return (
     <div className="mx-auto max-w-md min-h-screen px-5 pt-[calc(3rem+env(safe-area-inset-top))] pb-44">
