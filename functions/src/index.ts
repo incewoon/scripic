@@ -713,4 +713,4 @@ export const grantReviewReward = onCall(
   },
 );
 
-export { searchPlaces, reverseGeocode } from "./places";
+export { searchPlaces, reverseGeocode, geocodeLocation } from "./places";
