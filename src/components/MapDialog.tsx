@@ -323,10 +323,12 @@ export function MapDialog({
     const getLocation = async () => {
       try {
         if (Capacitor.isNativePlatform()) {
-          // 네이티브 앱(Capacitor)일 경우
-          const { Geolocation } = await import('@capacitor/geolocation');
-          
+          // 네이티브 환경에서만 @capacitor/geolocation 사용
+          const pluginName = '@capacitor/geolocation';
+          const { Geolocation } = await import(/* @vite-ignore */ pluginName);
+  
           const permission = await Geolocation.requestPermissions();
+  
           if (permission.location === 'denied' || permission.coarseLocation === 'denied') {
             toast(t.locationPermissionDenied);
             setLocating(false);
@@ -340,7 +342,7 @@ export function MapDialog({
   
           moveTo(position.coords.latitude, position.coords.longitude, 16);
         } else {
-          // 웹 환경일 경우 (Lovable)
+          // 웹 환경 (Lovable)
           if (!navigator.geolocation) {
             toast(t.locationPermissionDenied);
             setLocating(false);
@@ -367,6 +369,7 @@ export function MapDialog({
   
     getLocation();
   }
+  
   const isPick = mode === "pick";
 
   return (
