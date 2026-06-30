@@ -158,3 +158,44 @@ export const reverseGeocode = onCall(
     }
   }
 );
+// === 정방향 지오코딩 (주소 → 좌표) ===
+export const geocodeLocation = onCall(
+  {
+    enforceAppCheck: true,
+    secrets: [serverKey], // 기존에 사용 중인 secret 변수명으로 맞춰주세요
+  },
+  async (request) => {
+    const { query, lang = "ko" } = request.data as { query: string; lang?: string };
+
+    if (!query || typeof query !== "string") {
+      throw new HttpsError("invalid-argument", "query가 필요합니다.");
+    }
+
+    const apiKey = serverKey.value();
+
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&language=${lang}&key=${apiKey}`
+      );
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data: any = await response.json();
+      const result = data.results?.[0];
+
+      if (!result || !result.geometry?.location) {
+        return null;
+      }
+
+      return {
+        lat: result.geometry.location.lat,
+        lng: result.geometry.location.lng,
+      };
+    } catch (error) {
+      console.error("geocodeLocation error:", error);
+      return null;
+    }
+  }
+);
