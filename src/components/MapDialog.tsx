@@ -12,11 +12,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useT } from "@/lib/i18n";
-import { useServerFn } from "@tanstack/react-start";
 import { geocodeLocation } from "@/lib/geocode.functions";
-import { type PlaceSearchResult } from "@/lib/places.functions"; // 타입만 유지
-//import { getApp, getApps, initializeApp } from "firebase/app";
-//import { getFunctions, httpsCallable } from "firebase/functions";
+import { type PlaceSearchResult } from "@/lib/places.functions";
 import { getFns } from '@/integrations/firebase/client';
 import { httpsCallable } from 'firebase/functions';
 import { toast } from "sonner";
@@ -302,8 +299,7 @@ export function MapDialog({
       try {
         const lang =
           typeof navigator !== "undefined" && navigator.language?.startsWith("ko") ? "ko" : "en";
-    
-        // 올바른 방식
+
         const functionsInstance = getFns();
         const searchPlacesFn = httpsCallable<{ query: string; lang?: string }, PlaceSearchResult[]>(
           functionsInstance,
