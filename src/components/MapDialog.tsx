@@ -17,6 +17,14 @@ import { httpsCallable } from 'firebase/functions';
 import { toast } from "sonner";
 import { Capacitor } from '@capacitor/core';
 
+type PlaceSearchResult = {
+  name: string;
+  address?: string;
+  lat: number;
+  lng: number;
+  placeId?: string;
+};
+
 declare global {
   interface Window {
     google?: any;
