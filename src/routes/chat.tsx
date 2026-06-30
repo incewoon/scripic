@@ -126,6 +126,7 @@ async function downscaleForAi(dataUrl: string, maxDim = 896, q = 0.75): Promise<
 
 function Chat() {
   const { t, lang } = useT();
+  const online = useOnlineStatus();
   const navigate = useNavigate();
   const { ready: authReady, user } = useAuthReady();
   const [photos, setPhotos] = useState<string[]>([]);
