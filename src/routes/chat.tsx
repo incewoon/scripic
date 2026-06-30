@@ -775,8 +775,9 @@ function Chat() {
           <button
             ref={finishBtnRef}
             onClick={() => void finish()}
-            disabled={generating || busy}
-            className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-50"
+            disabled={generating || busy || !online}
+            title={!online ? t.offlineNotice : undefined}
+            className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Sparkles size={12} /> {generating ? t.creating : t.finish}
           </button>
