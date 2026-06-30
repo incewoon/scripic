@@ -12,7 +12,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useT } from "@/lib/i18n";
-import { geocodeLocation } from "@/lib/geocode.functions";
 import { getFns } from '@/integrations/firebase/client';
 import { httpsCallable } from 'firebase/functions';
 import { toast } from "sonner";
