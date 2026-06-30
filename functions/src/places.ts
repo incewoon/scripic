@@ -93,3 +93,68 @@ export const searchPlaces = onCall(
     }
   }
 );
+// === 역지오코딩 함수 추가 ===
+export const reverseGeocode = onCall(
+  {
+    enforceAppCheck: true,
+    secrets: [serverKey], // 기존에 사용하던 secret 변수명에 맞춰주세요
+  },
+  async (request): Promise<{ label: string }> => {
+    const { lat, lng, lang = "ko" } = request.data as {
+      lat: number;
+      lng: number;
+      lang?: string;
+    };
+
+    if (typeof lat !== "number" || typeof lng !== "number") {
+      throw new HttpsError("invalid-argument", "lat, lng가 필요합니다.");
+    }
+
+    const apiKey = serverKey.value();
+
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=${lang}&key=${apiKey}`
+      );
+
+      if (!response.ok) {
+        return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
+      }
+
+      const data: any = await response.json();
+      const results = data.results || [];
+
+      if (results.length === 0) {
+        return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
+      }
+
+      // 기존과 유사한 주소 파싱 로직
+      const components = results[0].address_components || [];
+      const levels: string[] = [];
+
+      const level1 = components.find((c: any) =>
+        c.types.includes("administrative_area_level_1")
+      ) || components.find((c: any) => c.types.includes("locality"));
+      if (level1) levels.push(level1.long_name);
+
+      const level2 = components.find((c: any) =>
+        c.types.includes("sublocality_level_1")
+      ) || components.find((c: any) => c.types.includes("locality") && c.long_name !== levels[0]);
+      if (level2) levels.push(level2.long_name);
+
+      const level3 = components.find((c: any) =>
+        c.types.includes("sublocality_level_2") ||
+        c.types.includes("sublocality") ||
+        c.types.includes("neighborhood")
+      );
+      if (level3) levels.push(level3.long_name);
+
+      const shortLabel = levels.length >= 2 ? levels.slice(0, 3).join(" ") : results[0].formatted_address;
+
+      return { label: shortLabel || `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
+    } catch (error) {
+      console.error("reverseGeocode error:", error);
+      return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
+    }
+  }
+);
