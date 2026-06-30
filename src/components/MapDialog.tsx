@@ -15,6 +15,7 @@ import { useT } from "@/lib/i18n";
 import { getFns } from '@/integrations/firebase/client';
 import { httpsCallable } from 'firebase/functions';
 import { toast } from "sonner";
+import { Geolocation } from '@capacitor/geolocation';
 
 declare global {
   interface Window {
@@ -317,22 +318,48 @@ export function MapDialog({
 
   function useCurrentLocation() {
     if (locating) return;
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      toast(t.locationPermissionDenied);
-      return;
-    }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        moveTo(pos.coords.latitude, pos.coords.longitude, 16);
+  
+    (async () => {
+      try {
+        // Capacitor 플러그인으로 먼저 시도
+        const permissionStatus = await Geolocation.requestPermissions();
+        
+        if (permissionStatus.location === 'denied' || permissionStatus.coarseLocation === 'denied') {
+          toast(t.locationPermissionDenied);
+          setLocating(false);
+          return;
+        }
+  
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 10000,
+        });
+  
+        moveTo(position.coords.latitude, position.coords.longitude, 16);
+      } catch (error) {
+        // Capacitor 실패 시 브라우저 Geolocation으로 fallback (웹 환경 대비)
+        try {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                moveTo(pos.coords.latitude, pos.coords.longitude, 16);
+              },
+              () => {
+                toast(t.locationPermissionDenied);
+              },
+              { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+            );
+          } else {
+            toast(t.locationPermissionDenied);
+          }
+        } catch {
+          toast(t.locationPermissionDenied);
+        }
+      } finally {
         setLocating(false);
-      },
-      () => {
-        setLocating(false);
-        toast(t.locationPermissionDenied);
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
-    );
+      }
+    })();
   }
 
   const isPick = mode === "pick";
