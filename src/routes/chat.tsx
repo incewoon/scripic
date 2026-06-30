@@ -13,6 +13,7 @@ import { aiChatStream, aiGenerateAlbum } from "@/lib/aiClient";
 import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 import { useAuthReady } from "@/lib/useAuthReady";
 import { ChatUsageCoachmark, shouldShowChatUsage } from "@/components/ChatUsageCoachmark";
+import { useOnlineStatus, requireOnline } from "@/lib/network";
 
 
 export const ssr = false;
@@ -125,6 +126,7 @@ async function downscaleForAi(dataUrl: string, maxDim = 896, q = 0.75): Promise<
 
 function Chat() {
   const { t, lang } = useT();
+  const online = useOnlineStatus();
   const navigate = useNavigate();
   const { ready: authReady, user } = useAuthReady();
   const [photos, setPhotos] = useState<string[]>([]);
@@ -612,6 +614,10 @@ function Chat() {
   }
 
   async function finish(messagesOverride?: Msg[]) {
+    if (!requireOnline(t.offlineNotice)) {
+      finishingRef.current = false;
+      return;
+    }
     const msgs = messagesOverride ?? messages;
     const activePhotos = photosRef.current.length ? photosRef.current : photos;
     const activeMeta = Object.keys(metaRef.current).length ? metaRef.current : meta;
@@ -769,8 +775,9 @@ function Chat() {
           <button
             ref={finishBtnRef}
             onClick={() => void finish()}
-            disabled={generating || busy}
-            className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-50"
+            disabled={generating || busy || !online}
+            title={!online ? t.offlineNotice : undefined}
+            className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Sparkles size={12} /> {generating ? t.creating : t.finish}
           </button>

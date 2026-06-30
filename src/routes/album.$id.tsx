@@ -9,6 +9,7 @@ import { Hl } from "@/lib/highlight";
 import { MapDialog } from "@/components/MapDialog";
 import { EditCoachmark, shouldShowEditCoach } from "@/components/EditCoachmark";
 import { TagPickerDialog } from "@/components/TagPickerDialog";
+import { useOnlineStatus, requireOnline } from "@/lib/network";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
@@ -115,6 +116,7 @@ function AlbumView() {
   const { q, tags: searchTags } = Route.useSearch();
   const { t } = useT();
   const [album, setAlbum] = useState<Album | null | undefined>(undefined);
+  const online = useOnlineStatus();
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -224,12 +226,15 @@ function AlbumView() {
           <button
             ref={pencilBtnRef}
             type="button"
+            disabled={!online}
+            title={!online ? t.offlineNotice : undefined}
             onClick={() => {
+              if (!requireOnline(t.offlineNotice)) return;
               const next = !editMode;
               setEditMode(next);
               if (!next) setActiveKey(null);
             }}
-            className={`p-2 rounded-full transition-colors ${
+            className={`p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               editMode ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
             }`}
             aria-label={t.edit}

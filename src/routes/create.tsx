@@ -20,6 +20,7 @@ import { UploadLimitDialog } from "@/components/UploadLimitDialog";
 import { CreateUsageCoachmark, shouldShowCreateUsage } from "@/components/CreateUsageCoachmark";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
 import { getAlbums } from "@/lib/storage";
+import { useOnlineStatus, requireOnline } from "@/lib/network";
 
 const PHOTO_MAX = 3;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -120,6 +121,7 @@ function Create() {
   const { t } = useT();
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
+  const online = useOnlineStatus();
   const [tags, setTags] = useState<string[]>([]);
   const [tagDraft, setTagDraft] = useState("");
   const [myTags, setMyTags] = useState<string[]>([]);
@@ -277,6 +279,7 @@ function Create() {
   };
 
   const next = async () => {
+    if (!requireOnline(t.offlineNotice)) return;
     if (items.length < 1) {
       toast.error(t.pickAtLeastOne);
       return;
@@ -562,8 +565,9 @@ function Create() {
       <div className="px-5 pt-1 pb-[max(env(safe-area-inset-bottom),0.5rem)] bg-gradient-to-t from-background via-background to-transparent space-y-2">
         <button
           onClick={next}
-          disabled={items.length < 1 || busy}
-          className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
+          disabled={items.length < 1 || busy || !online}
+          title={!online ? t.offlineNotice : undefined}
+          className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {items.length < 1 ? (
             t.pickAtLeastOne

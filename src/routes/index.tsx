@@ -9,6 +9,7 @@ import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageN
 import { ReviewRewardDialog } from "@/components/ReviewRewardDialog";
 import { HomeUsageCoachmark, shouldShowHomeCoach } from "@/components/HomeUsageCoachmark";
 import { Hl, tokenize } from "@/lib/highlight";
+import { useOnlineStatus, requireOnline } from "@/lib/network";
 
 const SORT_KEY = "moara_album_sort_v1";
 const SORT_DIR_KEY = "moara_album_sort_dir_v1";
@@ -64,6 +65,7 @@ export const Route = createFileRoute("/")({
 function Home() {
   const { t, lang } = useT();
   const [albums, setAlbums] = useState<Album[] | null>(null);
+  const online = useOnlineStatus();
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
   const [rewardOpen, setRewardOpen] = useState(false);
@@ -233,12 +235,14 @@ function Home() {
   })();
 
   const onCreate = () => {
+    if (!requireOnline(t.offlineNotice)) return;
     if (!canCreateAlbumToday()) {
       setLimitOpen(true);
       return;
     }
     navigate({ to: "/create" });
   };
+
 
   return (
     <div className="mx-auto max-w-md min-h-screen px-5 pt-[calc(3rem+env(safe-area-inset-top))] pb-44">
@@ -493,7 +497,9 @@ function Home() {
       <div className="fixed left-0 right-0 px-5 mx-auto max-w-md z-30 bottom-[max(env(safe-area-inset-bottom),0.75rem)]">
         <button
           onClick={onCreate}
-          className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98]"
+          disabled={!online}
+          title={!online ? t.offlineNotice : undefined}
+          className="btn-cta w-full py-4 text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus size={18} strokeWidth={2.5} /> {t.newAlbum}
         </button>
