@@ -132,25 +132,47 @@ export const reverseGeocode = onCall(
       const components = results[0].address_components || [];
       const levels: string[] = [];
 
+      // 1단계: 시/도 (administrative_area_level_1을 최우선으로 찾음)
       const level1 = components.find((c: any) =>
         c.types.includes("administrative_area_level_1")
-      ) || components.find((c: any) => c.types.includes("locality"));
-      if (level1) levels.push(level1.long_name);
-
+      );
+      
+      if (level1) {
+        levels.push(level1.long_name);
+      } else {
+        // administrative_area_level_1이 없을 때만 locality 사용
+        const locality = components.find((c: any) => c.types.includes("locality"));
+        if (locality) levels.push(locality.long_name);
+      }
+      
+      // 2단계: 시/군/구
       const level2 = components.find((c: any) =>
         c.types.includes("sublocality_level_1")
-      ) || components.find((c: any) => c.types.includes("locality") && c.long_name !== levels[0]);
-      if (level2) levels.push(level2.long_name);
-
+      );
+      
+      if (level2) {
+        levels.push(level2.long_name);
+      } else {
+        // sublocality_level_1이 없을 때 locality를 대체로 사용 (단, level1과 중복되지 않게)
+        const locality = components.find((c: any) =>
+          c.types.includes("locality") && c.long_name !== levels[0]
+        );
+        if (locality) levels.push(locality.long_name);
+      }
+      
+      // 3단계: 읍/면/동
       const level3 = components.find((c: any) =>
         c.types.includes("sublocality_level_2") ||
         c.types.includes("sublocality") ||
         c.types.includes("neighborhood")
       );
+      
       if (level3) levels.push(level3.long_name);
-
-      const shortLabel = levels.length >= 2 ? levels.slice(0, 3).join(" ") : results[0].formatted_address;
-
+      
+      const shortLabel = levels.length >= 2 
+        ? levels.slice(0, 3).join(" ") 
+        : results[0].formatted_address;
+      
       return { label: shortLabel || `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
     } catch (error) {
       console.error("reverseGeocode error:", error);
