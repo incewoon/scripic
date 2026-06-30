@@ -97,7 +97,7 @@ export const searchPlaces = onCall(
 export const reverseGeocode = onCall(
   {
     enforceAppCheck: true,
-    secrets: [serverKey], // 기존에 사용하던 secret 변수명에 맞춰주세요
+    secrets: [Scripic-Maps-Server-Key], // 기존에 사용하던 secret 변수명에 맞춰주세요
   },
   async (request): Promise<{ label: string }> => {
     const { lat, lng, lang = "ko" } = request.data as {
@@ -110,7 +110,7 @@ export const reverseGeocode = onCall(
       throw new HttpsError("invalid-argument", "lat, lng가 필요합니다.");
     }
 
-    const apiKey = serverKey.value();
+    const apiKey = GOOGLE_MAPS_API_KEY.value();
 
     try {
       const response = await fetch(
@@ -162,7 +162,7 @@ export const reverseGeocode = onCall(
 export const geocodeLocation = onCall(
   {
     enforceAppCheck: true,
-    secrets: [serverKey], // 기존에 사용 중인 secret 변수명으로 맞춰주세요
+    secrets: [Scripic-Maps-Server-Key], // 기존에 사용 중인 secret 변수명으로 맞춰주세요
   },
   async (request) => {
     const { query, lang = "ko" } = request.data as { query: string; lang?: string };
@@ -171,7 +171,7 @@ export const geocodeLocation = onCall(
       throw new HttpsError("invalid-argument", "query가 필요합니다.");
     }
 
-    const apiKey = serverKey.value();
+    const apiKey = GOOGLE_MAPS_API_KEY.value();
 
     try {
       const response = await fetch(
