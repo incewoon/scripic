@@ -20,6 +20,7 @@ import { UploadLimitDialog } from "@/components/UploadLimitDialog";
 import { CreateUsageCoachmark, shouldShowCreateUsage } from "@/components/CreateUsageCoachmark";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
 import { getAlbums } from "@/lib/storage";
+import { useOnlineStatus, requireOnline } from "@/lib/network";
 
 const PHOTO_MAX = 3;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -277,6 +278,7 @@ function Create() {
   };
 
   const next = async () => {
+    if (!requireOnline(t.offlineNotice)) return;
     if (items.length < 1) {
       toast.error(t.pickAtLeastOne);
       return;
