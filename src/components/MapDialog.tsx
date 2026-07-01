@@ -338,7 +338,16 @@ export function MapDialog({
           const permission = await Geolocation.requestPermissions();
   
           if (permission.location === 'denied' || permission.coarseLocation === 'denied') {
-            toast(t.locationPermissionDenied);
+            toast.error("위치 권한이 필요합니다.", {
+              description: "설정에서 위치 권한을 허용해주세요.",
+              action: {
+                label: "설정 열기",
+                onClick: () => {
+                  // Android 설정으로 이동
+                  window.open('app-settings:', '_blank');
+                },
+              },
+            });
             setLocating(false);
             return;
           }
