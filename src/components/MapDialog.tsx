@@ -1,3 +1,4 @@
+// MapDialog.tsx
 import { useEffect, useRef, useState } from "react";
 import { MapPin, ExternalLink, Loader2, Check, Search, LocateFixed, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
