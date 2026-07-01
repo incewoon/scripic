@@ -253,10 +253,12 @@ export function MapDialog({
       // Fallback: 클라이언트 Geocoder 사용
       try {
         if (results.length > 0) {
-          const components = results[0].address_components || [];
+          const result = results[0];
+          const components = result.address_components || [];
         
+          const allComponents = results.flatMap((r: any) => r.address_components || []);
           const get = (type: string) => 
-            components.find((c: any) => c.types.includes(type))?.long_name;
+            allComponents.find((c: any) => c.types.includes(type))?.long_name;
         
           const levels: string[] = [];
         
@@ -266,10 +268,15 @@ export function MapDialog({
           const level2 = get("locality") || get("administrative_area_level_2");
           if (level2) levels.push(level2);
         
-          const level3 = get("sublocality_level_2") || get("sublocality") || get("neighborhood");
+          const level3 = get("sublocality_level_2") || 
+                         get("sublocality_level_1") || 
+                         get("sublocality") || 
+                         get("neighborhood") || 
+                         get("route");
+        
           if (level3) levels.push(level3);
         
-          const shortLabel = levels.length >= 2 
+          const shortLabel = levels.length > 0 
             ? levels.slice(0, 3).join(" ") 
             : result.formatted_address;
         
