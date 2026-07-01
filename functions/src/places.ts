@@ -97,7 +97,7 @@ export const searchPlaces = onCall(
 export const reverseGeocode = onCall(
   {
     enforceAppCheck: true,
-    secrets: [serverKey],
+    secrets: [GOOGLE_MAPS_API_KEY],
   },
   async (request): Promise<{ label: string }> => {
     const { lat, lng, lang = "ko" } = request.data as {
@@ -113,7 +113,7 @@ export const reverseGeocode = onCall(
       throw new HttpsError("invalid-argument", "lat, lng가 필요합니다.");
     }
 
-    const apiKey = serverKey.value();
+    const apiKey = GOOGLE_MAPS_API_KEY.value();
 
     try {
       const response = await fetch(
