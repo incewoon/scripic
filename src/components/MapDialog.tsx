@@ -252,18 +252,29 @@ export function MapDialog({
   
       // Fallback: 클라이언트 Geocoder 사용
       try {
-        if (window.google?.maps) {
-          const geocoder = new window.google.maps.Geocoder();
-          const geocodeResult = await geocoder.geocode({
-            location: { lat: picked.lat, lng: picked.lng },
-            language: lang,
-          });
-  
-          const results = geocodeResult?.results ?? [];
-          if (results.length > 0) {
-            // 기존 주소 파싱 로직 유지
-            const result = results[0];
-            // ... (기존 주소 파싱 코드)
+        if (results.length > 0) {
+          const components = results[0].address_components || [];
+        
+          const get = (type: string) => 
+            components.find((c: any) => c.types.includes(type))?.long_name;
+        
+          const levels: string[] = [];
+        
+          const level1 = get("administrative_area_level_1");
+          if (level1) levels.push(level1);
+        
+          const level2 = get("locality") || get("administrative_area_level_2");
+          if (level2) levels.push(level2);
+        
+          const level3 = get("sublocality_level_2") || get("sublocality") || get("neighborhood");
+          if (level3) levels.push(level3);
+        
+          const shortLabel = levels.length >= 2 
+            ? levels.slice(0, 3).join(" ") 
+            : result.formatted_address;
+        
+          if (shortLabel) {
+            label = shortLabel;
           }
         }
       } catch (fallbackError) {
