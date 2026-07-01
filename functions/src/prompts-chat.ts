@@ -5,7 +5,7 @@ export type Mode = "story" | "journal" | "summary";
 
 export function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPhoto: number) {
   const rawCap = Math.max(1, photoCount * maxTurnsPerPhoto);
-  const totalCap = Math.min(12, rawCap); // ← 12로 변경
+  const totalCap = Math.min(12, rawCap); //최대 어시스턴트 응답은 12번으로 캡
   const lastTurn = totalCap;
 
   if (lang === "ko") {
