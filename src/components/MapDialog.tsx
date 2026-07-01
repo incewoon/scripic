@@ -225,7 +225,7 @@ export function MapDialog({
         : "en";
   
     let label = `${picked.lat.toFixed(3)}, ${picked.lng.toFixed(3)}`;
-  
+    console.log(`[confirmPick] 시작 - picked:`, picked);
     try {
       // Firebase Functions를 통한 역지오코딩 호출
       const functions = getFns();
@@ -239,7 +239,8 @@ export function MapDialog({
         lng: picked.lng,
         lang,
       });
-  
+      console.log(`[confirmPick] Firebase reverseGeocode 결과:`, result.data);
+      
       if (result.data?.label) {
         label = result.data.label;
       }
@@ -266,7 +267,7 @@ export function MapDialog({
         console.warn("클라이언트 역지오코딩도 실패:", fallbackError);
       }
     }
-  
+    console.log(`[confirmPick] 최종 label: ${label}`);
     onPick?.({ lat: picked.lat, lng: picked.lng, label });
     setSaving(false);
     onOpenChange(false);
