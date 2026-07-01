@@ -129,26 +129,29 @@ export const reverseGeocode = onCall(
       console.log(`[reverseGeocode] API 응답 결과 수: ${data.results?.length || 0}`);
 
       const results = data.results || [];
-
+      
       if (results.length === 0) {
         console.warn("[reverseGeocode] 결과 없음");
         return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
       }
-
-      const components = results[0].address_components || [];
-      console.log(`[reverseGeocode] raw address_components:`, 
-        JSON.stringify(components.map((c: any) => ({
+      
+      // ★ 모든 result의 address_components를 하나로 합쳐서 검색
+      const allComponents = results.flatMap((r: any) => r.address_components || []);
+      
+      console.log(`[reverseGeocode] allComponents 개수: ${allComponents.length}`);
+      console.log(`[reverseGeocode] raw allComponents:`, 
+        JSON.stringify(allComponents.map((c: any) => ({
           long_name: c.long_name,
           types: c.types
         })), null, 2)
       );
       
-      const get = (type: string) => 
-        components.find((c: any) => c.types.includes(type))?.long_name;
+      const get = (type: string) =>
+        allComponents.find((c: any) => c.types.includes(type))?.long_name;
       
       const levels: string[] = [];
       
-      // 1. 시/도 (행정구역 1단계)
+      // 1. 시/도
       const level1 = get("administrative_area_level_1");
       if (level1) levels.push(level1);
       
@@ -156,11 +159,16 @@ export const reverseGeocode = onCall(
       const level2 = get("locality") || get("administrative_area_level_2");
       if (level2) levels.push(level2);
       
-      // 3. 동/리
-      const level3 = get("sublocality_level_2") || get("sublocality") || get("neighborhood");
+      // 3. 동/리 or 길이름 (주인님 의견 반영)
+      const level3 = get("sublocality_level_2") ||
+                     get("sublocality_level_1") ||
+                     get("sublocality") ||
+                     get("neighborhood") ||
+                     get("route");  // 길이름 fallback
+      
       if (level3) levels.push(level3);
       
-      const shortLabel = levels.length >= 2 
+      const shortLabel = levels.length > 0 
         ? levels.slice(0, 3).join(" ") 
         : results[0].formatted_address;
       
@@ -168,7 +176,6 @@ export const reverseGeocode = onCall(
       console.log(`[reverseGeocode] 최종 shortLabel: ${shortLabel}`);
       
       return { label: shortLabel || `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
-      
     } catch (error) {
       console.error("[reverseGeocode] 전체 오류:", error);
       return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
