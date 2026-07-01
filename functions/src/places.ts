@@ -137,6 +137,12 @@ export const reverseGeocode = onCall(
 
       const result = results[0];
       const components = result.address_components || [];
+      console.log(`[reverseGeocode] raw address_components:`, 
+        JSON.stringify(components.map((c: any) => ({
+          long_name: c.long_name,
+          types: c.types
+        })), null, 2)
+      );
       console.log(`[reverseGeocode] address_components 개수: ${components.length}`);
       console.log(`[reverseGeocode] 전체 address_components:`, JSON.stringify(components, null, 2));
 
