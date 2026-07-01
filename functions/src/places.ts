@@ -135,62 +135,40 @@ export const reverseGeocode = onCall(
         return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
       }
 
-      const result = results[0];
-      const components = result.address_components || [];
+      const components = results[0].address_components || [];
       console.log(`[reverseGeocode] raw address_components:`, 
         JSON.stringify(components.map((c: any) => ({
           long_name: c.long_name,
           types: c.types
         })), null, 2)
       );
-      console.log(`[reverseGeocode] address_components 개수: ${components.length}`);
-      console.log(`[reverseGeocode] 전체 address_components:`, JSON.stringify(components, null, 2));
-
+      
+      const get = (type: string) => 
+        components.find((c: any) => c.types.includes(type))?.long_name;
+      
       const levels: string[] = [];
-
-      // 1단계: 시/도
-      const level1 = components.find((c: any) =>
-        c.types.includes("administrative_area_level_1")
-      );
-      if (level1) {
-        levels.push(level1.long_name);
-        console.log(`[reverseGeocode] level1 (시/도): ${level1.long_name}`);
-      } else {
-        console.warn("[reverseGeocode] administrative_area_level_1 없음");
-      }
-
-      // 2단계: 시/군/구
-      const level2 = components.find((c: any) =>
-        c.types.includes("sublocality_level_1")
-      );
-      if (level2) {
-        levels.push(level2.long_name);
-        console.log(`[reverseGeocode] level2 (시/군/구): ${level2.long_name}`);
-      } else {
-        console.warn("[reverseGeocode] sublocality_level_1 없음");
-      }
-
-      // 3단계: 읍/면/동
-      const level3 = components.find((c: any) =>
-        c.types.includes("sublocality_level_2") ||
-        c.types.includes("sublocality") ||
-        c.types.includes("neighborhood")
-      );
-      if (level3) {
-        levels.push(level3.long_name);
-        console.log(`[reverseGeocode] level3 (동): ${level3.long_name}`);
-      } else {
-        console.warn("[reverseGeocode] level3 없음");
-      }
-
+      
+      // 1. 시/도 (행정구역 1단계)
+      const level1 = get("administrative_area_level_1");
+      if (level1) levels.push(level1);
+      
+      // 2. 시/군/구
+      const level2 = get("locality") || get("administrative_area_level_2");
+      if (level2) levels.push(level2);
+      
+      // 3. 동/리
+      const level3 = get("sublocality_level_2") || get("sublocality") || get("neighborhood");
+      if (level3) levels.push(level3);
+      
       const shortLabel = levels.length >= 2 
         ? levels.slice(0, 3).join(" ") 
-        : result.formatted_address;
-
+        : results[0].formatted_address;
+      
+      console.log(`[reverseGeocode] levels:`, levels);
       console.log(`[reverseGeocode] 최종 shortLabel: ${shortLabel}`);
-      console.log(`[reverseGeocode] levels 배열:`, levels);
-
+      
       return { label: shortLabel || `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
+      
     } catch (error) {
       console.error("[reverseGeocode] 전체 오류:", error);
       return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
