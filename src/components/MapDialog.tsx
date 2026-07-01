@@ -230,6 +230,8 @@ export function MapDialog({
     try {
       // Firebase Functions를 통한 역지오코딩 호출
       const functions = getFns();
+
+      console.log("[confirmPick] picked 좌표:", JSON.stringify(picked));
       const reverseGeocodeFn = httpsCallable<
         { lat: number; lng: number; lang?: string },
         { label: string }
@@ -240,8 +242,8 @@ export function MapDialog({
         lng: picked.lng,
         lang,
       });
-      console.log(`[confirmPick] Firebase reverseGeocode 결과:`, result.data);
-      
+      console.log("[reverseGeocode raw]", JSON.stringify(result));
+      console.log(`[confirmPick] Firebase reverseGeocode raw result:`, result.data);
       if (result.data?.label) {
         label = result.data.label;
       }
