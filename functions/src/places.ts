@@ -97,7 +97,7 @@ export const searchPlaces = onCall(
 export const reverseGeocode = onCall(
   {
     enforceAppCheck: true,
-    secrets: [GOOGLE_MAPS_API_KEY], 
+    secrets: [serverKey],
   },
   async (request): Promise<{ label: string }> => {
     const { lat, lng, lang = "ko" } = request.data as {
@@ -106,11 +106,14 @@ export const reverseGeocode = onCall(
       lang?: string;
     };
 
+    console.log(`[reverseGeocode] 요청: lat=${lat}, lng=${lng}, lang=${lang}`);
+
     if (typeof lat !== "number" || typeof lng !== "number") {
+      console.error("[reverseGeocode] 잘못된 좌표");
       throw new HttpsError("invalid-argument", "lat, lng가 필요합니다.");
     }
 
-    const apiKey = GOOGLE_MAPS_API_KEY.value();
+    const apiKey = serverKey.value();
 
     try {
       const response = await fetch(
@@ -118,68 +121,77 @@ export const reverseGeocode = onCall(
       );
 
       if (!response.ok) {
+        console.error(`[reverseGeocode] API 호출 실패: ${response.status}`);
         return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
       }
 
       const data: any = await response.json();
+      console.log(`[reverseGeocode] API 응답 결과 수: ${data.results?.length || 0}`);
+
       const results = data.results || [];
 
       if (results.length === 0) {
+        console.warn("[reverseGeocode] 결과 없음");
         return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
       }
 
-      // 기존과 유사한 주소 파싱 로직
-      const components = results[0].address_components || [];
+      const result = results[0];
+      const components = result.address_components || [];
+      console.log(`[reverseGeocode] address_components 개수: ${components.length}`);
+      console.log(`[reverseGeocode] 전체 address_components:`, JSON.stringify(components, null, 2));
+
       const levels: string[] = [];
 
-      // 1단계: 시/도 (administrative_area_level_1을 최우선으로 찾음)
+      // 1단계: 시/도
       const level1 = components.find((c: any) =>
         c.types.includes("administrative_area_level_1")
       );
-      
       if (level1) {
         levels.push(level1.long_name);
+        console.log(`[reverseGeocode] level1 (시/도): ${level1.long_name}`);
       } else {
-        // administrative_area_level_1이 없을 때만 locality 사용
-        const locality = components.find((c: any) => c.types.includes("locality"));
-        if (locality) levels.push(locality.long_name);
+        console.warn("[reverseGeocode] administrative_area_level_1 없음");
       }
-      
+
       // 2단계: 시/군/구
       const level2 = components.find((c: any) =>
         c.types.includes("sublocality_level_1")
       );
-      
       if (level2) {
         levels.push(level2.long_name);
+        console.log(`[reverseGeocode] level2 (시/군/구): ${level2.long_name}`);
       } else {
-        // sublocality_level_1이 없을 때 locality를 대체로 사용 (단, level1과 중복되지 않게)
-        const locality = components.find((c: any) =>
-          c.types.includes("locality") && c.long_name !== levels[0]
-        );
-        if (locality) levels.push(locality.long_name);
+        console.warn("[reverseGeocode] sublocality_level_1 없음");
       }
-      
+
       // 3단계: 읍/면/동
       const level3 = components.find((c: any) =>
         c.types.includes("sublocality_level_2") ||
         c.types.includes("sublocality") ||
         c.types.includes("neighborhood")
       );
-      
-      if (level3) levels.push(level3.long_name);
-      
+      if (level3) {
+        levels.push(level3.long_name);
+        console.log(`[reverseGeocode] level3 (동): ${level3.long_name}`);
+      } else {
+        console.warn("[reverseGeocode] level3 없음");
+      }
+
       const shortLabel = levels.length >= 2 
         ? levels.slice(0, 3).join(" ") 
-        : results[0].formatted_address;
-      
+        : result.formatted_address;
+
+      console.log(`[reverseGeocode] 최종 shortLabel: ${shortLabel}`);
+      console.log(`[reverseGeocode] levels 배열:`, levels);
+
       return { label: shortLabel || `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
     } catch (error) {
-      console.error("reverseGeocode error:", error);
+      console.error("[reverseGeocode] 전체 오류:", error);
       return { label: `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
     }
   }
 );
+
 // === 정방향 지오코딩 (주소 → 좌표) ===
 export const geocodeLocation = onCall(
   {
