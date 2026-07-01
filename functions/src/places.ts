@@ -137,15 +137,7 @@ export const reverseGeocode = onCall(
       
       // ★ 모든 result의 address_components를 하나로 합쳐서 검색
       const allComponents = results.flatMap((r: any) => r.address_components || []);
-      
-      console.log(`[reverseGeocode] allComponents 개수: ${allComponents.length}`);
-      console.log(`[reverseGeocode] raw allComponents:`, 
-        JSON.stringify(allComponents.map((c: any) => ({
-          long_name: c.long_name,
-          types: c.types
-        })), null, 2)
-      );
-      
+
       const get = (type: string) =>
         allComponents.find((c: any) => c.types.includes(type))?.long_name;
       
@@ -155,24 +147,30 @@ export const reverseGeocode = onCall(
       const level1 = get("administrative_area_level_1");
       if (level1) levels.push(level1);
       
-      // 2. 시/군/구
-      const level2 = get("locality") || get("administrative_area_level_2");
+      // 2. 시/군/구 — 후보를 순서대로 시도하되, level1과 같으면 스킵
+      const level2Candidates = [
+        get("sublocality_level_1"),        // 구 (유성구 등)
+        get("administrative_area_level_2"), // 광역시에서 구가 여기로 오는 경우
+        get("locality"),                    // 일반 시
+      ];
+      
+      const level2 = level2Candidates.find((v) => v && v !== level1);
       if (level2) levels.push(level2);
       
-      // 3. 동/리 or 길이름 (주인님 의견 반영)
-      const level3 = get("sublocality_level_2") ||
-                     get("sublocality_level_1") ||
-                     get("sublocality") ||
-                     get("neighborhood") ||
-                     get("route");  // 길이름 fallback
+      // 3. 동/리 (route는 최후 fallback)
+      const level3 =
+        get("sublocality_level_2") ||
+        get("sublocality") ||
+        get("neighborhood") ||
+        get("route");
       
-      if (level3) levels.push(level3);
+      if (level3 && level3 !== level2) levels.push(level3);
       
       const shortLabel = levels.length > 0 
         ? levels.slice(0, 3).join(" ") 
         : results[0].formatted_address;
       
-      console.log(`[reverseGeocode] levels:`, levels);
+      console.log(`[reverseGeocode] level1: ${level1}, level2: ${level2}, level3: ${level3}`);
       console.log(`[reverseGeocode] 최종 shortLabel: ${shortLabel}`);
       
       return { label: shortLabel || `${lat.toFixed(3)}, ${lng.toFixed(3)}` };
