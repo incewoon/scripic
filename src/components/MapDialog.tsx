@@ -327,16 +327,18 @@ export function MapDialog({
   function useCurrentLocation() {
     if (locating) return;
     setLocating(true);
-  
+    console.log("현재 위치 버튼 클릭 - Capacitor.isNativePlatform():", Capacitor.isNativePlatform());
+    
     const getLocation = async () => {
       try {
         if (Capacitor.isNativePlatform()) {
           // 네이티브 환경에서만 @capacitor/geolocation 사용
+          console.log("네이티브 환경 - Geolocation 플러그인 호출 시도");
           const pluginName = '@capacitor/geolocation';
           const { Geolocation } = await import(/* @vite-ignore */ pluginName);
-  
+          console.log("플러그인 import 성공, 권한 요청 시작");
           const permission = await Geolocation.requestPermissions();
-  
+          console.log("권한 요청 결과:", permission);
           if (permission.location === 'denied' || permission.coarseLocation === 'denied') {
             toast.error("위치 권한이 필요합니다.", {
               description: "설정에서 위치 권한을 허용해주세요.",
@@ -356,10 +358,11 @@ export function MapDialog({
             enableHighAccuracy: true,
             timeout: 10000,
           });
-  
+          console.log("위치 획득 성공:", position.coords);
           moveTo(position.coords.latitude, position.coords.longitude, 16);
         } else {
           // 웹 환경 (Lovable)
+          console.log("웹 환경 - navigator.geolocation 사용");
           if (!navigator.geolocation) {
             toast(t.locationPermissionDenied);
             setLocating(false);
@@ -377,7 +380,7 @@ export function MapDialog({
           );
         }
       } catch (error) {
-        console.error("위치 가져오기 실패:", error);
+        console.error("위치 가져오기 전체 실패:", error);
         toast(t.locationPermissionDenied);
       } finally {
         setLocating(false);
