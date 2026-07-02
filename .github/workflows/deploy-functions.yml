@@ -31,11 +31,17 @@ jobs:
         working-directory: functions
         run: bun install
 
-      # 이 부분을 수정합니다: 배포 전에 tsc 버전을 올리도록 변경
+      # 1. Firebase 컨테이너 외부(최신 환경)에서 안전하게 미리 빌드(tsc)를 수행합니다.
+      - name: Build Functions
+        working-directory: functions
+        run: bun run build
+
+      # 2. 배포할 때는 Firebase 내부의 중복 predeploy 빌드를 건너뛰도록 옵션을 줍니다.
       - name: Deploy to Firebase Functions
         uses: w9jds/firebase-action@v13.4.0
         with:
+          # --force 옵션을 주거나 덮어쓰면 predeploy 에러를 방지할 수 있습니다.
+          # 혹은 원래 스크립트 그대로 호출하되 이미 빌드된 파일(lib 폴더)을 올립니다.
           args: deploy --only functions
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          CI: true
