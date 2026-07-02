@@ -20,22 +20,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22 # 현재 사용 중인 노드 버전과 일치
+          node-version: 22
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      # functions 폴더로 이동하여 의존성 설치
       - name: Install Functions Dependencies
         working-directory: functions
         run: bun install
 
-      # 공식 Firebase Action을 사용하여 배포
+      # 이 부분을 수정합니다: 배포 전에 tsc 버전을 올리도록 변경
       - name: Deploy to Firebase Functions
         uses: w9jds/firebase-action@v13.4.0
         with:
-          args: deploy --only functions
+          entrypoint: /bin/sh
+          args: -c "npm install -g typescript@latest && firebase deploy --only functions"
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
