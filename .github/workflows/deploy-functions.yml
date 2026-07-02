@@ -1,0 +1,41 @@
+name: Deploy Firebase Functions
+
+on:
+  # functions 폴더 내부의 코드가 변경되거나, main 브랜치에 푸시될 때 자동 실행
+  push:
+    branches: [ main ]
+    paths:
+      - 'functions/**'
+  # 필요할 때 수동 실행도 가능
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22 # 현재 사용 중인 노드 버전과 일치
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # functions 폴더로 이동하여 의존성 설치
+      - name: Install Functions Dependencies
+        working-directory: functions
+        run: bun install
+
+      # 공식 Firebase Action을 사용하여 배포
+      - name: Deploy to Firebase Functions
+        uses: w9jds/firebase-action@v13.4.0
+        with:
+          args: deploy --only functions
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
