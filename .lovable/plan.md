@@ -1,46 +1,50 @@
-## 목표
-4개의 주요 AI/네트워크 의존 액션 버튼에 인터넷 연결 체크를 추가하여, 오프라인 상태일 때 동작하지 않고 사용자에게 알림을 표시합니다.
 
-## 대상 버튼
-1. 메인화면(`src/routes/index.tsx`) 하단 "새 앨범 만들기" 버튼
-2. 앨범 생성 설정화면(`src/routes/create.tsx`) 하단 "AI 대화 시작" 버튼
-3. AI 대화화면(`src/routes/chat.tsx`) 상단 우측 "완성하기" 버튼
-4. 앨범 보기(`src/routes/album.$id.tsx`)의 "수정" 버튼
+## 수정된 방침
 
-## 구현 방식
+- 서버 프롬프트는 **기본값을 두지 않음**. 알 수 없는 `mode`/`tone`이 오면 즉시 에러.
+- 앱 최초 실행 시 create.tsx 화면 셋팅 기본값만 **journal + politely**로. 이후는 사용자가 마지막으로 고른 값을 유지(현재 동작 그대로).
+- Journal 프롬프트에 "AI 발화는 사실로 취급하지 말 것" 지침 추가.
 
-### 1. 공용 유틸 추가: `src/lib/network.ts`
-- `isOnline()`: `navigator.onLine` 기반 동기 체크
-- `useOnlineStatus()`: React hook — `online`/`offline` 이벤트 구독해 상태 반환
-- `requireOnline(t)`: 오프라인이면 `toast.error(t.offlineNotice)` 띄우고 `false` 반환, 온라인이면 `true`
+## 변경 사항
 
-> `navigator.onLine`은 일부 환경에서 false positive가 있으나, Capacitor + 모바일 브라우저에서 끊김 감지는 충분히 신뢰 가능. (필요 시 Capacitor `@capacitor/network`로 추후 강화 가능)
+### 1. `functions/src/index.ts` — 알 수 없는 값은 에러
+두 지점(L150·195 chat, L379·416 generateAlbum):
 
-### 2. i18n 키 추가 (`src/lib/i18n.ts`)
-- `offlineNotice` (예: "인터넷 연결을 확인해주세요." / "Please check your internet connection.")
-- `offlineDisabled` (버튼 비활성 시 보조 안내, 필요 시)
+- 파라미터 기본값 `mode = "story"`, `tone = "politely"` 제거 → 그냥 `mode`, `tone`으로 받음.
+- 유효성 체크로 대체:
+  ```ts
+  if (mode !== "story" && mode !== "journal" && mode !== "summary") {
+    throw new HttpsError("invalid-argument", `invalid mode: ${String(mode)}`);
+  }
+  if (tone !== "politely" && tone !== "friendly" && tone !== "short") {
+    throw new HttpsError("invalid-argument", `invalid tone: ${String(tone)}`);
+  }
+  ```
+- 기존 `const m: AlbumMode = mode === ... ? mode : "story"` 폴백 코드 제거.
 
-### 3. 각 화면 적용
-공통 패턴:
-```tsx
-const online = useOnlineStatus();
-<Button
-  disabled={... || !online}
-  onClick={() => { if (!requireOnline(t)) return; /* 기존 로직 */ }}
-  title={!online ? t.offlineNotice : undefined}
->
-```
+### 2. `functions/src/prompts-album.ts` — 명시적 switch + Journal 강화
+- `albumSystem`과 `modeSpec`의 `if/if/return story` 구조를 `switch (mode)`로 바꾸고, `default:`는 `throw new Error(`unknown mode: ${mode}`)`. 서버에서 이미 검증하므로 실제로는 도달 안 하지만, 프롬프트 층에서도 조용한 폴백을 금지.
+- Journal 시스템 프롬프트에 추가:
+  - "대화 기록에는 `User:`와 `AI:` 두 발화자가 있습니다. **`User:` 줄만 사실로 취급**하고, `AI:` 줄에 등장한 감성적 묘사·비유·풍경 표현은 사용자 발화가 아니므로 결과물에 옮기지 마세요."
+  - "사용자가 직접 말하지 않은 감정어(설렘·벅찬·아련한 등)·비유·의성어를 추가하지 마세요."
+- Summary도 같은 "`User:` 줄만 사실" 문구 추가(재발 방지).
+- Story 브랜치는 유지.
 
-- **index.tsx**: "새 앨범 만들기" CTA에 `disabled`와 onClick 가드 추가
-- **create.tsx**: 하단 "AI 대화 시작" 버튼에 동일 적용
-- **chat.tsx**: 상단 우측 "완성하기" 버튼에 동일 적용 (대화 입력/전송 버튼은 이번 범위 외 — 사용자 요청 4개만)
-- **album.$id.tsx**: "수정"(연필) 버튼에 동일 적용
+### 3. `src/routes/create.tsx` — 최초 실행 기본값을 politely로
+- L129 `loadDefault(TONE_KEY, VALID_TONES, "friendly")` → `"politely"`로 변경.
+- mode 기본값은 이미 `"journal"` (L128) — 그대로 둠.
+- 사용자가 이전에 다른 값을 선택했다면 localStorage에 저장되어 있으므로 그 값이 그대로 유지됨(loadDefault 로직).
 
-### 4. UX 디테일
-- 오프라인일 때 버튼은 시각적으로 `disabled`(opacity 낮춤) 처리
-- 클릭 시도 시(터치 영역에서 disabled가 안 먹는 케이스 대비) onClick에서도 `requireOnline` 가드로 한 번 더 차단 + toast
-- 온라인 복귀 시 hook이 자동으로 버튼을 다시 활성화
+### 4. 손대지 않음
+- `supabase/functions/_shared/prompts-album.ts` (미사용 레거시)
+- `src/routes/chat.tsx`의 legacy 마이그레이션(`fact`→`journal` 등) — 방어 코드로 남겨둠.
+- 프론트에서 mode/tone을 서버로 보내는 부분 — 현재 항상 유효값이므로 수정 불필요.
 
-## 범위 외
-- 이미 진행 중인 AI 스트림 도중 끊김 처리(별도 retry 배너가 이미 존재)
-- 백업/복원, 지도, 검색 등 기타 버튼 (사용자가 명시한 4곳만 처리)
+## 검증
+- 빌드 통과 확인.
+- Journal 모드로 앨범 생성 시 결과에서 감성 표현/허구가 줄어드는지 사용자 재현으로 확인.
+
+## 파일
+- `functions/src/index.ts`
+- `functions/src/prompts-album.ts`
+- `src/routes/create.tsx`
