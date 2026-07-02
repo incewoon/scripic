@@ -248,43 +248,7 @@ export function MapDialog({
         label = result.data.label;
       }
     } catch (error) {
-      console.warn("Firebase 역지오코딩 실패, 클라이언트 Geocoder로 fallback:", error);
-  
-      // Fallback: 클라이언트 Geocoder 사용
-      try {
-        if (results.length > 0) {
-          const allComponents = results.flatMap((r: any) => r.address_components || []);
-          const get = (type: string) => 
-            allComponents.find((c: any) => c.types.includes(type))?.long_name;
-        
-          const levels: string[] = [];
-        
-          const level1 = get("administrative_area_level_1");
-          if (level1) levels.push(level1);
-        
-          const level2Candidates = [
-            get("sublocality_level_1"),
-            get("administrative_area_level_2"),
-            get("locality"),
-          ];
-          const level2 = level2Candidates.find((v) => v && v !== level1);
-          if (level2) levels.push(level2);
-        
-          const level3 = get("sublocality_level_2") || 
-                         get("sublocality") || 
-                         get("neighborhood") || 
-                         get("route");
-          if (level3 && level3 !== level2) levels.push(level3);
-        
-          const shortLabel = levels.length > 0 
-            ? levels.slice(0, 3).join(" ") 
-            : results[0].formatted_address;
-        
-          if (shortLabel) label = shortLabel;
-        }
-      } catch (fallbackError) {
-        console.warn("클라이언트 역지오코딩도 실패:", fallbackError);
-      }
+      console.warn("Firebase 역지오코딩 실패:", error);
     }
     console.log(`[confirmPick] 최종 label: ${label}`);
     onPick?.({ lat: picked.lat, lng: picked.lng, label });
