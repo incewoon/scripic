@@ -32,8 +32,26 @@ jobs:
       - name: Write service account key
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ${{ runner.temp }}/gcp-key.json
 
-      - name: Deploy to Firebase Functions
+      - name: Deploy to Firebase Functions (batch 1)
         working-directory: functions
-        run: firebase deploy --only functions --project ai-album-app --non-interactive
+        run: firebase deploy --only functions:chat,functions:generateAlbum --project ai-album-app --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-key.json
+      
+      - name: Wait between batches
+        run: sleep 30
+      
+      - name: Deploy to Firebase Functions (batch 2)
+        working-directory: functions
+        run: firebase deploy --only functions:dailyStatus,functions:grantReviewReward --project ai-album-app --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-key.json
+      
+      - name: Wait between batches
+        run: sleep 30
+      
+      - name: Deploy to Firebase Functions (batch 3)
+        working-directory: functions
+        run: firebase deploy --only functions:searchPlaces,functions:reverseGeocode,functions:geocodeLocation --project ai-album-app --non-interactive
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-key.json
