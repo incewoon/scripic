@@ -147,7 +147,7 @@ export const chat = onCall(
       photos,
       photoCount: pcFromClient,
       lang = "en",
-      mode = "story",
+      mode,
       maxTurnsPerPhoto: rawCap,
     } = (request.data ?? {}) as {
       messages: OpenAIMessage[];
@@ -192,7 +192,10 @@ export const chat = onCall(
       }
     }
 
-    const m: Mode = mode === "journal" || mode === "summary" ? mode : "story";
+    if (mode !== "story" && mode !== "journal" && mode !== "summary") {
+      throw new HttpsError("invalid-argument", `invalid mode: ${String(mode)}`);
+    }
+    const m: Mode = mode;
     const maxTurnsPerPhoto = typeof rawCap === "number" && rawCap > 0 ? Math.min(20, Math.floor(rawCap)) : 3;
     const photoCount = typeof pcFromClient === "number" && pcFromClient > 0 ? pcFromClient : (photos?.length ?? 0);
 
