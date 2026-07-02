@@ -379,8 +379,8 @@ export const generateAlbum = onCall(
       lang = "en",
       period,
       location,
-      mode = "story",
-      tone = "politely",
+      mode,
+      tone,
     } = (req.data ?? {}) as {
       messages: { role: string; content: any }[];
       photoCount: number;
@@ -416,8 +416,14 @@ export const generateAlbum = onCall(
     }
     if (!photoCount || photoCount < 1) throw new HttpsError("invalid-argument", "photoCount required");
 
-    const m: AlbumMode = mode === "journal" || mode === "summary" ? mode : "story";
-    const tn: Tone = tone === "friendly" || tone === "short" ? tone : "politely";
+    if (mode !== "story" && mode !== "journal" && mode !== "summary") {
+      throw new HttpsError("invalid-argument", `invalid mode: ${String(mode)}`);
+    }
+    if (tone !== "politely" && tone !== "friendly" && tone !== "short") {
+      throw new HttpsError("invalid-argument", `invalid tone: ${String(tone)}`);
+    }
+    const m: AlbumMode = mode;
+    const tn: Tone = tone;
 
     // Enforce 1 album / day BEFORE we burn a Gemini call.
     const key = rateLimitKey(req);
