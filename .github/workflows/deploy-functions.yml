@@ -43,3 +43,4 @@ jobs:
           args: deploy --only functions
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_CLI_VERSION: "latest"
