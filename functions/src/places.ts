@@ -1,14 +1,6 @@
 // functions/src/places.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
-import { setGlobalOptions } from "firebase-functions/v2";
-
-setGlobalOptions({
-  region: "us-central1",
-  memory: "256MiB",
-  timeoutSeconds: 60,
-  maxInstances: 10,
-});
 
 const GOOGLE_MAPS_API_KEY = defineSecret("Scripic-Maps-Server-Key");
 
