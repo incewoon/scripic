@@ -3,7 +3,7 @@
   "private": true,
   "main": "lib/index.js",
   "engines": {
-    "node": "24"
+    "node": "18"
   },
   "scripts": {
     "build": "tsc",
