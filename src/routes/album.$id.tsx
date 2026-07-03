@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download, Tag, Plus } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar as CalendarIcon, Download, Tag, Plus } from "lucide-react";
 import { toPng } from "html-to-image";
 import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, getLastSavedCoords, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
@@ -10,6 +10,10 @@ import { MapDialog } from "@/components/MapDialog";
 import { EditCoachmark, shouldShowEditCoach } from "@/components/EditCoachmark";
 import { TagPickerDialog } from "@/components/TagPickerDialog";
 import { useOnlineStatus, requireOnline } from "@/lib/network";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import type { DateRange } from "react-day-picker";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
