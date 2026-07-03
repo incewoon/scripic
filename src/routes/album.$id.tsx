@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar, Download, Tag, Plus } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar as CalendarIcon, Download, Tag, Plus } from "lucide-react";
 import { toPng } from "html-to-image";
 import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, getLastSavedCoords, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
@@ -10,6 +10,10 @@ import { MapDialog } from "@/components/MapDialog";
 import { EditCoachmark, shouldShowEditCoach } from "@/components/EditCoachmark";
 import { TagPickerDialog } from "@/components/TagPickerDialog";
 import { useOnlineStatus, requireOnline } from "@/lib/network";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import type { DateRange } from "react-day-picker";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
@@ -110,6 +114,131 @@ function EditableText({
     </div>
   );
 }
+
+// ----- Period (date range) picker --------------------------------------------
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+function fmtDate(d: Date) {
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+}
+function formatPeriod(range: DateRange | undefined): string {
+  if (!range?.from) return "";
+  const from = range.from;
+  const to = range.to ?? range.from;
+  if (from.toDateString() === to.toDateString()) return fmtDate(from);
+  if (from.getFullYear() === to.getFullYear() && from.getMonth() === to.getMonth()) {
+    return `${fmtDate(from)}~${pad(to.getDate())}`;
+  }
+  return `${fmtDate(from)}~${fmtDate(to)}`;
+}
+function parsePeriod(s: string): DateRange | undefined {
+  if (!s) return undefined;
+  const mkDate = (y: number, m: number, d: number) => {
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? undefined : dt;
+  };
+  const full = s.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})(?:~(?:(\d{4})\.(\d{1,2})\.)?(\d{1,2}))?$/);
+  if (!full) return undefined;
+  const from = mkDate(+full[1], +full[2], +full[3]);
+  if (!from) return undefined;
+  if (!full[6]) return { from };
+  const toY = full[4] ? +full[4] : +full[1];
+  const toM = full[5] ? +full[5] : +full[2];
+  const to = mkDate(toY, toM, +full[6]);
+  return { from, to };
+}
+
+function PeriodPicker({
+  value,
+  onSave,
+  placeholder,
+  labelClear,
+  labelSave,
+  labelCancel,
+  labelTitle,
+}: {
+  value: string;
+  onSave: (v: string) => void;
+  placeholder: string;
+  labelClear: string;
+  labelSave: string;
+  labelCancel: string;
+  labelTitle: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [range, setRange] = useState<DateRange | undefined>(() => parsePeriod(value));
+  useEffect(() => {
+    if (open) setRange(parsePeriod(value));
+  }, [open, value]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="group relative text-left text-[12px] inline-flex items-center gap-1"
+          aria-label={labelTitle}
+        >
+          <span>{value || <span className="warm-muted italic">{placeholder}</span>}</span>
+          <Pencil size={11} className="opacity-60 warm-muted" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="center">
+        <div className="p-3">
+          <div className="text-xs warm-muted mb-2 px-1">{labelTitle}</div>
+          <Calendar
+            mode="range"
+            selected={range}
+            onSelect={setRange}
+            numberOfMonths={1}
+            initialFocus
+            className={cn("p-0 pointer-events-auto")}
+          />
+          <div className="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-border/40">
+            <button
+              type="button"
+              onClick={() => {
+                setRange(undefined);
+                onSave("");
+                setOpen(false);
+                toast.success(labelSave);
+              }}
+              className="text-xs warm-muted px-2 py-1"
+            >
+              {labelClear}
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="text-xs warm-muted px-2 py-1 flex items-center gap-1"
+              >
+                <X size={12} />
+                {labelCancel}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onSave(formatPeriod(range));
+                  setOpen(false);
+                  toast.success(labelSave);
+                }}
+                className="text-xs bg-primary text-primary-foreground rounded-full px-3 py-1 flex items-center gap-1"
+              >
+                <Check size={12} />
+                {labelSave}
+              </button>
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
 
 function AlbumView() {
   const { id } = Route.useParams();
@@ -284,33 +413,56 @@ function AlbumView() {
 
           <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
             <div className="flex items-center gap-1.5">
-              <Calendar size={12} />
-              <EditableText
-                editKey="period"
-                activeKey={activeKey}
-                setActiveKey={setActiveKey}
-                editingMode={editMode}
-                value={album.period || ""}
-                onSave={(v) => patch({ period: v })}
-                placeholder={t.period}
-                className="text-[12px]"
-                highlightQuery={q}
-              />
+              <CalendarIcon size={12} />
+              {editMode ? (
+                <PeriodPicker
+                  value={album.period || ""}
+                  onSave={(v) => patch({ period: v })}
+                  placeholder={t.period}
+                  labelClear={t.clear}
+                  labelSave={t.save}
+                  labelCancel={t.cancel}
+                  labelTitle={t.pickPeriodTitle}
+                />
+              ) : (
+                <div className="text-[12px]">
+                  {album.period ? (
+                    <Hl text={album.period} query={q} />
+                  ) : (
+                    <span className="warm-muted italic">{t.period}</span>
+                  )}
+                </div>
+              )}
             </div>
             {album.location || (album.lat != null && album.lng != null) ? (
-              <button
-                ref={locationChipRef}
-                type="button"
-                onClick={() => {
-                  setMapMode(editMode ? "pick" : "view");
-                  setMapOpen(true);
-                }}
-                className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
-                aria-label={t.openGoogleMaps}
-              >
-                <MapPin size={12} />
-                {album.location ? <Hl text={album.location} query={q} /> : <span>{t.openGoogleMaps}</span>}
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  ref={locationChipRef}
+                  type="button"
+                  onClick={() => {
+                    setMapMode(editMode ? "pick" : "view");
+                    setMapOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
+                  aria-label={t.openGoogleMaps}
+                >
+                  <MapPin size={12} />
+                  {album.location ? <Hl text={album.location} query={q} /> : <span>{t.openGoogleMaps}</span>}
+                </button>
+                {editMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void patch({ location: "", lat: undefined, lng: undefined });
+                      toast.success(t.saved);
+                    }}
+                    aria-label={t.removeLocation}
+                    className="p-0.5 text-muted-foreground hover:text-destructive active:scale-95 transition-transform"
+                  >
+                    <X size={12} strokeWidth={2.5} />
+                  </button>
+                )}
+              </div>
             ) : (
               <button
                 ref={locationChipRef}

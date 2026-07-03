@@ -1,50 +1,52 @@
+## 목표
+앨범 상세 수정모드에서 (1) 저장된 장소를 삭제할 수 있게, (2) 기간(날짜)을 텍스트 대신 달력에서 선택할 수 있게 개선.
 
-## 수정된 방침
+## 1. 장소 삭제 기능 (`src/routes/album.$id.tsx`)
 
-- 서버 프롬프트는 **기본값을 두지 않음**. 알 수 없는 `mode`/`tone`이 오면 즉시 에러.
-- 앱 최초 실행 시 create.tsx 화면 셋팅 기본값만 **journal + politely**로. 이후는 사용자가 마지막으로 고른 값을 유지(현재 동작 그대로).
-- Journal 프롬프트에 "AI 발화는 사실로 취급하지 말 것" 지침 추가.
+- 수정모드(`editMode`)일 때, 장소 칩(`locationChipRef` 버튼) 옆에 작은 `X` 삭제 버튼을 추가.
+  - 조건: `album.location` 또는 `album.lat/lng` 중 하나라도 있을 때만 표시.
+  - 클릭 시 `patch({ location: "", lat: undefined, lng: undefined })` 실행 후 `toast.success(t.deleted)`.
+  - 삭제 후에는 자동으로 "+ 장소 추가" 버튼 UI로 전환됨(기존 조건부 렌더링 재사용).
+- 태그 삭제와 동일한 시각적 패턴(작은 `X` 아이콘) 사용.
+- i18n: 필요 시 `t.removeLocation` 정도의 aria-label 키 추가(`src/lib/i18n.ts`).
 
-## 변경 사항
+## 2. 기간 달력 선택 기능
 
-### 1. `functions/src/index.ts` — 알 수 없는 값은 에러
-두 지점(L150·195 chat, L379·416 generateAlbum):
+앨범의 `period` 필드는 현재 단일 날짜 또는 범위(`2024.01.01~05`, `2024.01.01~2024.02.03`) 형식의 문자열. 수정모드에서 이 값을 date range picker로 편집.
 
-- 파라미터 기본값 `mode = "story"`, `tone = "politely"` 제거 → 그냥 `mode`, `tone`으로 받음.
-- 유효성 체크로 대체:
-  ```ts
-  if (mode !== "story" && mode !== "journal" && mode !== "summary") {
-    throw new HttpsError("invalid-argument", `invalid mode: ${String(mode)}`);
-  }
-  if (tone !== "politely" && tone !== "friendly" && tone !== "short") {
-    throw new HttpsError("invalid-argument", `invalid tone: ${String(tone)}`);
-  }
-  ```
-- 기존 `const m: AlbumMode = mode === ... ? mode : "story"` 폴백 코드 제거.
+### 접근
 
-### 2. `functions/src/prompts-album.ts` — 명시적 switch + Journal 강화
-- `albumSystem`과 `modeSpec`의 `if/if/return story` 구조를 `switch (mode)`로 바꾸고, `default:`는 `throw new Error(`unknown mode: ${mode}`)`. 서버에서 이미 검증하므로 실제로는 도달 안 하지만, 프롬프트 층에서도 조용한 폴백을 금지.
-- Journal 시스템 프롬프트에 추가:
-  - "대화 기록에는 `User:`와 `AI:` 두 발화자가 있습니다. **`User:` 줄만 사실로 취급**하고, `AI:` 줄에 등장한 감성적 묘사·비유·풍경 표현은 사용자 발화가 아니므로 결과물에 옮기지 마세요."
-  - "사용자가 직접 말하지 않은 감정어(설렘·벅찬·아련한 등)·비유·의성어를 추가하지 마세요."
-- Summary도 같은 "`User:` 줄만 사실" 문구 추가(재발 방지).
-- Story 브랜치는 유지.
+- 기존 `EditableText` 대신, `period` 항목에 한해 별도 컴포넌트/브랜치로 처리.
+- 수정모드에서 기간 텍스트/연필 아이콘을 클릭하면 shadcn `Popover` + `Calendar (mode="range")` 팝오버가 열림.
+- 범위 선택 후 "저장" 클릭 시 문자열로 포맷팅하여 `patch({ period })`:
+  - 같은 날: `YYYY.MM.DD`
+  - 같은 월: `YYYY.MM.DD~DD`
+  - 그 외: `YYYY.MM.DD~YYYY.MM.DD`
+  - (기존 `summarizePeriod` 로직과 동일 규칙; 헬퍼로 추출해 공유)
+- "지우기" 버튼으로 `period`를 빈 값으로 초기화 가능.
+- 읽기모드에서는 지금처럼 텍스트만 표시.
 
-### 3. `src/routes/create.tsx` — 최초 실행 기본값을 politely로
-- L129 `loadDefault(TONE_KEY, VALID_TONES, "friendly")` → `"politely"`로 변경.
-- mode 기본값은 이미 `"journal"` (L128) — 그대로 둠.
-- 사용자가 이전에 다른 값을 선택했다면 localStorage에 저장되어 있으므로 그 값이 그대로 유지됨(loadDefault 로직).
+### 기존 문자열 파싱
 
-### 4. 손대지 않음
-- `supabase/functions/_shared/prompts-album.ts` (미사용 레거시)
-- `src/routes/chat.tsx`의 legacy 마이그레이션(`fact`→`journal` 등) — 방어 코드로 남겨둠.
-- 프론트에서 mode/tone을 서버로 보내는 부분 — 현재 항상 유효값이므로 수정 불필요.
+- 팝오버 초기값은 저장된 `period` 문자열을 파싱해서 range로 복원 시도.
+- 파싱 실패(수동으로 이상하게 입력된 경우 등) → 빈 상태로 시작.
 
-## 검증
-- 빌드 통과 확인.
-- Journal 모드로 앨범 생성 시 결과에서 감성 표현/허구가 줄어드는지 사용자 재현으로 확인.
+### 기술 세부
 
-## 파일
-- `functions/src/index.ts`
-- `functions/src/prompts-album.ts`
-- `src/routes/create.tsx`
+- `src/components/ui/calendar.tsx`, `popover.tsx` 이미 존재하므로 신규 라이브러리 설치 없음.
+- 달력 wrapper에 `pointer-events-auto` 클래스 필수 적용.
+- `date-fns`는 이미 프로젝트에 포함(shadcn Calendar 의존성).
+
+## 변경 파일 요약
+
+- `src/routes/album.$id.tsx`
+  - 장소 칩 옆 삭제 X 버튼 추가 (수정모드 한정).
+  - period 편집을 date range picker Popover로 교체.
+  - 문자열 ↔ range 변환 헬퍼 추가(파일 내부 또는 `src/lib/photoMeta.ts` 공용화).
+- `src/lib/i18n.ts` (선택)
+  - `removeLocation`, `pickPeriod` 등 라벨 추가(ko/en/ja/zh 등 프로젝트에 있는 언어들에 맞춰).
+
+## 비변경
+
+- 저장 스키마(`Album` 타입)는 그대로 유지 — 여전히 `period: string`.
+- 다른 필드(제목/부제/본문 등)의 편집 UX는 변경 없음.
