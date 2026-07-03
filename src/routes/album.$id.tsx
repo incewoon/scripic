@@ -115,6 +115,131 @@ function EditableText({
   );
 }
 
+// ----- Period (date range) picker --------------------------------------------
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+function fmtDate(d: Date) {
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+}
+function formatPeriod(range: DateRange | undefined): string {
+  if (!range?.from) return "";
+  const from = range.from;
+  const to = range.to ?? range.from;
+  if (from.toDateString() === to.toDateString()) return fmtDate(from);
+  if (from.getFullYear() === to.getFullYear() && from.getMonth() === to.getMonth()) {
+    return `${fmtDate(from)}~${pad(to.getDate())}`;
+  }
+  return `${fmtDate(from)}~${fmtDate(to)}`;
+}
+function parsePeriod(s: string): DateRange | undefined {
+  if (!s) return undefined;
+  const mkDate = (y: number, m: number, d: number) => {
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? undefined : dt;
+  };
+  const full = s.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})(?:~(?:(\d{4})\.(\d{1,2})\.)?(\d{1,2}))?$/);
+  if (!full) return undefined;
+  const from = mkDate(+full[1], +full[2], +full[3]);
+  if (!from) return undefined;
+  if (!full[6]) return { from };
+  const toY = full[4] ? +full[4] : +full[1];
+  const toM = full[5] ? +full[5] : +full[2];
+  const to = mkDate(toY, toM, +full[6]);
+  return { from, to };
+}
+
+function PeriodPicker({
+  value,
+  onSave,
+  placeholder,
+  labelClear,
+  labelSave,
+  labelCancel,
+  labelTitle,
+}: {
+  value: string;
+  onSave: (v: string) => void;
+  placeholder: string;
+  labelClear: string;
+  labelSave: string;
+  labelCancel: string;
+  labelTitle: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [range, setRange] = useState<DateRange | undefined>(() => parsePeriod(value));
+  useEffect(() => {
+    if (open) setRange(parsePeriod(value));
+  }, [open, value]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="group relative text-left text-[12px] inline-flex items-center gap-1"
+          aria-label={labelTitle}
+        >
+          <span>{value || <span className="warm-muted italic">{placeholder}</span>}</span>
+          <Pencil size={11} className="opacity-60 warm-muted" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="center">
+        <div className="p-3">
+          <div className="text-xs warm-muted mb-2 px-1">{labelTitle}</div>
+          <Calendar
+            mode="range"
+            selected={range}
+            onSelect={setRange}
+            numberOfMonths={1}
+            initialFocus
+            className={cn("p-0 pointer-events-auto")}
+          />
+          <div className="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-border/40">
+            <button
+              type="button"
+              onClick={() => {
+                setRange(undefined);
+                onSave("");
+                setOpen(false);
+                toast.success(labelSave);
+              }}
+              className="text-xs warm-muted px-2 py-1"
+            >
+              {labelClear}
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="text-xs warm-muted px-2 py-1 flex items-center gap-1"
+              >
+                <X size={12} />
+                {labelCancel}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onSave(formatPeriod(range));
+                  setOpen(false);
+                  toast.success(labelSave);
+                }}
+                className="text-xs bg-primary text-primary-foreground rounded-full px-3 py-1 flex items-center gap-1"
+              >
+                <Check size={12} />
+                {labelSave}
+              </button>
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
+
 function AlbumView() {
   const { id } = Route.useParams();
   const { q, tags: searchTags } = Route.useSearch();
