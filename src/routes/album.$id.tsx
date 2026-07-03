@@ -288,33 +288,56 @@ function AlbumView() {
 
           <div className="mt-4 flex items-center justify-center gap-4 text-[12px] warm-muted">
             <div className="flex items-center gap-1.5">
-              <Calendar size={12} />
-              <EditableText
-                editKey="period"
-                activeKey={activeKey}
-                setActiveKey={setActiveKey}
-                editingMode={editMode}
-                value={album.period || ""}
-                onSave={(v) => patch({ period: v })}
-                placeholder={t.period}
-                className="text-[12px]"
-                highlightQuery={q}
-              />
+              <CalendarIcon size={12} />
+              {editMode ? (
+                <PeriodPicker
+                  value={album.period || ""}
+                  onSave={(v) => patch({ period: v })}
+                  placeholder={t.period}
+                  labelClear={t.clear}
+                  labelSave={t.save}
+                  labelCancel={t.cancel}
+                  labelTitle={t.pickPeriodTitle}
+                />
+              ) : (
+                <div className="text-[12px]">
+                  {album.period ? (
+                    <Hl text={album.period} query={q} />
+                  ) : (
+                    <span className="warm-muted italic">{t.period}</span>
+                  )}
+                </div>
+              )}
             </div>
             {album.location || (album.lat != null && album.lng != null) ? (
-              <button
-                ref={locationChipRef}
-                type="button"
-                onClick={() => {
-                  setMapMode(editMode ? "pick" : "view");
-                  setMapOpen(true);
-                }}
-                className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
-                aria-label={t.openGoogleMaps}
-              >
-                <MapPin size={12} />
-                {album.location ? <Hl text={album.location} query={q} /> : <span>{t.openGoogleMaps}</span>}
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  ref={locationChipRef}
+                  type="button"
+                  onClick={() => {
+                    setMapMode(editMode ? "pick" : "view");
+                    setMapOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 text-[12px] text-primary hover:underline active:opacity-80"
+                  aria-label={t.openGoogleMaps}
+                >
+                  <MapPin size={12} />
+                  {album.location ? <Hl text={album.location} query={q} /> : <span>{t.openGoogleMaps}</span>}
+                </button>
+                {editMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void patch({ location: "", lat: undefined, lng: undefined });
+                      toast.success(t.saved);
+                    }}
+                    aria-label={t.removeLocation}
+                    className="p-0.5 text-muted-foreground hover:text-destructive active:scale-95 transition-transform"
+                  >
+                    <X size={12} strokeWidth={2.5} />
+                  </button>
+                )}
+              </div>
             ) : (
               <button
                 ref={locationChipRef}
