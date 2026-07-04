@@ -5,6 +5,9 @@
 import JSZip from "jszip";
 import { getAlbums, type Album } from "./storage";
 import { set, get } from "idb-keyval";
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 const SCHEMA_VERSION = 2;
 const APP_NAME = "scripic";
@@ -154,14 +157,32 @@ export async function exportBackupZip(pin: string): Promise<void> {
     mimeType: "application/octet-stream",
   });
   const filename = `scripic-backup-${fileTimestamp()}.bak`;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+  if (Capacitor.isNativePlatform()) {
+    // 빌드 앱(네이티브)용 저장 로직
+    const base64Data = await blobToBase64(blob);
+    await Filesystem.writeFile({
+      path: filename,
+      data: base64Data,
+      directory: Directory.Documents,
+    });
+    await Share.share({
+      title: "Scripic Backup",
+      text: "백업 파일이 저장되었습니다.",
+      url: filename,
+      dialogTitle: "백업 파일 저장",
+    });
+  } else {
+    // 웹앱용 기존 다운로드 로직
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
 }
 
 // ---------- import ----------
