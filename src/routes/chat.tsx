@@ -14,6 +14,13 @@ import { markAlbumCreatedToday } from "@/lib/dailyLimit";
 import { useAuthReady } from "@/lib/useAuthReady";
 import { ChatUsageCoachmark, shouldShowChatUsage } from "@/components/ChatUsageCoachmark";
 import { useOnlineStatus, requireOnline } from "@/lib/network";
+import {
+  isNativePlatform,
+  isNativeSTTAvailable,
+  ensureSTTPermission,
+  startNativeSTT,
+  stopNativeSTT,
+} from "@/lib/nativeSTT";
 
 
 export const ssr = false;
