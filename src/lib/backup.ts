@@ -7,7 +7,7 @@ import { getAlbums, type Album } from "./storage";
 import { set, get } from "idb-keyval";
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
+
 
 const SCHEMA_VERSION = 2;
 const APP_NAME = "scripic";
