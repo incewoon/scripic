@@ -236,7 +236,7 @@ function SettingsPage() {
           <input
             ref={fileRef}
             type="file"
-            accept=".bak,.zip,application/*"
+            accept=".bak,.mwbak,.moarabak,.zip,application/zip,application/x-zip-compressed,application/octet-stream"
             className="hidden"
             onChange={onFileChosen}
           />
