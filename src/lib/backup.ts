@@ -173,19 +173,27 @@ export async function exportBackupZip(pin: string): Promise<void> {
   if (Capacitor.isNativePlatform()) {
     // 빌드 앱(네이티브)용 저장 로직
     const base64Data = await blobToBase64(blob);
+
     await Filesystem.writeFile({
       path: filename,
       data: base64Data,
       directory: Directory.Documents,
     });
+
+    // ★ 중요: getUri로 실제 파일 URI를 가져와서 Share에 전달해야 함
+    const uriResult = await Filesystem.getUri({
+      directory: Directory.Documents,
+      path: filename,
+    });
+
     await Share.share({
       title: "Scripic Backup",
       text: "백업 파일이 저장되었습니다.",
-      url: filename,
+      url: uriResult.uri,           // ← 여기 수정
       dialogTitle: "백업 파일 저장",
     });
   } else {
-    // 웹앱용 기존 다운로드 로직
+    // 웹앱용 기존 다운로드 로직 (변경 없음)
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
