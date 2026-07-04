@@ -1,3 +1,4 @@
+//src/routes/album.$id.tsx
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar as CalendarIcon, Download, Tag, Plus } from "lucide-react";
