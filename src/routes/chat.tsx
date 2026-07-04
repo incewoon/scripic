@@ -589,17 +589,83 @@ function Chat() {
     return rec;
   }
 
-  function toggleMic() {
+  async function toggleMic() {
     if (listening) {
       shouldRestartRef.current = false;
       clearSilenceTimer();
       recGenRef.current++; // ★ 현재 인스턴스를 즉시 "구세대"로 만들어 이후 이벤트 차단
-      try {
-        recognitionRef.current?.stop();
-      } catch {}
+      if (isNativePlatform()) {
+        await stopNativeSTT();
+      } else {
+        try {
+          recognitionRef.current?.stop();
+        } catch {}
+      }
       setListening(false);
       return;
     }
+
+    // 네이티브(Android/iOS) 셸에서는 Web Speech API가 WebView 권한 브리지에서
+    // 막히므로 Capacitor STT 플러그인을 사용한다.
+    if (isNativePlatform()) {
+      const available = await isNativeSTTAvailable();
+      if (!available) {
+        toast.error(t.micNotSupported);
+        return;
+      }
+      const ok = await ensureSTTPermission();
+      if (!ok) {
+        toast.error(t.micPermissionDenied);
+        return;
+      }
+      baseInputRef.current = input ? input.replace(/\s*$/, "") + " " : "";
+      shouldRestartRef.current = true;
+      const myGen = ++recGenRef.current;
+      const lang = getLang() === "ko" ? "ko-KR" : "en-US";
+
+      const startOnce = async (): Promise<void> => {
+        await startNativeSTT(lang, {
+          onPartial: (txt) => {
+            if (myGen !== recGenRef.current) return;
+            setInput(baseInputRef.current + txt);
+            moveCursorEnd();
+            armSilenceTimer();
+          },
+          onEnd: () => {
+            if (myGen !== recGenRef.current) return;
+            if (shouldRestartRef.current) {
+              setInput((cur) => {
+                const next = cur.replace(/\s*$/, "") + " ";
+                baseInputRef.current = next;
+                return next;
+              });
+              startOnce().catch((err) => {
+                console.error("[mic native] restart failed", err);
+                clearSilenceTimer();
+                setListening(false);
+              });
+              return;
+            }
+            clearSilenceTimer();
+            setListening(false);
+          },
+        });
+      };
+
+      try {
+        await startOnce();
+        setListening(true);
+        armSilenceTimer();
+      } catch (err) {
+        console.error("[mic native] start failed", err);
+        shouldRestartRef.current = false;
+        clearSilenceTimer();
+        setListening(false);
+        toast.error(t.micPermissionDenied);
+      }
+      return;
+    }
+
     const rec = createRecognition();
     if (!rec) {
       toast.error(t.micNotSupported);
