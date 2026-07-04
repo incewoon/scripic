@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trash2, Pencil, Check, X, MapPin, Calendar as CalendarIcon, Download, Tag, Plus } from "lucide-react";
 import { toPng } from "html-to-image";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
 import { getAlbums, deleteAlbum, updateAlbum, subscribeAlbums, getLastSavedCoords, type Album } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
@@ -321,12 +323,28 @@ function AlbumView() {
         backgroundColor: "#fdf6f1",
         cacheBust: true,
       });
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `${(album.title || "memory-weaver").replace(/[^\w가-힣\- ]/g, "")}.png`;
-      a.click();
-      toast.success(t.downloaded);
-    } catch {
+      const safeName = `${(album.title || "memory-weaver").replace(/[^\w가-힣\- ]/g, "")}.png`;
+
+      if (Capacitor.isNativePlatform()) {
+        // Android WebView는 <a download> 로 dataURL 을 저장하지 못하므로
+        // Capacitor Filesystem 으로 Documents 폴더에 직접 기록한다.
+        const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+        await Filesystem.writeFile({
+          path: safeName,
+          data: base64,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        toast.success(t.downloaded);
+      } else {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = safeName;
+        a.click();
+        toast.success(t.downloaded);
+      }
+    } catch (e) {
+      console.error("[album] save image failed", e);
       toast.error(t.failed);
     } finally {
       setDownloading(false);
