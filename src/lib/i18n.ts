@@ -358,6 +358,8 @@ const dict = {
     download: "이미지로 저장",
     preparing: "이미지 만드는 중…",
     downloaded: "이미지를 저장했어요",
+    savedToGallery: "사진첩에 저장했어요",
+    viewNow: "지금 보기",
     madeWith: "Scripic으로 만든 추억",
     leaveTitle: "정말 나갈까요?",
     leaveDesc: "지금 나가면 대화 내용은 사라져요. 앨범은 아직 만들어지지 않았어요.",
