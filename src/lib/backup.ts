@@ -179,6 +179,13 @@ export async function exportBackupZip(pin: string): Promise<void> {
       directory: Directory.Documents,
       recursive: true,
     });
+    // 저장된 파일의 URI를 가져와서 반환
+    const { uri } = await Filesystem.getUri({
+      directory: Directory.Documents,
+      path: filename,
+    });
+  
+    return { uri }; // ← settings.tsx에서 사용
   } else {
     // 웹앱용 기존 다운로드 로직 (변경 없음)
     const url = URL.createObjectURL(blob);
