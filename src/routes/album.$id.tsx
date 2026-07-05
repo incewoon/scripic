@@ -358,7 +358,16 @@ function AlbumView() {
   
         // 3. Media 플러그인으로 갤러리에 저장
         console.log("[album] Media.savePhoto 시작");
-        const saveResult = await Media.savePhoto({ path: uri });
+        try {
+          await Media.savePhoto({
+            path: uri,
+            album: "Scripic",           // ← 앨범 이름 지정 (없으면 자동 생성됨)
+          });
+          console.log("[album] Media.savePhoto 성공");
+        } catch (mediaError) {
+          console.error("[album] Media.savePhoto 실패 상세:", mediaError);
+          throw mediaError; // 기존 catch로 넘김
+        }
         console.log("[album] Media.savePhoto 완료", saveResult);
   
         // 성공 토스트 + 지금 보기 액션
