@@ -354,21 +354,13 @@ function AlbumView() {
         });
         console.log("[album] getUri 완료:", uri);
   
-        // 3. 앨범 생성 (v9 대응)
-        try {
-          await Media.createAlbum({ name: "Scripic" });
-          console.log("[album] createAlbum 완료");
-        } catch {
-          console.log("[album] createAlbum 스킵 (이미 존재)");
-        }
-  
-        // 4. 갤러리에 저장
+        // 3. 갤러리에 저장 (기본 앨범/Pictures 로 저장)
         console.log("[album] Media.savePhoto 시작");
         await Media.savePhoto({
           path: uri,
-          album: "Scripic",
         });
         console.log("[album] Media.savePhoto 성공");
+
   
         toast.success(t.savedToGallery, {
           action: {
