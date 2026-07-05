@@ -607,6 +607,9 @@ function Chat() {
 
     // 네이티브(Android/iOS) 셸에서는 Web Speech API가 WebView 권한 브리지에서
     // 막히므로 Capacitor STT 플러그인을 사용한다.
+    // Android SpeechRecognizer 는 single-utterance: 침묵을 감지하면 세션이
+    // 스스로 끝난다. 자동 재시작을 하지 않고, 사용자가 다시 마이크 버튼을
+    // 눌러 이어 말하도록 한다. (침묵 타이머도 네이티브에서는 사용하지 않음)
     if (isNativePlatform()) {
       const available = await isNativeSTTAvailable();
       if (!available) {
@@ -619,52 +622,35 @@ function Chat() {
         return;
       }
       baseInputRef.current = input ? input.replace(/\s*$/, "") + " " : "";
-      shouldRestartRef.current = true;
+      shouldRestartRef.current = false;
       const myGen = ++recGenRef.current;
       const lang = getLang() === "ko" ? "ko-KR" : "en-US";
 
-      const startOnce = async (): Promise<void> => {
+      try {
         await startNativeSTT(lang, {
           onPartial: (txt) => {
             if (myGen !== recGenRef.current) return;
             setInput(baseInputRef.current + txt);
             moveCursorEnd();
-            armSilenceTimer();
           },
           onEnd: () => {
             if (myGen !== recGenRef.current) return;
-            if (shouldRestartRef.current) {
-              setInput((cur) => {
-                const next = cur.replace(/\s*$/, "") + " ";
-                baseInputRef.current = next;
-                return next;
-              });
-              startOnce().catch((err) => {
-                console.error("[mic native] restart failed", err);
-                clearSilenceTimer();
-                setListening(false);
-              });
-              return;
-            }
-            clearSilenceTimer();
+            // 세션 자연 종료 (침묵 감지) → 그대로 종료. 재시작 없음.
             setListening(false);
           },
+          onError: (err) => {
+            console.error("[mic native] error", err);
+          },
         });
-      };
-
-      try {
-        await startOnce();
         setListening(true);
-        armSilenceTimer();
       } catch (err) {
         console.error("[mic native] start failed", err);
-        shouldRestartRef.current = false;
-        clearSilenceTimer();
         setListening(false);
         toast.error(t.micPermissionDenied);
       }
       return;
     }
+
 
     const rec = createRecognition();
     if (!rec) {
