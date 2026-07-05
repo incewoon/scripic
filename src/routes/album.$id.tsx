@@ -346,8 +346,17 @@ function AlbumView() {
         
           // 3. Media 플러그인으로 갤러리(MediaStore)에 저장
           await Media.savePhoto({ path: uri });
-        
-          toast.success(t.downloaded); // 또는 더 구체적인 메시지로 변경
+
+          toast.success(t.savedToGallery, {
+            action: {
+              label: t.viewNow,
+              onClick: () => {
+                FileOpener.open({ filePath: uri, contentType: "image/png" }).catch(
+                  (err) => console.error("[album] open image failed", err),
+                );
+              },
+            },
+          });
       } else {
         const a = document.createElement("a");
         a.href = dataUrl;
