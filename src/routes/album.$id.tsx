@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
+import { Media } from '@capacitor-community/media';
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
@@ -327,16 +328,25 @@ function AlbumView() {
       const safeName = `${(album.title || "memory-weaver").replace(/[^\w가-힣\- ]/g, "")}.png`;
 
       if (Capacitor.isNativePlatform()) {
-        // Android WebView는 <a download> 로 dataURL 을 저장하지 못하므로
-        // Capacitor Filesystem 으로 Documents 폴더에 직접 기록한다.
         const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
-        await Filesystem.writeFile({
-          path: safeName,
-          data: base64,
-          directory: Directory.Documents,
-          recursive: true,
-        });
-        toast.success(t.downloaded);
+        
+          // 1. 임시로 Cache에 먼저 저장
+          await Filesystem.writeFile({
+            path: safeName,
+            data: base64,
+            directory: Directory.Cache,
+          });
+        
+          // 2. URI 가져오기
+          const { uri } = await Filesystem.getUri({
+            directory: Directory.Cache,
+            path: safeName,
+          });
+        
+          // 3. Media 플러그인으로 갤러리(MediaStore)에 저장
+          await Media.savePhoto({ path: uri });
+        
+          toast.success(t.downloaded); // 또는 더 구체적인 메시지로 변경
       } else {
         const a = document.createElement("a");
         a.href = dataUrl;
