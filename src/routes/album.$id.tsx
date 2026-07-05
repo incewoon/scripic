@@ -335,70 +335,54 @@ function AlbumView() {
   
       if (Capacitor.isNativePlatform()) {
         const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
-      
+        console.log("[album] base64 추출 완료, 길이:", base64.length);
+  
         // 1. Cache에 임시 저장
+        console.log("[album] Filesystem.writeFile 시작 (Cache)");
         await Filesystem.writeFile({
           path: safeName,
           data: base64,
           directory: Directory.Cache,
         });
-      
+        console.log("[album] Filesystem.writeFile 완료");
+  
         // 2. URI 가져오기
+        console.log("[album] Filesystem.getUri 시작");
         const { uri } = await Filesystem.getUri({
           directory: Directory.Cache,
           path: safeName,
         });
-      
-        console.log("[album] Media.savePhoto 준비 - uri:", uri);
-      
-        // 3. 앨범 생성 (없으면 생성, 있으면 무시)
+        console.log("[album] getUri 완료:", uri);
+  
+        // 3. 앨범 생성 (v9 대응)
         try {
           await Media.createAlbum({ name: "Scripic" });
           console.log("[album] createAlbum 완료");
-        } catch (e) {
-          console.log("[album] createAlbum 스킵 (이미 존재할 가능성)");
+        } catch {
+          console.log("[album] createAlbum 스킵 (이미 존재)");
         }
-      
-        // 4. 갤러리에 저장
-        try {
-          await Media.savePhoto({
-            path: uri,
-            album: "Scripic",
-          });
-          console.log("[album] Media.savePhoto 성공");
-      
-          toast.success(t.savedToGallery, {
-            action: {
-              label: t.viewNow,
-              onClick: () => {
-                FileOpener.open({ filePath: uri, contentType: "image/png" }).catch((err) =>
-                  console.error("[album] FileOpener 실패", err)
-                );
-              },
-            },
-          });
-        } catch (mediaError) {
-          console.error("[album] Media.savePhoto 최종 실패:", mediaError);
-          throw mediaError;
-        }
-      }
-
-        console.log("[album] Media.savePhoto 완료", saveResult);
   
-        // 성공 토스트 + 지금 보기 액션
+        // 4. 갤러리에 저장
+        console.log("[album] Media.savePhoto 시작");
+        await Media.savePhoto({
+          path: uri,
+          album: "Scripic",
+        });
+        console.log("[album] Media.savePhoto 성공");
+  
         toast.success(t.savedToGallery, {
           action: {
             label: t.viewNow,
             onClick: () => {
-              console.log("[album] 지금 보기 클릭 - FileOpener 호출");
-              FileOpener.open({ filePath: uri, contentType: "image/png" }).catch((err) => {
-                console.error("[album] FileOpener.open 실패", err);
-              });
+              console.log("[album] 지금 보기 클릭");
+              FileOpener.open({ filePath: uri, contentType: "image/png" }).catch((err) =>
+                console.error("[album] FileOpener 실패", err)
+              );
             },
           },
         });
       } else {
-        // 웹 로직 (변경 없음)
+        // 웹 로직 (절대 건드리지 않음)
         const a = document.createElement("a");
         a.href = dataUrl;
         a.download = safeName;
@@ -406,11 +390,7 @@ function AlbumView() {
         toast.success(t.downloaded);
       }
     } catch (e) {
-      console.error("[album] save image failed - 전체 에러 객체:", e);
-      console.error("[album] 에러 메시지:", e instanceof Error ? e.message : String(e));
-      if (e instanceof Error && e.stack) {
-        console.error("[album] 스택 트레이스:", e.stack);
-      }
+      console.error("[album] save image failed - 전체 에러:", e);
       toast.error(t.failed);
     } finally {
       setDownloading(false);
