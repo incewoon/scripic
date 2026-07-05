@@ -80,6 +80,8 @@ const dict = {
     download: "Save as image",
     preparing: "Preparing image…",
     downloaded: "Image saved",
+    savedToGallery: "Saved to your gallery",
+    viewNow: "View now",
     madeWith: "Made with Scripic",
     leaveTitle: "Leave the conversation?",
     leaveDesc: "Your chat will be discarded. The album hasn't been created yet.",
