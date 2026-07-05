@@ -319,6 +319,9 @@ function AlbumView() {
     if (!shareRef.current || !album) return;
     setDownloading(true);
     setActiveKey(null);
+  
+    console.log("[album] downloadImage 시작 - isNative:", Capacitor.isNativePlatform());
+  
     try {
       await new Promise((r) => setTimeout(r, 50));
       const dataUrl = await toPng(shareRef.current, {
@@ -326,38 +329,52 @@ function AlbumView() {
         backgroundColor: "#fdf6f1",
         cacheBust: true,
       });
+      console.log("[album] toPng 완료");
+  
       const safeName = `${(album.title || "memory-weaver").replace(/[^\w가-힣\- ]/g, "")}.png`;
-
+  
       if (Capacitor.isNativePlatform()) {
+        console.log("[album] 네이티브 분기 진입");
+  
         const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
-        
-          // 1. 임시로 Cache에 먼저 저장
-          await Filesystem.writeFile({
-            path: safeName,
-            data: base64,
-            directory: Directory.Cache,
-          });
-        
-          // 2. URI 가져오기
-          const { uri } = await Filesystem.getUri({
-            directory: Directory.Cache,
-            path: safeName,
-          });
-        
-          // 3. Media 플러그인으로 갤러리(MediaStore)에 저장
-          await Media.savePhoto({ path: uri });
-
-          toast.success(t.savedToGallery, {
-            action: {
-              label: t.viewNow,
-              onClick: () => {
-                FileOpener.open({ filePath: uri, contentType: "image/png" }).catch(
-                  (err) => console.error("[album] open image failed", err),
-                );
-              },
+        console.log("[album] base64 추출 완료, 길이:", base64.length);
+  
+        // 1. Cache에 임시 저장
+        console.log("[album] Filesystem.writeFile 시작 (Cache)");
+        await Filesystem.writeFile({
+          path: safeName,
+          data: base64,
+          directory: Directory.Cache,
+        });
+        console.log("[album] Filesystem.writeFile 완료");
+  
+        // 2. URI 가져오기
+        console.log("[album] Filesystem.getUri 시작");
+        const { uri } = await Filesystem.getUri({
+          directory: Directory.Cache,
+          path: safeName,
+        });
+        console.log("[album] getUri 완료:", uri);
+  
+        // 3. Media 플러그인으로 갤러리에 저장
+        console.log("[album] Media.savePhoto 시작");
+        const saveResult = await Media.savePhoto({ path: uri });
+        console.log("[album] Media.savePhoto 완료", saveResult);
+  
+        // 성공 토스트 + 지금 보기 액션
+        toast.success(t.savedToGallery, {
+          action: {
+            label: t.viewNow,
+            onClick: () => {
+              console.log("[album] 지금 보기 클릭 - FileOpener 호출");
+              FileOpener.open({ filePath: uri, contentType: "image/png" }).catch((err) => {
+                console.error("[album] FileOpener.open 실패", err);
+              });
             },
-          });
+          },
+        });
       } else {
+        // 웹 로직 (변경 없음)
         const a = document.createElement("a");
         a.href = dataUrl;
         a.download = safeName;
@@ -365,7 +382,11 @@ function AlbumView() {
         toast.success(t.downloaded);
       }
     } catch (e) {
-      console.error("[album] save image failed", e);
+      console.error("[album] save image failed - 전체 에러 객체:", e);
+      console.error("[album] 에러 메시지:", e instanceof Error ? e.message : String(e));
+      if (e instanceof Error && e.stack) {
+        console.error("[album] 스택 트레이스:", e.stack);
+      }
       toast.error(t.failed);
     } finally {
       setDownloading(false);
