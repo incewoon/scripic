@@ -357,17 +357,31 @@ function AlbumView() {
         console.log("[album] getUri 완료:", uri);
   
         // 3. Media 플러그인으로 갤러리에 저장
-        console.log("[album] Media.savePhoto 시작");
+        console.log("[album] Media.savePhoto 시작 - uri:", uri);
+        
         try {
-          await Media.savePhoto({
+          const result = await Media.savePhoto({
             path: uri,
-            album: "Scripic",           // ← 앨범 이름 지정 (없으면 자동 생성됨)
+            album: "Scripic",
           });
-          console.log("[album] Media.savePhoto 성공");
-        } catch (mediaError) {
-          console.error("[album] Media.savePhoto 실패 상세:", mediaError);
-          throw mediaError; // 기존 catch로 넘김
+          console.log("[album] Media.savePhoto 성공:", result);
+        
+          toast.success(t.savedToGallery, {
+            action: {
+              label: t.viewNow,
+              onClick: () => {
+                FileOpener.open({ filePath: uri, contentType: "image/png" }).catch(err =>
+                  console.error("[album] FileOpener 실패", err)
+                );
+              },
+            },
+          });
+        } catch (mediaErr) {
+          console.error("[album] Media.savePhoto 상세 에러:", mediaErr);
+          console.error("[album] 에러 메시지:", mediaErr?.message || mediaErr);
+          throw mediaErr;
         }
+
         console.log("[album] Media.savePhoto 완료", saveResult);
   
         // 성공 토스트 + 지금 보기 액션
