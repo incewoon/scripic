@@ -89,7 +89,7 @@ async function blobToBase64(blob: Blob): Promise<string> {
 
 // ---------- export ----------
 
-export async function exportBackupZip(pin: string): Promise<void> {
+export async function exportBackupZip(pin: string): Promise<{ uri?: string }> {
   if (!/^\d{4}$/.test(pin)) throw new Error("invalid_pin");
 
   const albums = await getAlbums();
