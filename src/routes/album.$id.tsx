@@ -346,27 +346,43 @@ function AlbumView() {
         });
         console.log("[album] Filesystem.writeFile 완료");
   
-        // 2. URI 가져오기
-        console.log("[album] Filesystem.getUri 시작");
+       // 2. URI 가져오기
         const { uri } = await Filesystem.getUri({
           directory: Directory.Cache,
           path: safeName,
         });
         console.log("[album] getUri 완료:", uri);
-  
-        // 3. 앨범 생성 (v9 대응)
+        
+        // 3. 앨범 생성 또는 기존 앨범 찾기 (v9 대응)
+        let albumIdentifier: string | undefined;
+        
         try {
-          await Media.createAlbum({ name: "Scripic" });
-          console.log("[album] createAlbum 완료");
-        } catch {
-          console.log("[album] createAlbum 스킵 (이미 존재)");
+          const createResult = await Media.createAlbum({ name: "Scripic" });
+          albumIdentifier = createResult?.identifier;
+          console.log("[album] createAlbum 완료, identifier:", albumIdentifier);
+        } catch (e) {
+          console.log("[album] createAlbum 실패 (이미 존재할 수 있음)");
+          
+          // 이미 존재하는 경우 getAlbums로 찾기
+          try {
+            const { albums } = await Media.getAlbums();
+            const existingAlbum = albums.find((a: any) => a.name === "Scripic");
+            albumIdentifier = existingAlbum?.identifier;
+            console.log("[album] 기존 앨범 찾음, identifier:", albumIdentifier);
+          } catch (getErr) {
+            console.error("[album] getAlbums 실패:", getErr);
+          }
         }
-  
+        
+        if (!albumIdentifier) {
+          throw new Error("Album identifier를 찾을 수 없습니다.");
+        }
+        
         // 4. 갤러리에 저장
-        console.log("[album] Media.savePhoto 시작");
+        console.log("[album] Media.savePhoto 시작, albumIdentifier:", albumIdentifier);
         await Media.savePhoto({
           path: uri,
-          album: "Scripic",
+          albumIdentifier,           // ← album이 아니라 albumIdentifier
         });
         console.log("[album] Media.savePhoto 성공");
   
