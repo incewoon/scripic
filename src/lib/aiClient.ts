@@ -1,3 +1,4 @@
+// src/lib/aiClient.ts
 // Single entry point for AI calls.
 //
 // All AI traffic goes through Firebase Cloud Functions callables
