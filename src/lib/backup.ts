@@ -170,8 +170,10 @@ export async function exportBackupZip(pin: string): Promise<{ uri?: string }> {
     mimeType: "application/octet-stream",
   });
   const filename = `scripic-backup-${fileTimestamp()}.bak`;
-
+  
   if (Capacitor.isNativePlatform()) {
+    const base64Data = await blobToBase64(blob);   // ← 빠졌던 변환 단계 추가
+  
     await Filesystem.writeFile({
       path: filename,
       data: base64Data,
@@ -184,7 +186,7 @@ export async function exportBackupZip(pin: string): Promise<{ uri?: string }> {
       path: filename,
     });
   
-    return { uri };   // ← uri를 반환하도록 수정
+    return { uri };
   } else {
     // 웹앱용 기존 다운로드 로직 (변경 없음)
     const url = URL.createObjectURL(blob);
@@ -195,6 +197,7 @@ export async function exportBackupZip(pin: string): Promise<{ uri?: string }> {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return {};
   }
 }
 
