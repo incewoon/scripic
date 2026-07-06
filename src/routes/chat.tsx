@@ -449,6 +449,11 @@ function Chat() {
       !errorToasted &&
       (streamError || looksIncomplete(assistant))
     ) {
+      console.warn("[Chat] 응답이 불완전 → incomplete 배너 표시", {
+        streamError: streamError ? { code: streamError.code, message: streamError.message } : null,
+        assistantLen: assistant.length,
+        isRetry,
+      });
       // Strip the failed/partial assistant bubble from the visible thread.
       setMessages(newMsgs);
       setIncomplete({
