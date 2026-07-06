@@ -88,9 +88,34 @@ function SettingsPage() {
   const submitPin = async (pin: string) => {
     if (pinMode === "export") {
       setExporting(true);
-      try { await exportBackupZip(pin); toast.success(t.saved); }
-      catch { toast.error(t.failed); }
-      finally { setExporting(false); setPinMode(null); }
+      try {
+        const result = await exportBackupZip(pin);
+    
+        if (result?.uri) {
+          // 네이티브: "지금 보기" 액션이 있는 토스트
+          toast.success(t.savedToDocuments || "저장했어요", {
+            action: {
+              label: t.viewNow || "지금 보기",
+              onClick: () => {
+                FileOpener.open({
+                  filePath: result.uri!,
+                  contentType: "application/octet-stream",
+                }).catch((err) => {
+                  console.error("[backup] FileOpener 실패", err);
+                });
+              },
+            },
+          });
+        } else {
+          // 웹
+          toast.success(t.saved);
+        }
+      } catch {
+        toast.error(t.failed);
+      } finally {
+        setExporting(false);
+        setPinMode(null);
+      }
     } else if (pinMode === "import") {
       const file = pendingFileRef.current;
       if (!file) { setPinMode(null); return; }
