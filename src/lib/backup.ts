@@ -1,3 +1,4 @@
+// src/lib/backup.ts
 // Encrypted album backup. AES-GCM with a PBKDF2-derived key from a 4-digit PIN.
 // File is a small outer ZIP containing meta.json + payload.enc.
 // Inner payload is the original album-bundle ZIP (manifest + photos).
