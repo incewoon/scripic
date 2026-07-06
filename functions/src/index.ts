@@ -1,3 +1,4 @@
+// functions/src/index.ts
 // Cloud Functions for Firebase — proxy for Gemini 2.5 Flash-Lite.
 //
 // All AI traffic from the app goes through these callable functions:
