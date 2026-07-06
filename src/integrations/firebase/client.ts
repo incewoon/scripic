@@ -1,3 +1,5 @@
+// src/integrations/firebase/client.ts
+
 // Firebase web client. Initializes app, App Check, and Functions SDK.
 //
 // The web config below is your Firebase project's PUBLIC config — it is safe
