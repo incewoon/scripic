@@ -383,6 +383,14 @@ function Chat() {
       streamError = err;
       const code = err?.code ?? "";
       const kind = err?.details?.kind;
+      console.error("[Chat] send() 스트림 오류", {
+        code,
+        kind,
+        message: err?.message,
+        name: err?.name,
+        details: err?.details,
+        assistantSoFarLen: assistant.length,
+      });
       if (kind === "ai_quota") {
         toast.error(t.aiQuota);
         errorToasted = true;
@@ -393,12 +401,18 @@ function Chat() {
         toast.error(t.rateLimit);
         errorToasted = true;
       } else if (code === "functions/unauthenticated" || code === "functions/permission-denied") {
+        console.warn("[Chat] auth/appcheck 실패로 connectionError 토스트 표시");
         toast.error(t.connectionError);
         errorToasted = true;
       }
       // ai_unavailable / functions/unavailable / generic network: fall
       // through to the inline incomplete banner — no toast needed.
     } finally {
+      console.log("[Chat] send() 스트림 종료", {
+        assistantLen: assistant.length,
+        assistantPreview: assistant.slice(0, 80),
+        hadError: !!streamError,
+      });
       setBusy(false);
     }
 
