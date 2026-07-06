@@ -43,14 +43,42 @@ export async function* aiChatStream(payload: {
   maxTurnsPerPhoto?: number;
 }): AsyncGenerator<string> {
   const startTime = performance.now();
-  console.log(`[AI Client] aiChatStream → callable chat (stream)`);
+  const msgCount = payload.messages?.length ?? 0;
+  const photoBytes = (payload.photos ?? []).reduce(
+    (a, p) => a + (typeof p === "string" ? p.length : 0),
+    0,
+  );
+  console.log(`[AI Client] ▶ aiChatStream 시작`, {
+    msgCount,
+    photoCount: payload.photoCount,
+    photosInPayload: payload.photos?.length ?? 0,
+    photoPayloadBytes: photoBytes,
+    lang: payload.lang,
+    mode: payload.mode,
+  });
 
-  await ensureFirebaseUser(); // anonymous sign-in (also ensures App Check is initialized)
+  try {
+    console.log(`[AI Client] ensureFirebaseUser() 대기…`);
+    const authUser = await ensureFirebaseUser();
+    console.log(`[AI Client] ensureFirebaseUser() OK`, {
+      uid: authUser?.uid,
+      isAnonymous: authUser?.isAnonymous,
+      ms: (performance.now() - startTime).toFixed(0),
+    });
+  } catch (e: any) {
+    console.error(`[AI Client] ensureFirebaseUser() 실패`, {
+      code: e?.code,
+      message: e?.message,
+      name: e?.name,
+    });
+    normalizeError(e);
+  }
 
   const call = httpsCallable<any, { text: string }, { delta?: string; replace?: string }>(
     getFns(),
     "chat",
   );
+  console.log(`[AI Client] httpsCallable('chat') 준비 완료 — call.stream() 호출`);
 
   try {
     const { stream, data } = await call.stream({
@@ -63,32 +91,58 @@ export async function* aiChatStream(payload: {
       deviceId: getDeviceId(),
       localDate: getLocalDate(),
     });
+    console.log(
+      `[AI Client] call.stream() 반환 — ${(performance.now() - startTime).toFixed(0)}ms, 스트림 소비 시작`,
+    );
 
     let firstChunkAt: number | null = null;
+    let chunkIdx = 0;
+    let totalDeltaChars = 0;
+    let replaceCount = 0;
     for await (const chunk of stream) {
+      chunkIdx++;
       if (firstChunkAt == null) {
         firstChunkAt = performance.now();
         console.log(
-          `[AI Client] aiChatStream 첫 토큰 - ${(firstChunkAt - startTime).toFixed(0)}ms`,
+          `[AI Client] 🟢 첫 토큰 수신 - ${(firstChunkAt - startTime).toFixed(0)}ms`,
+          { chunkKeys: chunk ? Object.keys(chunk) : null },
         );
       }
-      // Server may send either an incremental `delta` or a full `replace`
-      // (after post-processing strips wrap sentences / appends server-injected tails).
       if (typeof chunk?.replace === "string") {
-        // Sentinel-prefixed string tells the consumer to reset accumulated text.
+        replaceCount++;
+        console.log(`[AI Client] chunk#${chunkIdx} REPLACE(len=${chunk.replace.length})`);
         yield `\x00REPLACE\x00${chunk.replace}`;
       } else {
         const delta = chunk?.delta;
-        if (typeof delta === "string" && delta.length > 0) yield delta;
+        if (typeof delta === "string" && delta.length > 0) {
+          totalDeltaChars += delta.length;
+          if (chunkIdx <= 3 || chunkIdx % 20 === 0) {
+            console.log(
+              `[AI Client] chunk#${chunkIdx} delta(len=${delta.length}, total=${totalDeltaChars})`,
+            );
+          }
+          yield delta;
+        } else {
+          console.warn(`[AI Client] chunk#${chunkIdx} 빈/비정상`, chunk);
+        }
       }
     }
-    await data; // surface server-side errors that fire after streaming begins
-    const endTime = performance.now();
     console.log(
-      `[AI Client] aiChatStream 완료 - ${(endTime - startTime).toFixed(0)}ms`,
+      `[AI Client] 스트림 루프 종료 — chunks=${chunkIdx}, deltaChars=${totalDeltaChars}, replaces=${replaceCount}. data 프로미스 await…`,
     );
-  } catch (e) {
-    console.error(`[AI Client] aiChatStream 실패`, e);
+    const finalData: any = await data;
+    console.log(
+      `[AI Client] ✅ aiChatStream 완료 - ${(performance.now() - startTime).toFixed(0)}ms`,
+      { finalTextLen: finalData?.text?.length ?? null },
+    );
+  } catch (e: any) {
+    console.error(`[AI Client] ❌ aiChatStream 실패`, {
+      name: e?.name,
+      code: e?.code,
+      message: e?.message,
+      details: e?.details,
+      elapsedMs: (performance.now() - startTime).toFixed(0),
+    });
     normalizeError(e);
   }
 }
@@ -125,8 +179,14 @@ export async function aiGenerateAlbum(payload: {
     const endTime = performance.now();
     console.log(`[AI Client] aiGenerateAlbum 완료 - ${(endTime - startTime).toFixed(0)}ms`);
     return res.data;
-  } catch (e) {
-    console.error(`[AI Client] aiGenerateAlbum 실패`, e);
+  } catch (e: any) {
+    console.error(`[AI Client] ❌ aiGenerateAlbum 실패`, {
+      name: e?.name,
+      code: e?.code,
+      message: e?.message,
+      details: e?.details,
+      elapsedMs: (performance.now() - startTime).toFixed(0),
+    });
     normalizeError(e);
   }
 }

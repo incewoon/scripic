@@ -53,22 +53,32 @@ export function getFirebase() {
     const nativeBridge = (window as any).__APPCHECK_NATIVE__;
 
     if (nativeBridge?.getToken) {
+      console.log("[firebase] App Check → CustomProvider(native bridge)");
       _appCheck = initializeAppCheck(_app, {
         provider: new CustomProvider({
           getToken: async () => {
+            console.log("[firebase] App Check nativeBridge.getToken() 호출");
             const t = await nativeBridge.getToken();
+            console.log("[firebase] App Check nativeBridge token OK", {
+              tokenLen: t?.token?.length,
+              expireInMs: t?.expireTimeMillis ? t.expireTimeMillis - Date.now() : null,
+            });
             return { token: t.token, expireTimeMillis: t.expireTimeMillis };
           },
         }),
         isTokenAutoRefreshEnabled: true,
       });
     } else if (recaptchaKey) {
+      console.log("[firebase] App Check → ReCaptchaV3Provider");
       _appCheck = initializeAppCheck(_app, {
         provider: new ReCaptchaV3Provider(recaptchaKey),
         isTokenAutoRefreshEnabled: true,
       });
+    } else {
+      console.warn(
+        "[firebase] App Check 미설정 (nativeBridge/recaptchaKey 없음) — 콜러블 호출이 App Check 강제와 함께 실패할 수 있음",
+      );
     }
-    // else: no provider — works only in dev with FIREBASE_APPCHECK_DEBUG_TOKEN.
   } catch (e) {
     console.warn("App Check init skipped:", e);
   }
