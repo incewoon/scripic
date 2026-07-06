@@ -8,7 +8,6 @@ import { exportBackupZip, importBackupZip } from "@/lib/backup";
 import { getStorageDiagnostics, requestPersistentStorage } from "@/lib/storage";
 import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
-import { FileOpener } from "@capacitor-community/file-opener";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -90,30 +89,8 @@ function SettingsPage() {
     if (pinMode === "export") {
       setExporting(true);
       try {
-        const result = await exportBackupZip(pin);
-    
-        if (result?.uri) {
-          // 네이티브: "지금 보기" 액션이 있는 토스트
-          toast.success(t.savedToDocuments || "저장했어요", {
-            action: {
-              label: t.viewNow || "지금 보기",
-              onClick: () => {
-                // 파일이 있는 Documents 폴더를 열기 위해 상위 경로 추출
-                const folderUri = result.uri!.substring(0, result.uri!.lastIndexOf('/'));
-                
-                FileOpener.open({
-                  filePath: folderUri,
-                  contentType: "*/*",           // 폴더를 열 때는 * /* 가 더 잘 동작함
-                }).catch((err) => {
-                  console.error("[backup] FileOpener 실패", err);
-                });
-              },
-            },
-          });
-        } else {
-          // 웹
-          toast.success(t.saved);
-        }
+        await exportBackupZip(pin);
+        toast.success(t.savedToDocuments);
       } catch {
         toast.error(t.failed);
       } finally {
