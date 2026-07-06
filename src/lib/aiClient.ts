@@ -179,8 +179,14 @@ export async function aiGenerateAlbum(payload: {
     const endTime = performance.now();
     console.log(`[AI Client] aiGenerateAlbum 완료 - ${(endTime - startTime).toFixed(0)}ms`);
     return res.data;
-  } catch (e) {
-    console.error(`[AI Client] aiGenerateAlbum 실패`, e);
+  } catch (e: any) {
+    console.error(`[AI Client] ❌ aiGenerateAlbum 실패`, {
+      name: e?.name,
+      code: e?.code,
+      message: e?.message,
+      details: e?.details,
+      elapsedMs: (performance.now() - startTime).toFixed(0),
+    });
     normalizeError(e);
   }
 }
