@@ -98,9 +98,12 @@ function SettingsPage() {
             action: {
               label: t.viewNow || "지금 보기",
               onClick: () => {
+                // 파일이 있는 Documents 폴더를 열기 위해 상위 경로 추출
+                const folderUri = result.uri!.substring(0, result.uri!.lastIndexOf('/'));
+                
                 FileOpener.open({
-                  filePath: result.uri!,
-                  contentType: "application/octet-stream",
+                  filePath: folderUri,
+                  contentType: "*/*",           // 폴더를 열 때는 * /* 가 더 잘 동작함
                 }).catch((err) => {
                   console.error("[backup] FileOpener 실패", err);
                 });
