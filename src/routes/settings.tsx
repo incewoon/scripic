@@ -1,3 +1,5 @@
+//src/routes/settings.tsx
+
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, Archive, Download, Upload, Palette, Check, Database, Smartphone, Lock, ListOrdered, AlertTriangle, ExternalLink } from "lucide-react";
