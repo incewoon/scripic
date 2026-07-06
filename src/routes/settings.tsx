@@ -89,8 +89,18 @@ function SettingsPage() {
     if (pinMode === "export") {
       setExporting(true);
       try {
-        await exportBackupZip(pin);
-        toast.success(t.savedToDocuments);
+        const result = await exportBackupZip(pin);
+    
+        if (result?.uri) {
+          // uri에 'Documents'가 포함되어 있는지 확인
+          const isDocuments = result.uri.includes('Documents');
+          const folderName = isDocuments ? 'Documents' : '저장된 위치';
+    
+          toast.success(`${folderName} 폴더에 저장되었습니다`);
+        } else {
+          // 웹
+          toast.success("다운로드 폴더에 저장 되었어요");
+        }
       } catch {
         toast.error(t.failed);
       } finally {
