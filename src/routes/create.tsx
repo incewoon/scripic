@@ -1,3 +1,4 @@
+// src/routes/creat.tsx
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ImagePlus, ArrowRight, X, GripVertical, Info } from "lucide-react";
