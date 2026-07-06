@@ -317,7 +317,20 @@ function Chat() {
     aiPhotos?: string[],
     isRetry = false,
   ) {
+    console.log("[Chat] ▶ send()", {
+      textLen: text.length,
+      textPreview: text.slice(0, 60),
+      priorMsgCount: prior.length,
+      photoCount: ph.length,
+      aiPhotosProvided: !!aiPhotos,
+      isRetry,
+      authReady,
+      hasUser: !!user,
+      uid: user?.uid,
+      online,
+    });
     if (!authReady || !user) {
+      console.warn("[Chat] send() 중단 — auth 아직 준비 안됨");
       toast.error(t.connectionError);
       return;
     }
