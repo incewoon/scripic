@@ -171,16 +171,19 @@ export async function exportBackupZip(pin: string): Promise<{ uri?: string }> {
   const filename = `scripic-backup-${fileTimestamp()}.bak`;
 
   if (Capacitor.isNativePlatform()) {
-    // 빌드 앱(네이티브): 문서(Documents) 폴더에 바로 저장. 공유시트는 띄우지 않는다.
-    const base64Data = await blobToBase64(blob);
     await Filesystem.writeFile({
       path: filename,
       data: base64Data,
       directory: Directory.Documents,
       recursive: true,
     });
- 
-    return;
+  
+    const { uri } = await Filesystem.getUri({
+      directory: Directory.Documents,
+      path: filename,
+    });
+  
+    return { uri };   // ← uri를 반환하도록 수정
   } else {
     // 웹앱용 기존 다운로드 로직 (변경 없음)
     const url = URL.createObjectURL(blob);
