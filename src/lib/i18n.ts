@@ -155,7 +155,7 @@ const dict = {
     backupInfoStepsTitle: "How backup works",
     backupInfoStep1: "Tap 'Download backup file' — a PIN prompt appears.",
     backupInfoStep2:
-      "Enter your PIN. All albums, photos, and theme settings are bundled into an encrypted .bak file and saved to your device.",
+      "Enter your PIN. All albums, photos, and theme settings are bundled into an encrypted .bak file and saved to your device(Documents Folder).",
     backupInfoStep3: "To restore, tap 'Restore from backup file', pick the .bak file, and enter the same PIN.",
     backupInfoWarnTitle: "Important",
     backupInfoWarnBody:
@@ -425,14 +425,14 @@ const dict = {
     backupRestoring: "복원하는 중…",
     backupInfoDeviceTitle: "기기 저장만 지원",
     backupInfoDeviceBody:
-      "백업 파일은 사용자 기기의 다운로드 폴더에만 저장돼요. 보안과 개인정보 보호를 위해 클라우드 백업은 지원하지 않으며, 사진과 앨범은 모두 기기 안에서만 관리돼요.",
+      "백업 파일은 사용자 기기의 내부 저장소에만 저장돼요. 보안과 개인정보 보호를 위해 클라우드 백업은 지원하지 않으며, 사진과 앨범은 모두 기기 안에서만 관리돼요.",
     backupInfoPinTitle: "PIN으로 암호화",
     backupInfoPinBody:
       "모든 백업 파일은 사용자가 설정한 4자리 PIN으로 암호화돼요. PIN을 잃어버리면 복원할 수 없으니 꼭 안전한 곳에 기억해 주세요.",
     backupInfoStepsTitle: "백업 과정",
     backupInfoStep1: '"백업 파일 다운로드" 버튼을 누르면 PIN 입력창이 나타나요.',
     backupInfoStep2:
-      "PIN을 입력하면 모든 앨범·사진·테마 설정이 암호화된 scripic-backup-백업시점.bak 파일로 만들어져 기기에 저장돼요.",
+      "PIN을 입력하면 모든 앨범·사진·테마 설정이 암호화된 scripic-backup-백업시점.bak 파일로 만들어져 기기(Documents 폴더)에 저장돼요.",
     backupInfoStep3: "복원할 때는 '백업 파일에서 복원'을 누르고 같은 PIN으로 .bak 파일을 선택하면 돼요.",
     backupInfoWarnTitle: "주의",
     backupInfoWarnBody:
