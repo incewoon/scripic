@@ -180,7 +180,7 @@ export async function exportBackupZip(pin: string): Promise<{ uri?: string }> {
       recursive: true,
     });
  
-    return; // ← settings.tsx에서 사용
+    return;
   } else {
     // 웹앱용 기존 다운로드 로직 (변경 없음)
     const url = URL.createObjectURL(blob);
