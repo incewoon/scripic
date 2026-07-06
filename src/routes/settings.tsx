@@ -8,6 +8,7 @@ import { exportBackupZip, importBackupZip } from "@/lib/backup";
 import { getStorageDiagnostics, requestPersistentStorage } from "@/lib/storage";
 import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
+import { FileOpener } from "@capacitor-community/file-opener";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
