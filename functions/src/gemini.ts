@@ -1,3 +1,4 @@
+// functions/src/gemini.ts
 // Tiny Gemini REST client used by the Cloud Functions.
 // API key is read from process.env.GEMINI_API_KEY (Functions secret).
 
