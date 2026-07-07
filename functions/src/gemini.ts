@@ -154,6 +154,7 @@ export async function* geminiStreamText(body: any): AsyncGenerator<string> {
   const reader = (res.body as any).getReader();
   const decoder = new TextDecoder();
   let buf = "";
+  let lastFinishReason: string | null = null;
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -167,11 +168,21 @@ export async function* geminiStreamText(body: any): AsyncGenerator<string> {
       if (!json || json === "[DONE]") continue;
       try {
         const obj = JSON.parse(json);
-        const parts = obj?.candidates?.[0]?.content?.parts ?? [];
+        const cand = obj?.candidates?.[0];
+        const parts = cand?.content?.parts ?? [];
         for (const p of parts) if (p.text) yield p.text as string;
+        if (typeof cand?.finishReason === "string") {
+          lastFinishReason = cand.finishReason;
+        }
       } catch {
         // ignore malformed line
       }
     }
+  }
+  // Abnormal early termination (SAFETY, RECITATION, OTHER, …) — treat as
+  // transient upstream unavailability so callers can surface "busy" UX.
+  if (lastFinishReason && lastFinishReason !== "STOP" && lastFinishReason !== "MAX_TOKENS") {
+    console.error(`[GeminiStream] abnormal finishReason: ${lastFinishReason}`);
+    throw new GeminiUnavailableError(200, `Gemini finished abnormally: ${lastFinishReason}`);
   }
 }

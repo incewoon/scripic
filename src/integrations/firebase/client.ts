@@ -11,6 +11,25 @@
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { initializeAppCheck, ReCaptchaV3Provider, CustomProvider, type AppCheck } from "firebase/app-check";
 import { getFunctions, type Functions } from "firebase/functions";
+import { Capacitor, registerPlugin } from "@capacitor/core";
+
+// Wire the native Play Integrity App Check bridge before getFirebase() runs.
+// On native platforms the Android AppCheckPlugin exposes getToken(); we
+// expose it on window so the CustomProvider branch below can call it.
+interface AppCheckBridgePlugin {
+  getToken(): Promise<{ token: string; expireTimeMillis: number }>;
+}
+if (typeof window !== "undefined" && Capacitor.isNativePlatform()) {
+  try {
+    const AppCheckBridge = registerPlugin<AppCheckBridgePlugin>("AppCheckBridge");
+    (window as any).__APPCHECK_NATIVE__ = {
+      getToken: () => AppCheckBridge.getToken(),
+    };
+    console.log("[firebase] AppCheckBridge native plugin registered");
+  } catch (e) {
+    console.warn("[firebase] AppCheckBridge registerPlugin failed", e);
+  }
+}
 
 const env = (import.meta as any).env ?? {};
 
