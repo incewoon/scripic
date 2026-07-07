@@ -291,6 +291,17 @@ export const chat = onCall(
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
 
+    // Defensive: if the model produced almost nothing and no server-injected
+    // finish token was present, treat as transient upstream failure so the
+    // client shows a retry-able "busy" state instead of an empty bubble.
+    const trimmedFull = full.trim();
+    if (!/\[(READY_TO_FINISH|PROPOSE_FINISH)\]/.test(full) && trimmedFull.length < 6) {
+      throw new HttpsError("unavailable", "ai_unavailable", {
+        kind: "ai_unavailable",
+        reason: "too_short",
+      });
+    }
+
     // Capture the raw streamed text (what the client has accumulated) so we
     // can decide whether to issue a final "replace" reconciliation chunk.
     const streamed = full;
