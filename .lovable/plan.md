@@ -1,61 +1,93 @@
-## Problem
+# 작업 계획 (v2)
 
-빌드된 Android 앱에서 AI 대화모드의 마이크 버튼:
-- 누르면 녹음이 시작됐다가 잠깐 뒤 스스로 멈춤
-- 다시 눌러도 정지가 안 됨 (상태가 꼬임)
-- 웹에서는 정상 동작
+## 현재 App Check 초기화 위치
 
-## Root cause
-
-`src/routes/chat.tsx` 의 `toggleMic` 네이티브 분기와 `src/lib/nativeSTT.ts` 의 구조가 **Web Speech API** 흐름을 그대로 흉내내서 생긴 문제:
-
-1. **자동 재시작 루프 (핵심 원인)**  
-   Android 의 `SpeechRecognizer`(= `@capacitor-community/speech-recognition`)는 본질적으로 **single-utterance**. 짧은 침묵이 감지되면 플러그인이 `listeningState: "stopped"` 를 쏘고 세션이 끝난다.  
-   현재 `onEnd` 핸들러는 `shouldRestartRef.current` 가 true 이면 곧바로 `startOnce()` 를 다시 부른다 → `detachListeners()` → `addListener` → `SpeechRecognition.start()`.  
-   이 재시작이 플러그인 내부의 stop 트랜지션과 겹치면서 두 번째 `start()` 가 조용히 실패하거나, 리스너가 detach 되어 UI 상태(`listening`) 와 실제 플러그인 상태가 어긋난다. 그 결과 "녹음이 멈춘 것처럼 보이고, 버튼을 다시 눌러도 반응이 이상함".
-
-2. **`silenceTimer` 이중 트리거**  
-   `armSilenceTimer()` 는 타임아웃이 지나면 `recognitionRef.current?.stop()` 만 호출한다 — 네이티브 경로에서는 `recognitionRef` 가 비어있어서 no-op. 대신 네이티브에서는 플러그인이 알아서 자동 종료 → 재시작 루프와 충돌.
-
-3. **stop 버튼이 안 먹는 이유**  
-   auto-stop 이 먼저 발생 → `onEnd` 가 restart 시도 → 이 사이에 사용자가 버튼을 누르면 `listening` 값이 이미 false 로 세팅되고 있거나(레이스), `recGenRef` 가 restart 쪽에서 새로 발급되어 있어서 사용자의 stop 이 무시된다.
-
-웹에서는 `webkitSpeechRecognition` 이 `continuous:true` 를 실제로 지원해서 stop 을 명시적으로 부르기 전까지 세션이 유지된다 — 그래서 동일 로직이 웹에서만 정상 동작.
-
-## Fix plan
-
-Android/iOS 네이티브 경로를 "단발성 세션 + 명시적 정지" 모델로 재작성. 웹 로직은 그대로 유지.
-
-### 1. `src/lib/nativeSTT.ts` 개선
-- `startNativeSTT` 에 `onError(err)` 콜백 추가 (플러그인 error 이벤트 전달).
-- 리스너 등록 순서를 `addListener → start` 로 유지하되, `stopNativeSTT` 에서는:
-  - `SpeechRecognition.stop()` 을 `await` 로 완료까지 대기
-  - 그 다음 `detachListeners()` 호출 (반대 순서로 하면 stopped 이벤트가 유실됨)
-- iOS 를 위해 `listeningState` 뿐 아니라 Android `partialResults` 종료 신호도 함께 처리.
-
-### 2. `src/routes/chat.tsx` 네이티브 분기 재작성
-- **자동 재시작 제거**: `onEnd` 에서 `startOnce()` 를 재호출하지 않는다. Android 는 single-utterance 라는 것을 그대로 반영 — 세션이 끝나면 그대로 종료하고 `setListening(false)` 만 수행. 사용자가 다시 말하려면 버튼을 다시 누른다. (웹은 기존 continuous 재시작 로직 유지.)
-- **silenceTimer 는 웹 전용**: 네이티브 경로에서는 `armSilenceTimer` 를 호출하지 않는다 (플러그인이 알아서 침묵 감지).
-- **stop 경로 안정화**:
-  - `toggleMic` 의 stop 분기에서 `shouldRestartRef.current = false` → `recGenRef.current++` → `await stopNativeSTT()` → `setListening(false)` 순서를 유지.
-  - `stopNativeSTT()` 가 await 되도록 함수 시그니처를 async 로 맞추고, 실패해도 UI 상태는 무조건 false 로 복구.
-- **partial 누적 방식 유지**: `baseInputRef` + 마지막 partial 로 input 값 계산 (현재와 동일).
-- **에러 토스트**: `startNativeSTT` 가 던지는 에러를 catch 해서 `t.micNotSupported` 또는 `t.micPermissionDenied` 토스트, 상태 원복.
-
-### 3. `chat.tsx` UI 힌트 (선택)
-- 네이티브에서 세션이 짧게 끝나는 게 정상임을 사용자가 알 수 있도록, `t.micCoach` / `chatCoachMicBody` 안내 문구에 "한 문장씩 말하고 버튼을 다시 눌러 이어 말하세요" 뉘앙스가 없다면 i18n 문구만 살짝 조정 (기존 문구 확인 후 결정, 없으면 이 단계 skip).
-
-### 파일 변경
-- `src/lib/nativeSTT.ts` — 리스너 정리 순서, `onError` 콜백, stop await 처리.
-- `src/routes/chat.tsx` — 네이티브 분기의 auto-restart 제거, silence 타이머 네이티브에서 미사용, stop 경로 안정화. 웹 경로는 변경 없음.
-
-### 재빌드 안내
-로컬에서 확인하려면:
+`android/app/src/main/java/app/lovable/aialbum/MainActivity.java` 의 `onCreate` 내부에 이미 다음 코드 존재:
+```java
+FirebaseApp.initializeApp(this);
+FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+    PlayIntegrityAppCheckProviderFactory.getInstance());
 ```
-git pull
-bun install
-bun run build:capacitor
-bunx cap sync android
-cd android && ./gradlew assembleDebug
+→ **여기가 유일한 설치 지점으로 유지**. `MainApplication.java` 를 새로 만들지 않음(중복 초기화 방지, AndroidManifest `android:name` 수정 불필요).
+
+## [1] Android 네이티브 App Check 브릿지
+
+- `android/app/build.gradle`: `firebase-appcheck-playintegrity` 이미 있음 → 스킵.
+
+- `android/app/src/main/java/app/lovable/aialbum/AppCheckPlugin.java` (신규)
+  - `load()` 내부에서 **installAppCheckProviderFactory 호출하지 않음**.
+  - `@PluginMethod getToken(PluginCall call)` 만 노출:
+    ```java
+    @CapacitorPlugin(name = "AppCheckBridge")
+    public class AppCheckPlugin extends Plugin {
+      @PluginMethod
+      public void getToken(PluginCall call) {
+        FirebaseAppCheck.getInstance().getAppCheckToken(false)
+          .addOnSuccessListener(res -> {
+            JSObject ret = new JSObject();
+            ret.put("token", res.getToken());
+            ret.put("expireTimeMillis", res.getExpireTimeMillis());
+            call.resolve(ret);
+          })
+          .addOnFailureListener(e -> call.reject("app_check_failed", e));
+      }
+    }
+    ```
+
+- `MainActivity.java`
+  - 기존 `FirebaseApp.initializeApp` + `installAppCheckProviderFactory` 블록 **그대로 유지** (유일 설치 지점).
+  - `super.onCreate()` **이전** 라인에 `registerPlugin(AppCheckPlugin.class);` 추가.
+
+## [2] 웹 클라이언트 브릿지 연결
+
+`src/integrations/firebase/client.ts` 상단(import 직후, `getFirebase()` 정의 이전):
+```ts
+import { Capacitor, registerPlugin } from "@capacitor/core";
+interface AppCheckBridgePlugin {
+  getToken(): Promise<{ token: string; expireTimeMillis: number }>;
+}
+if (Capacitor.isNativePlatform()) {
+  const AppCheckBridge = registerPlugin<AppCheckBridgePlugin>("AppCheckBridge");
+  (window as any).__APPCHECK_NATIVE__ = { getToken: () => AppCheckBridge.getToken() };
+}
 ```
-GitHub Actions 빌드도 그대로 사용 가능 (플러그인/매니페스트 변경 없음).
+기존 `nativeBridge?.getToken` 분기 및 ReCaptchaV3Provider 폴백은 변경하지 않음.
+
+## [3] Gemini finishReason 검증
+
+`functions/src/gemini.ts`의 `geminiStreamText()`:
+- SSE 파싱 루프에서 `obj?.candidates?.[0]?.finishReason` 을 `lastFinishReason` 로 계속 갱신.
+- 루프 종료 후:
+  ```ts
+  if (lastFinishReason && lastFinishReason !== "STOP" && lastFinishReason !== "MAX_TOKENS") {
+    throw new GeminiUnavailableError(200, `Gemini finished abnormally: ${lastFinishReason}`);
+  }
+  ```
+`delays`, `classifyStatus`, 시그니처, 재시도 로직 유지.
+
+## [4] 짧은 응답 방어 (chat 콜러블)
+
+`functions/src/index.ts` chat 콜러블, `try { for await ... } catch { ... }` 블록 직후, 기존 `const streamed = full;` 이전에 삽입:
+```ts
+const trimmedFull = full.trim();
+if (!/\[(READY_TO_FINISH|PROPOSE_FINISH)\]/.test(full) && trimmedFull.length < 6) {
+  throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", reason: "too_short" });
+}
+```
+기존 정규식 판단/tail 주입/replace 청크 로직 유지.
+
+## [5] 버전 호환성 확인
+
+- Firebase BoM `34.13.0`이 `firebase-appcheck-playintegrity` 버전을 관리 → 명시 버전 지정 없이 BoM에 위임. 다른 firebase 관련 의존성과 충돌 없음.
+- AGP `8.13.0`, google-services `4.4.4` 조합 정상.
+- 결과: **충돌 없음**.
+
+## 변경 파일
+
+1. `android/app/src/main/java/app/lovable/aialbum/AppCheckPlugin.java` (신규 — getToken 만)
+2. `android/app/src/main/java/app/lovable/aialbum/MainActivity.java` (registerPlugin 라인만 추가; App Check 설치 블록 유지)
+3. `src/integrations/firebase/client.ts` (상단 브릿지 초기화 추가)
+4. `functions/src/gemini.ts` (finishReason 검증)
+5. `functions/src/index.ts` (짧은 응답 방어)
+
+구현 완료 후 각 파일의 실제 diff를 함께 출력함.
