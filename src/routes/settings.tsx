@@ -11,6 +11,8 @@ import { getStorageDiagnostics, requestPersistentStorage } from "@/lib/storage";
 import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
 
+declare const __APP_VERSION__: string;
+
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
   head: () => ({
@@ -48,6 +50,7 @@ function SettingsPage() {
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const [diag, setDiag] = useState<{ origin: string; persisted: boolean; usage: number; quota: number } | null>(null);
+  const version = __APP_VERSION__;
 
   const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
   useEffect(() => { refreshDiag(); }, []);
@@ -329,10 +332,14 @@ function SettingsPage() {
         </a>
       </section>
 
-      <p className="mt-10 mb-2 text-center text-[11px] warm-muted select-none">
+      <p className="mt-8 text-center text-[11px] warm-muted tracking-[0.5px]">
+        v{version}
+      </p>
+      
+      <p className="mt-2 mb-2 text-center text-[11px] warm-muted select-none">
         Copyright 2026.{" "}
-        <span onClick={handleCopyrightTap} className="text-inherit no-underline cursor-default">ince</span>
-        . All rights reserved.
+        <span onClick={handleCopyrightTap} className="text-inherit no-underline cursor-default">G.Y. In</span>
+         All rights reserved.
       </p>
     </div>
   );
