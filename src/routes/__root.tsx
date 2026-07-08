@@ -1,8 +1,19 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { applyThemeOnBoot } from "@/lib/theme";
 import { requestPersistentStorage } from "@/lib/storage";
+import { initGlobalNativeBack, exitApp } from "@/lib/nativeBack";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import appCss from "../styles.css?url";
 
