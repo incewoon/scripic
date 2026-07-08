@@ -42,7 +42,7 @@ export async function initGlobalNativeBack(opts: {
     }
     const path = window.location.pathname;
     if (path === "/" || path === "") {
-      opts.onHomeExitRequest();
+      void exitApp();
       return;
     }
     window.history.back();
