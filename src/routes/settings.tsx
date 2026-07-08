@@ -10,8 +10,8 @@ import { exportBackupZip, importBackupZip } from "@/lib/backup";
 import { getStorageDiagnostics, requestPersistentStorage } from "@/lib/storage";
 import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
+import { APP_VERSION } from "@/generated/app-version";
 
-declare const __APP_VERSION__: string;
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -50,7 +50,7 @@ function SettingsPage() {
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const [diag, setDiag] = useState<{ origin: string; persisted: boolean; usage: number; quota: number } | null>(null);
-  const version = __APP_VERSION__;
+  const version = APP_VERSION;
 
   const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
   useEffect(() => { refreshDiag(); }, []);
