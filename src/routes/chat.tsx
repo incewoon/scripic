@@ -828,6 +828,15 @@ function Chat() {
     sessionStorage.removeItem("memori_tone");
     setConfirmLeave(false);
     leavingRef.current = true;
+    // 네이티브(하드웨어 back)에서는 navigate() 로 /create 를 push 하면
+    // 히스토리 스택이 [/, /create, /chat, /create] 로 오염돼 이후 뒤로가기가
+    // /chat 으로 되돌아가고, sessionStorage 가 이미 비어있어 다시 /create 로
+    // navigate 되면서 스택이 계속 쌓이는 문제가 있었다. 이전 항목이 /create
+    // 이므로 history.back() 으로 스택을 [/, /create] 로 정리해 복귀한다.
+    if (isNativeApp()) {
+      window.history.back();
+      return;
+    }
     // 사용자 요구: 대화중 나가기 → 사진업로드(create) 화면으로 복귀.
     navigate({ to: "/create" });
   }
