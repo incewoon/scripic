@@ -338,7 +338,7 @@ function SettingsPage() {
       
       <p className="mt-2 mb-2 text-center text-[11px] warm-muted select-none">
         Copyright 2026.{" "}
-        <span onClick={handleCopyrightTap} className="text-inherit no-underline cursor-default">G.Y. In </span>
+        <span onClick={handleCopyrightTap} className="text-inherit no-underline cursor-default">Gyu yeon IN </span>
         {"  "} All rights reserved.
       </p>
     </div>
