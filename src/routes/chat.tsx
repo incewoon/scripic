@@ -762,7 +762,8 @@ function Chat() {
       setMessages([]);
       toast.success(t.completed);
       leavingRef.current = true;
-      window.history.replaceState({}, "", "/");
+      // NOTE: 이전에는 여기서 history.replaceState({}, "", "/") 로 URL을 덮어썼으나
+      // 뒤로가기 스택이 오염되는 원인이었어서 제거함. navigate() 가 URL을 관리한다.
       navigate({ to: "/album/$id", params: { id } });
     } catch (err: any) {
       const code = err?.code ?? "";
