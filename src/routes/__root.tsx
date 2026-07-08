@@ -1,8 +1,19 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { applyThemeOnBoot } from "@/lib/theme";
 import { requestPersistentStorage } from "@/lib/storage";
+import { initGlobalNativeBack, exitApp } from "@/lib/nativeBack";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import appCss from "../styles.css?url";
 
@@ -79,14 +90,45 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const [exitOpen, setExitOpen] = useState(false);
   useEffect(() => {
     applyThemeOnBoot();
     requestPersistentStorage();
+    let cleanup: (() => void) | undefined;
+    initGlobalNativeBack({
+      onHomeExitRequest: () => setExitOpen(true),
+    }).then((fn) => {
+      cleanup = fn;
+    });
+    return () => {
+      cleanup?.();
+    };
   }, []);
   return (
     <>
       <Outlet />
       <Toaster position="top-center" richColors />
+      <AlertDialog open={exitOpen} onOpenChange={setExitOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>앱을 종료할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              앱을 종료하면 현재 화면에서 나가게 됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setExitOpen(false);
+                void exitApp();
+              }}
+            >
+              종료
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

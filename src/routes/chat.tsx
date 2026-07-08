@@ -21,6 +21,7 @@ import {
   startNativeSTT,
   stopNativeSTT,
 } from "@/lib/nativeSTT";
+import { pushNativeBackHandler, isNative as isNativeApp } from "@/lib/nativeBack";
 
 
 export const ssr = false;
@@ -761,7 +762,8 @@ function Chat() {
       setMessages([]);
       toast.success(t.completed);
       leavingRef.current = true;
-      window.history.replaceState({}, "", "/");
+      // NOTE: 이전에는 여기서 history.replaceState({}, "", "/") 로 URL을 덮어썼으나
+      // 뒤로가기 스택이 오염되는 원인이었어서 제거함. navigate() 가 URL을 관리한다.
       navigate({ to: "/album/$id", params: { id } });
     } catch (err: any) {
       const code = err?.code ?? "";
@@ -788,6 +790,7 @@ function Chat() {
   }, [previewOpen]);
 
   useEffect(() => {
+    if (isNativeApp()) return;
     if (!previewOpen) return;
     window.history.pushState({ memoriPreview: true }, "");
     const onPop = () => setPreviewIdx(null);
@@ -825,22 +828,24 @@ function Chat() {
     sessionStorage.removeItem("memori_tone");
     setConfirmLeave(false);
     leavingRef.current = true;
-    navigate({ to: "/" });
+    // 사용자 요구: 대화중 나가기 → 사진업로드(create) 화면으로 복귀.
+    navigate({ to: "/create" });
   }
 
   // Device/browser back button guard. Stays active during preview too — the
   // preview entry sits on top of the guard entry in history.
+  // 웹 전용: 네이티브(Capacitor)에서는 pushState 기반 가드가 하드웨어 back과
+  // 겹쳐 히스토리 스택을 오염시키므로, 아래 별도 native 핸들러를 사용한다.
   useEffect(() => {
+    if (isNativeApp()) return;
     if (!hasConversation || generating) return;
     window.history.pushState({ memoriChatGuard: true }, "");
     const onPop = () => {
       if (leavingRef.current) return;
-      // Pop consumed by another owner (e.g. preview cleanup): ignore.
       if (expectedPopsRef.current > 0) {
         expectedPopsRef.current--;
         return;
       }
-      // Device back while preview is open: preview handles its own close.
       if (previewOpenRef.current) return;
       window.history.pushState({ memoriChatGuard: true }, "");
       setConfirmLeave(true);
@@ -853,6 +858,25 @@ function Chat() {
         window.history.back();
       }
     };
+  }, [hasConversation, generating]);
+
+  // Native (Capacitor) hardware back handler.
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    const unregister = pushNativeBackHandler(() => {
+      if (leavingRef.current) return false;
+      if (previewOpenRef.current) {
+        setPreviewIdx(null);
+        return true;
+      }
+      if (hasConversation && !generating) {
+        setConfirmLeave(true);
+        return true;
+      }
+      // 소비하지 않음 → 전역 핸들러가 history.back() 수행.
+      return false;
+    });
+    return unregister;
   }, [hasConversation, generating]);
 
   return (
