@@ -143,7 +143,9 @@ export const chat = onCall(
   },
   // @ts-ignore
   async (request: any, response: any) => {
+    const chatT0 = Date.now();
     const {
+      rid: ridRaw,
       messages,
       photos,
       photoCount: pcFromClient,
@@ -151,6 +153,7 @@ export const chat = onCall(
       mode,
       maxTurnsPerPhoto: rawCap,
     } = (request.data ?? {}) as {
+      rid?: string;
       messages: OpenAIMessage[];
       photos?: string[];
       photoCount?: number;
@@ -158,6 +161,12 @@ export const chat = onCall(
       mode?: Mode;
       maxTurnsPerPhoto?: number;
     };
+    const rid = typeof ridRaw === "string" && ridRaw.length ? ridRaw.slice(0, 64) : "-";
+    const photoBytes = Array.isArray(photos)
+      ? photos.reduce((a, p) => a + (typeof p === "string" ? p.length : 0), 0)
+      : 0;
+    console.log(`[chat] recv rid=${rid} msgs=${Array.isArray(messages) ? messages.length : 0} photos=${photos?.length ?? 0} photoBytes=${photoBytes} lang=${lang} mode=${mode}`);
+
 
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
