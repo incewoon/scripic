@@ -121,7 +121,7 @@ function armWatchdog(gen: number) {
   clearWatchdog();
   watchdogTimer = setTimeout(() => {
     if (gen !== currentGen) return;
-    if (sawPartialThisSession) return;
+    // if (sawPartialThisSession) return;
     console.warn(`${TAG} watchdog fired (no partial in ${WATCHDOG_MS}ms) → force stop for restart`);
     // Force plugin.stop() so the stopped event fires and the restart branch
     // in the state listener kicks in.
