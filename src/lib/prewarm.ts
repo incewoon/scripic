@@ -123,20 +123,26 @@ export function prewarmAI(): Promise<void> {
     //    initial issuance if none is cached.
     const acT0 = performance.now();
     try {
-      const app = getFirebase();
-      const appCheck = getAppCheck(app);
-      const tok = await getToken(appCheck, false);
-      s.appCheckReadyAt = performance.now();
-      s.appCheckOk = true;
-      s.appCheckTokenLen = tok?.token?.length;
-      s.appCheckExpiresInMs = (tok as any)?.expireTimeMillis
-        ? (tok as any).expireTimeMillis - Date.now()
-        : undefined;
-      console.log("[Prewarm] appCheck getToken ok", {
-        elapsedMs: Math.round(s.appCheckReadyAt - acT0),
-        tokenLen: s.appCheckTokenLen,
-        expiresInMs: s.appCheckExpiresInMs,
-      });
+      const appCheck = getAppCheckInstance();
+      if (!appCheck) {
+        s.appCheckReadyAt = performance.now();
+        s.appCheckOk = false;
+        s.appCheckError = "not_initialized";
+        console.warn("[Prewarm] appCheck not initialized (no provider) — skipping token fetch");
+      } else {
+        const tok = await getToken(appCheck, false);
+        s.appCheckReadyAt = performance.now();
+        s.appCheckOk = true;
+        s.appCheckTokenLen = tok?.token?.length;
+        s.appCheckExpiresInMs = (tok as any)?.expireTimeMillis
+          ? (tok as any).expireTimeMillis - Date.now()
+          : undefined;
+        console.log("[Prewarm] appCheck getToken ok", {
+          elapsedMs: Math.round(s.appCheckReadyAt - acT0),
+          tokenLen: s.appCheckTokenLen,
+          expiresInMs: s.appCheckExpiresInMs,
+        });
+      }
     } catch (e: any) {
       s.appCheckReadyAt = performance.now();
       s.appCheckOk = false;

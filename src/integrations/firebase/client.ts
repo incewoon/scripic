@@ -111,10 +111,13 @@ export function getFns(): Functions {
   if (_functions) return _functions;
   _functions = getFunctions(getFirebase(), "us-central1");
   return _functions;
+}
+
 export function getAppCheckInstance(): AppCheck | null {
   // Trigger init if not done yet
   getFirebase();
   return _appCheck;
+
 }
 
 export function isFirebaseReady(): boolean {
