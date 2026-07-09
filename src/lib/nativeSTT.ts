@@ -159,7 +159,7 @@ async function detachListeners() {
 
 // Called exactly once per underlying plugin session when it truly ends.
 // Decides whether to autoRestart or terminate the whole mic UX session.
-function handleSessionEnd(gen: number, reason: "user" | "silence" | "error" | "watchdog") {
+async function handleSessionEnd(gen: number, reason: "user" | "silence" | "error" | "watchdog") {
   if (gen !== currentGen) {
     console.log(`${TAG} [END] ignored (stale gen)`, { gen, currentGen, reason });
     return;
