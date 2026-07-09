@@ -20,6 +20,7 @@ import { canCreateAlbumToday } from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
 import { CreateUsageCoachmark, shouldShowCreateUsage } from "@/components/CreateUsageCoachmark";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
+import { prewarmAI } from "@/lib/prewarm";
 import { getAlbums } from "@/lib/storage";
 import { useOnlineStatus, requireOnline } from "@/lib/network";
 
@@ -169,10 +170,12 @@ function Create() {
     if (shouldShowCreateUsage()) setCoachOpen(true);
   }, []);
 
-  // Pre-warm Firebase anonymous auth + App Check token while the user picks
-  // photos. By the time they tap "AI와 대화하기" the first /chat call doesn't
-  // pay for sign-in or token issuance.
+  // Pre-warm Firebase anonymous auth + App Check token + Functions client
+  // while the user picks photos. Detailed timing/status is recorded into
+  // window.__AI_PREWARM__ and correlated later by [AI Client] logs.
   useEffect(() => {
+    void prewarmAI();
+    // Kept for backwards-compat callers that expect the auth promise.
     void ensureFirebaseUser().catch(() => {
       /* retried at call time */
     });

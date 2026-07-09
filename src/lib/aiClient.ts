@@ -3,23 +3,40 @@
 //
 // All AI traffic goes through Firebase Cloud Functions callables
 // (`chat`, `generateAlbum`) — enforced by App Check + per-device daily limit.
-// Prompts are assembled server-side; the client only forwards the
-// conversation, photos, and locale/mode metadata.
+//
+// Observability:
+//   Every call logs a `[AI Client] prewarm snapshot` line up front (was the
+//   auth+AppCheck sidecar prewarm done before the user entered chat?), then
+//   per-phase timings (auth / callable_setup / stream_connect / first_chunk),
+//   inter-chunk silence gaps, and a final summary. Each call carries a `rid`
+//   so client logs can be joined with the server's `[chat] rid=...` /
+//   `[album] rid=...` timing logs.
 
 import { httpsCallable, FunctionsError } from "firebase/functions";
 import { getFns } from "@/integrations/firebase/client";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
 import { canCreateAlbumToday, getDeviceId, getLocalDate, todayKey } from "./dailyLimit";
+import { prewarmSnapshot } from "./prewarm";
 
 type CallableErrorShape = { code: string; message: string };
 
+// Any inter-chunk gap over this threshold is worth flagging as "the stream
+// went silent" — most likely a Gemini stall or worker back-pressure.
+const SILENCE_GAP_WARN_MS = 500;
+
+function makeRid(): string {
+  try {
+    return (globalThis.crypto as any)?.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
+  } catch {
+    return Math.random().toString(36).slice(2, 10);
+  }
+}
+
 function normalizeError(e: unknown): never {
-  // Firebase SDK throws FunctionsError with `code` like "functions/resource-exhausted".
   if (e instanceof FunctionsError) {
     const err: any = new Error(e.message);
-    // Already namespaced: "functions/<code>"
     err.code = e.code.startsWith("functions/") ? e.code : `functions/${e.code}`;
-    err.details = (e as any).details; // preserve { kind: "ai_quota" | "daily_limit", ... }
+    err.details = (e as any).details;
     throw err;
   }
   if (typeof e === "object" && e !== null && "code" in e) {
@@ -33,8 +50,6 @@ function normalizeError(e: unknown): never {
 }
 
 // ---------------- chat ----------------
-// Uses Firebase v12 streaming callables so server-side `response.sendChunk({ delta })`
-// arrives token-by-token (first token in ~1s instead of waiting for the entire reply).
 export async function* aiChatStream(payload: {
   messages: any[];
   photos?: string[];
@@ -43,13 +58,18 @@ export async function* aiChatStream(payload: {
   mode: string;
   maxTurnsPerPhoto?: number;
 }): AsyncGenerator<string> {
-  const startTime = performance.now();
+  const rid = makeRid();
+  const t0 = performance.now();
   const msgCount = payload.messages?.length ?? 0;
   const photoBytes = (payload.photos ?? []).reduce(
     (a, p) => a + (typeof p === "string" ? p.length : 0),
     0,
   );
-  console.log(`[AI Client] ▶ aiChatStream 시작`, {
+
+  // Snapshot the sidecar prewarm state — this is the single most useful line
+  // when diagnosing "첫 응답 지연" / "연결이 늦어짐" complaints.
+  const pw = prewarmSnapshot();
+  console.log(`[AI Client] ▶ aiChatStream rid=${rid}`, {
     msgCount,
     photoCount: payload.photoCount,
     photosInPayload: payload.photos?.length ?? 0,
@@ -57,32 +77,46 @@ export async function* aiChatStream(payload: {
     lang: payload.lang,
     mode: payload.mode,
   });
+  console.log(`[AI Client] prewarm snapshot rid=${rid}`, pw);
+  if (!pw.wasReady) {
+    console.warn(
+      `[AI Client] ⚠ prewarm NOT ready at call time rid=${rid} — 사전 워밍이 안 끝난 상태에서 대화로 진입`,
+      pw,
+    );
+  }
 
+  // --- phase: auth ---
+  const authT0 = performance.now();
   try {
-    console.log(`[AI Client] ensureFirebaseUser() 대기…`);
-    const authUser = await ensureFirebaseUser();
-    console.log(`[AI Client] ensureFirebaseUser() OK`, {
-      uid: authUser?.uid,
-      isAnonymous: authUser?.isAnonymous,
-      ms: (performance.now() - startTime).toFixed(0),
+    const u = await ensureFirebaseUser();
+    console.log(`[AI Client] phase=auth ok rid=${rid}`, {
+      uid: u?.uid,
+      elapsedMs: Math.round(performance.now() - authT0),
     });
   } catch (e: any) {
-    console.error(`[AI Client] ensureFirebaseUser() 실패`, {
+    console.error(`[AI Client] phase=auth FAIL rid=${rid}`, {
       code: e?.code,
       message: e?.message,
-      name: e?.name,
+      elapsedMs: Math.round(performance.now() - authT0),
     });
     normalizeError(e);
   }
 
+  // --- phase: callable_setup ---
+  const setupT0 = performance.now();
   const call = httpsCallable<any, { text: string }, { delta?: string; replace?: string }>(
     getFns(),
     "chat",
   );
-  console.log(`[AI Client] httpsCallable('chat') 준비 완료 — call.stream() 호출`);
+  console.log(`[AI Client] phase=callable_setup ok rid=${rid}`, {
+    elapsedMs: Math.round(performance.now() - setupT0),
+  });
 
   try {
+    // --- phase: stream_connect ---
+    const connectT0 = performance.now();
     const { stream, data } = await call.stream({
+      rid,
       messages: payload.messages,
       photos: payload.photos,
       photoCount: payload.photoCount,
@@ -92,57 +126,89 @@ export async function* aiChatStream(payload: {
       deviceId: getDeviceId(),
       localDate: getLocalDate(),
     });
-    console.log(
-      `[AI Client] call.stream() 반환 — ${(performance.now() - startTime).toFixed(0)}ms, 스트림 소비 시작`,
-    );
+    console.log(`[AI Client] phase=stream_connect ok rid=${rid}`, {
+      elapsedMs: Math.round(performance.now() - connectT0),
+      totalSinceStartMs: Math.round(performance.now() - t0),
+    });
 
+    // --- consume stream with gap detection ---
     let firstChunkAt: number | null = null;
+    let lastChunkAt: number | null = null;
     let chunkIdx = 0;
     let totalDeltaChars = 0;
     let replaceCount = 0;
+    let maxGapMs = 0;
+    let gapSum = 0;
+    let gapSamples = 0;
+    let silenceWarnings = 0;
+
     for await (const chunk of stream) {
       chunkIdx++;
+      const now = performance.now();
       if (firstChunkAt == null) {
-        firstChunkAt = performance.now();
-        console.log(
-          `[AI Client] 🟢 첫 토큰 수신 - ${(firstChunkAt - startTime).toFixed(0)}ms`,
-          { chunkKeys: chunk ? Object.keys(chunk) : null },
-        );
+        firstChunkAt = now;
+        console.log(`[AI Client] phase=first_chunk 🟢 rid=${rid}`, {
+          ttfbMs: Math.round(now - t0),
+          sinceConnectMs: Math.round(now - connectT0),
+        });
+      } else if (lastChunkAt != null) {
+        const gap = now - lastChunkAt;
+        gapSum += gap;
+        gapSamples++;
+        if (gap > maxGapMs) maxGapMs = gap;
+        if (gap > SILENCE_GAP_WARN_MS) {
+          silenceWarnings++;
+          console.warn(
+            `[AI Client] ⚠ silence gap rid=${rid} chunk#${chunkIdx} gapMs=${Math.round(gap)}`,
+          );
+        }
       }
+      lastChunkAt = now;
+
       if (typeof chunk?.replace === "string") {
         replaceCount++;
-        console.log(`[AI Client] chunk#${chunkIdx} REPLACE(len=${chunk.replace.length})`);
+        console.log(
+          `[AI Client] chunk#${chunkIdx} REPLACE rid=${rid} len=${chunk.replace.length}`,
+        );
         yield `\x00REPLACE\x00${chunk.replace}`;
       } else {
         const delta = chunk?.delta;
         if (typeof delta === "string" && delta.length > 0) {
           totalDeltaChars += delta.length;
-          if (chunkIdx <= 3 || chunkIdx % 20 === 0) {
+          if (chunkIdx <= 3 || chunkIdx % 25 === 0) {
             console.log(
-              `[AI Client] chunk#${chunkIdx} delta(len=${delta.length}, total=${totalDeltaChars})`,
+              `[AI Client] chunk#${chunkIdx} delta rid=${rid} len=${delta.length} total=${totalDeltaChars}`,
             );
           }
           yield delta;
         } else {
-          console.warn(`[AI Client] chunk#${chunkIdx} 빈/비정상`, chunk);
+          console.warn(`[AI Client] chunk#${chunkIdx} 빈/비정상 rid=${rid}`, chunk);
         }
       }
     }
-    console.log(
-      `[AI Client] 스트림 루프 종료 — chunks=${chunkIdx}, deltaChars=${totalDeltaChars}, replaces=${replaceCount}. data 프로미스 await…`,
-    );
+
     const finalData: any = await data;
-    console.log(
-      `[AI Client] ✅ aiChatStream 완료 - ${(performance.now() - startTime).toFixed(0)}ms`,
-      { finalTextLen: finalData?.text?.length ?? null },
-    );
+    const doneAt = performance.now();
+    console.log(`[AI Client] ✅ aiChatStream done rid=${rid}`, {
+      totalMs: Math.round(doneAt - t0),
+      ttfbMs: firstChunkAt != null ? Math.round(firstChunkAt - t0) : null,
+      streamMs:
+        firstChunkAt != null && lastChunkAt != null ? Math.round(lastChunkAt - firstChunkAt) : null,
+      chunks: chunkIdx,
+      deltaChars: totalDeltaChars,
+      replaces: replaceCount,
+      maxGapMs: Math.round(maxGapMs),
+      avgGapMs: gapSamples ? Math.round(gapSum / gapSamples) : null,
+      silenceGapWarnings: silenceWarnings,
+      finalTextLen: finalData?.text?.length ?? null,
+    });
   } catch (e: any) {
-    console.error(`[AI Client] ❌ aiChatStream 실패`, {
+    console.error(`[AI Client] ❌ aiChatStream FAIL rid=${rid}`, {
       name: e?.name,
       code: e?.code,
       message: e?.message,
       details: e?.details,
-      elapsedMs: (performance.now() - startTime).toFixed(0),
+      elapsedMs: Math.round(performance.now() - t0),
     });
     normalizeError(e);
   }
@@ -158,15 +224,49 @@ export async function aiGenerateAlbum(payload: {
   mode: string;
   tone: string;
 }): Promise<any> {
-  const startTime = performance.now();
-  console.log(`[AI Client] aiGenerateAlbum → callable generateAlbum`);
+  const rid = makeRid();
+  const t0 = performance.now();
+  const pw = prewarmSnapshot();
+  console.log(`[AI Client] ▶ aiGenerateAlbum rid=${rid}`, {
+    msgCount: payload.messages?.length ?? 0,
+    photoCount: payload.photoCount,
+    lang: payload.lang,
+    mode: payload.mode,
+    tone: payload.tone,
+  });
+  console.log(`[AI Client] prewarm snapshot rid=${rid}`, pw);
+  if (!pw.wasReady) {
+    console.warn(
+      `[AI Client] ⚠ prewarm NOT ready at album generation rid=${rid}`,
+      pw,
+    );
+  }
 
-  await ensureFirebaseUser();
+  const authT0 = performance.now();
+  try {
+    await ensureFirebaseUser();
+    console.log(`[AI Client] phase=auth ok rid=${rid}`, {
+      elapsedMs: Math.round(performance.now() - authT0),
+    });
+  } catch (e: any) {
+    console.error(`[AI Client] phase=auth FAIL rid=${rid}`, {
+      code: e?.code,
+      message: e?.message,
+      elapsedMs: Math.round(performance.now() - authT0),
+    });
+    normalizeError(e);
+  }
 
+  const setupT0 = performance.now();
   const call = httpsCallable<any, any>(getFns(), "generateAlbum");
+  console.log(`[AI Client] phase=callable_setup ok rid=${rid}`, {
+    elapsedMs: Math.round(performance.now() - setupT0),
+  });
 
   try {
+    const roundtripT0 = performance.now();
     const res = await call({
+      rid,
       messages: payload.messages,
       photoCount: payload.photoCount,
       lang: payload.lang,
@@ -177,24 +277,25 @@ export async function aiGenerateAlbum(payload: {
       deviceId: getDeviceId(),
       localDate: getLocalDate(),
     });
-    const endTime = performance.now();
-    console.log(`[AI Client] aiGenerateAlbum 완료 - ${(endTime - startTime).toFixed(0)}ms`);
+    const doneAt = performance.now();
+    console.log(`[AI Client] ✅ aiGenerateAlbum done rid=${rid}`, {
+      totalMs: Math.round(doneAt - t0),
+      roundtripMs: Math.round(doneAt - roundtripT0),
+    });
     return res.data;
   } catch (e: any) {
-    console.error(`[AI Client] ❌ aiGenerateAlbum 실패`, {
+    console.error(`[AI Client] ❌ aiGenerateAlbum FAIL rid=${rid}`, {
       name: e?.name,
       code: e?.code,
       message: e?.message,
       details: e?.details,
-      elapsedMs: (performance.now() - startTime).toFixed(0),
+      elapsedMs: Math.round(performance.now() - t0),
     });
     normalizeError(e);
   }
 }
 
 // ---------------- dailyStatus ----------------
-// Optimistic UI-only readout. The server is the source of truth (and will
-// reject with `resource-exhausted` if the local cache lies).
 export async function aiDailyStatus(): Promise<{
   used: number;
   limit: number;

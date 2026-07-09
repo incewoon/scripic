@@ -74,30 +74,43 @@ export function getFirebase() {
     const nativeBridge = (window as any).__APPCHECK_NATIVE__;
 
     if (nativeBridge?.getToken) {
-      console.log("[firebase] App Check → CustomProvider(native bridge)");
+      console.log("[AppCheck] init provider=native");
       _appCheck = initializeAppCheck(_app, {
         provider: new CustomProvider({
           getToken: async () => {
-            console.log("[firebase] App Check nativeBridge.getToken() 호출");
-            const t = await nativeBridge.getToken();
-            console.log("[firebase] App Check nativeBridge token OK", {
-              tokenLen: t?.token?.length,
-              expireInMs: t?.expireTimeMillis ? t.expireTimeMillis - Date.now() : null,
-            });
-            return { token: t.token, expireTimeMillis: t.expireTimeMillis };
+            const t0 = performance.now();
+            console.log("[AppCheck] native.getToken start");
+            try {
+              const t = await nativeBridge.getToken();
+              const elapsed = Math.round(performance.now() - t0);
+              console.log("[AppCheck] native.getToken ok", {
+                elapsedMs: elapsed,
+                tokenLen: t?.token?.length,
+                expireInMs: t?.expireTimeMillis ? t.expireTimeMillis - Date.now() : null,
+              });
+              return { token: t.token, expireTimeMillis: t.expireTimeMillis };
+            } catch (e: any) {
+              const elapsed = Math.round(performance.now() - t0);
+              console.error("[AppCheck] native.getToken failed", {
+                elapsedMs: elapsed,
+                code: e?.code,
+                message: e?.message,
+              });
+              throw e;
+            }
           },
         }),
         isTokenAutoRefreshEnabled: true,
       });
     } else if (recaptchaKey) {
-      console.log("[firebase] App Check → ReCaptchaV3Provider");
+      console.log("[AppCheck] init provider=recaptcha");
       _appCheck = initializeAppCheck(_app, {
         provider: new ReCaptchaV3Provider(recaptchaKey),
         isTokenAutoRefreshEnabled: true,
       });
     } else {
       console.warn(
-        "[firebase] App Check 미설정 (nativeBridge/recaptchaKey 없음) — 콜러블 호출이 App Check 강제와 함께 실패할 수 있음",
+        "[AppCheck] init provider=none — 콜러블 호출이 App Check 강제와 함께 실패할 수 있음",
       );
     }
   } catch (e) {
@@ -111,6 +124,13 @@ export function getFns(): Functions {
   if (_functions) return _functions;
   _functions = getFunctions(getFirebase(), "us-central1");
   return _functions;
+}
+
+export function getAppCheckInstance(): AppCheck | null {
+  // Trigger init if not done yet
+  getFirebase();
+  return _appCheck;
+
 }
 
 export function isFirebaseReady(): boolean {

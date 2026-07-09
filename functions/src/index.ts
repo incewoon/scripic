@@ -143,7 +143,9 @@ export const chat = onCall(
   },
   // @ts-ignore
   async (request: any, response: any) => {
+    const chatT0 = Date.now();
     const {
+      rid: ridRaw,
       messages,
       photos,
       photoCount: pcFromClient,
@@ -151,6 +153,7 @@ export const chat = onCall(
       mode,
       maxTurnsPerPhoto: rawCap,
     } = (request.data ?? {}) as {
+      rid?: string;
       messages: OpenAIMessage[];
       photos?: string[];
       photoCount?: number;
@@ -158,6 +161,12 @@ export const chat = onCall(
       mode?: Mode;
       maxTurnsPerPhoto?: number;
     };
+    const rid = typeof ridRaw === "string" && ridRaw.length ? ridRaw.slice(0, 64) : "-";
+    const photoBytes = Array.isArray(photos)
+      ? photos.reduce((a, p) => a + (typeof p === "string" ? p.length : 0), 0)
+      : 0;
+    console.log(`[chat] recv rid=${rid} msgs=${Array.isArray(messages) ? messages.length : 0} photos=${photos?.length ?? 0} photoBytes=${photoBytes} lang=${lang} mode=${mode}`);
+
 
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
@@ -273,15 +282,26 @@ export const chat = onCall(
       WRAP_HINT_KO.test(prevAssistantText) ||
       WRAP_HINT_EN.test(prevAssistantText);
 
+    console.log(`[chat] validated rid=${rid} elapsedMs=${Date.now() - chatT0}`);
+
     let full = "";
+    const geminiT0 = Date.now();
+    let firstTokenAt: number | null = null;
+    let chunkCount = 0;
     try {
+      console.log(`[chat] gemini.connect rid=${rid}`);
       for await (const delta of geminiStreamText(body)) {
+        chunkCount++;
+        if (firstTokenAt == null) {
+          firstTokenAt = Date.now();
+          console.log(`[chat] gemini.firstToken rid=${rid} elapsedMs=${firstTokenAt - geminiT0}`);
+        }
         full += delta;
-        // Forward raw model output to the client in real time so the user
-        // sees text appear immediately instead of waiting for full generation.
         if (response?.sendChunk) response.sendChunk({ delta });
       }
+      console.log(`[chat] gemini.done rid=${rid} streamMs=${Date.now() - geminiT0} chunks=${chunkCount} chars=${full.length}`);
     } catch (e: any) {
+      console.error(`[chat] fail rid=${rid} kind=${e?.constructor?.name} status=${e?.status} elapsedMs=${Date.now() - chatT0} msg=${e?.message}`);
       if (e instanceof GeminiUnavailableError) {
         throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
       }
@@ -290,6 +310,7 @@ export const chat = onCall(
       }
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
+
 
     // Defensive: if the model produced almost nothing and no server-injected
     // finish token was present, treat as transient upstream failure so the
@@ -348,12 +369,18 @@ export const chat = onCall(
     // If post-processing changed the text (stripped wrap sentence or appended
     // a server-injected tail), reconcile the client by sending a final
     // replacement chunk. The client treats `replace` as the authoritative full text.
-    if (response?.sendChunk && full !== streamed) {
+    // If post-processing changed the text (stripped wrap sentence or appended
+    // a server-injected tail), reconcile the client by sending a final
+    // replacement chunk. The client treats `replace` as the authoritative full text.
+    const postReplaced = full !== streamed;
+    if (response?.sendChunk && postReplaced) {
       response.sendChunk({ replace: full });
     }
+    console.log(`[chat] done rid=${rid} totalMs=${Date.now() - chatT0} replaced=${postReplaced} finalChars=${full.length}`);
     return { text: full };
   },
 );
+
 
 // ---------------- generateAlbum ----------------
 
@@ -385,7 +412,9 @@ export const generateAlbum = onCall(
     secrets: [GEMINI_API_KEY],
   },
   async (req) => {
+    const albumT0 = Date.now();
     const {
+      rid: ridRaw,
       messages,
       photoCount,
       lang = "en",
@@ -394,6 +423,7 @@ export const generateAlbum = onCall(
       mode,
       tone,
     } = (req.data ?? {}) as {
+      rid?: string;
       messages: { role: string; content: any }[];
       photoCount: number;
       lang?: string;
@@ -402,6 +432,9 @@ export const generateAlbum = onCall(
       mode?: AlbumMode;
       tone?: Tone;
     };
+    const rid = typeof ridRaw === "string" && ridRaw.length ? ridRaw.slice(0, 64) : "-";
+    console.log(`[album] recv rid=${rid} msgs=${Array.isArray(messages) ? messages.length : 0} photoCount=${photoCount} lang=${lang} mode=${mode} tone=${tone}`);
+
 
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
@@ -489,9 +522,13 @@ export const generateAlbum = onCall(
     };
 
     let result: any;
+    const geminiT0 = Date.now();
     try {
+      console.log(`[album] gemini.start rid=${rid} validatedMs=${geminiT0 - albumT0}`);
       result = await geminiGenerate(body);
+      console.log(`[album] gemini.done rid=${rid} elapsedMs=${Date.now() - geminiT0}`);
     } catch (e: any) {
+      console.error(`[album] fail rid=${rid} kind=${e?.constructor?.name} status=${e?.status} elapsedMs=${Date.now() - albumT0} msg=${e?.message}`);
       await rollbackDailyCount();
       if (e instanceof GeminiUnavailableError) {
         throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
@@ -505,11 +542,14 @@ export const generateAlbum = onCall(
     const fc = parts.find((p: any) => p.functionCall)?.functionCall;
     if (!fc?.args) {
       await rollbackDailyCount();
+      console.error(`[album] fail rid=${rid} reason=no_function_call totalMs=${Date.now() - albumT0}`);
       throw new HttpsError("internal", "gemini did not return album");
     }
+    console.log(`[album] done rid=${rid} totalMs=${Date.now() - albumT0}`);
     return fc.args;
   },
 );
+
 
 // ---------------- dailyStatus (peek) ----------------
 
