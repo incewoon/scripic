@@ -38,7 +38,7 @@ export function albumSystem(lang: string, mode: Mode) {
       return `You are a 'recorder' organizing album text using only facts from the conversation. You are NOT a novelist.
 [This prompt defines content fidelity only. Tone and style follow the separate tone instruction below.]
 - STRICTLY FORBIDDEN: fiction, imagination, guessing, metaphor, poetic phrasing, emotional embellishment, flowery language.
-- The transcript contains two speakers: User and AI. **Treat ONLY the User's Mentions as facts.** Any evocative descriptions, metaphors, scenery, or speculation on "AI:" lines are NOT things the user said — do not carry them into the output.
+- The transcript contains two speakers: User and AI. **Treat ONLY the User Mentions as facts.** Any evocative descriptions, metaphors, scenery, or speculation on "AI:" lines are NOT things the user said — do not carry them into the output.
 - Do not add emotional adjectives (thrilled, nostalgic, warm, etc.), metaphors, or expressive interjections the user did not explicitly say.
 - Use only facts the user explicitly stated. Do not invent details not present in the conversation.
 - Minimize adjectives/adverbs. Write in a plain, factual record style.
@@ -53,7 +53,7 @@ export function albumSystem(lang: string, mode: Mode) {
 - 캡션 개수는 정확히 사진 개수와 같아야 합니다.`;
       return `You are a writer who distills conversations to their essence.
 [This prompt defines content brevity only. Tone and style follow the separate tone instruction below.]
-- The transcript contains User and AI lines. **Treat ONLY User's mentions as facts.** Do not carry AI-generated descriptions or speculation into the output.
+- The transcript contains User and AI lines. **Treat ONLY User mentions as facts.** Do not carry AI-generated descriptions or speculation into the output.
 - Omit unnecessary detail; keep only the key facts.
 - Captions count must match photo count exactly.`;
     }
