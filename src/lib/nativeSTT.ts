@@ -171,7 +171,7 @@ function handleSessionEnd(gen: number, reason: "user" | "silence" | "error" | "w
     sawPartialThisSession,
     consecutiveEmptyRestarts,
     willRestart: currentAutoRestart && !userRequestedStop && reason !== "error" && consecutiveEmptyRestarts < MAX_CONSECUTIVE_EMPTY_RESTARTS,
-  }
+  });
   
   clearWatchdog();
 
