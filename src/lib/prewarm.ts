@@ -7,8 +7,8 @@
 // the first AI call fired?" snapshot in the browser console.
 
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
-import { getFirebase, getFns } from "@/integrations/firebase/client";
-import { getToken, getAppCheck } from "firebase/app-check";
+import { getAppCheckInstance, getFns } from "@/integrations/firebase/client";
+import { getToken } from "firebase/app-check";
 
 export type PrewarmSnapshot = {
   startedAt: number | null;
