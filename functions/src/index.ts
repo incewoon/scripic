@@ -412,7 +412,9 @@ export const generateAlbum = onCall(
     secrets: [GEMINI_API_KEY],
   },
   async (req) => {
+    const albumT0 = Date.now();
     const {
+      rid: ridRaw,
       messages,
       photoCount,
       lang = "en",
@@ -421,6 +423,7 @@ export const generateAlbum = onCall(
       mode,
       tone,
     } = (req.data ?? {}) as {
+      rid?: string;
       messages: { role: string; content: any }[];
       photoCount: number;
       lang?: string;
@@ -429,6 +432,9 @@ export const generateAlbum = onCall(
       mode?: AlbumMode;
       tone?: Tone;
     };
+    const rid = typeof ridRaw === "string" && ridRaw.length ? ridRaw.slice(0, 64) : "-";
+    console.log(`[album] recv rid=${rid} msgs=${Array.isArray(messages) ? messages.length : 0} photoCount=${photoCount} lang=${lang} mode=${mode} tone=${tone}`);
+
 
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
@@ -516,9 +522,13 @@ export const generateAlbum = onCall(
     };
 
     let result: any;
+    const geminiT0 = Date.now();
     try {
+      console.log(`[album] gemini.start rid=${rid} validatedMs=${geminiT0 - albumT0}`);
       result = await geminiGenerate(body);
+      console.log(`[album] gemini.done rid=${rid} elapsedMs=${Date.now() - geminiT0}`);
     } catch (e: any) {
+      console.error(`[album] fail rid=${rid} kind=${e?.constructor?.name} status=${e?.status} elapsedMs=${Date.now() - albumT0} msg=${e?.message}`);
       await rollbackDailyCount();
       if (e instanceof GeminiUnavailableError) {
         throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
@@ -532,11 +542,14 @@ export const generateAlbum = onCall(
     const fc = parts.find((p: any) => p.functionCall)?.functionCall;
     if (!fc?.args) {
       await rollbackDailyCount();
+      console.error(`[album] fail rid=${rid} reason=no_function_call totalMs=${Date.now() - albumT0}`);
       throw new HttpsError("internal", "gemini did not return album");
     }
+    console.log(`[album] done rid=${rid} totalMs=${Date.now() - albumT0}`);
     return fc.args;
   },
 );
+
 
 // ---------------- dailyStatus (peek) ----------------
 

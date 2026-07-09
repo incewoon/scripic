@@ -344,6 +344,20 @@ function Chat() {
     const userMsg: Msg = { role: "user", content: text };
     // On retry, the user message is already in `prior` — don't duplicate.
     const newMsgs = isRetry ? [...prior] : [...prior, userMsg];
+    // First send in this session → log prewarm state so we can tell whether
+    // the sidecar AI-connection prewarm was actually complete when the user
+    // entered chat and pressed send.
+    if (prior.length === 0) {
+      const pw = (window as any).__AI_PREWARM__;
+      console.log("[Chat] first send prewarm snapshot", {
+        wasReady: !!pw?.readyAt,
+        msSincePrewarmStart:
+          pw?.startedAt != null ? Math.round(performance.now() - pw.startedAt) : null,
+        authOk: pw?.authOk,
+        appCheckOk: pw?.appCheckOk,
+        uid: pw?.uid,
+      });
+    }
     setMessages(newMsgs);
     setBusy(true);
 
