@@ -1,85 +1,56 @@
-# Android 뒤로가기 동작 정상화 계획
+## 문제 진단 (빌드앱 = Capacitor 네이티브)
 
-## 현재 원인 분석
+`src/lib/nativeSTT.ts` + `src/routes/chat.tsx`의 `toggleMic()` 네이티브 분기에서 두 가지 구조적 문제가 있음.
 
-- `@capacitor/app`은 설치되어 있으나 어디에서도 `App.addListener('backButton', …)`를 등록하지 않음. 그래서 하드웨어 뒤로가기는 Capacitor 기본 동작(WebView.goBack, 없으면 앱 종료)에 맡겨져 있고, chat 화면에서 `window.history.pushState({memoriChatGuard})` / cleanup 시 `history.back()`가 겹치면서 히스토리 스택이 어긋남.
-- 특히 `src/routes/chat.tsx` 764행 `window.history.replaceState({}, "", "/")` 가 완료 직후 URL을 "/"로 덮어써 스택이 오염됨.
-- 홈(`/`)에서 뒤로가기 시 종료 확인 UI가 없어 그냥 앱이 닫히거나(스택이 얕은 경우) WebView가 이전 항목으로 감.
+### 1) 잠깐만 멈춰도 세션이 끝남
+Android `SpeechRecognizer`는 **single-utterance**. 사용자가 0.5~1.5초만 침묵해도 플러그인이 `listeningState: "stopped"` 이벤트를 보내고, `onEnd` → `setListening(false)`로 마이크가 꺼진다. 웹의 `webkitSpeechRecognition`(continuous=true, `shouldRestartRef` 재시작 루프)과 달리, 네이티브 경로는 **자동 재시작 로직 자체가 없다** — 주석에도 "재시작 없음"으로 명시.
 
-## 목표 동작 (네이티브 앱만)
+### 2) 버튼 눌러도 말 안 하면 완전히 먹통
+- 무발화 시 Android가 던지는 error(코드 6=SPEECH_TIMEOUT, 7=NO_MATCH, 5=CLIENT 등)는 `nativeSTT.ts`에 **error 리스너가 없어서** JS로 전달되지 않는다.
+- 그 경로에서는 `listeningState: "stopped"`도 보장되지 않아 `onEnd`가 발화하지 않음 → `listening=true`가 그대로 유지 → 버튼이 "활성" 상태로 얼어붙음.
+- 다시 눌러 끄려 해도 `SpeechRecognition.stop()`은 이미 죽은 세션에 대해 no-op이고, 리스너는 계속 붙어있으며, `listening`은 해제되지 않음.
 
-1. 홈(`/`)에서 뒤로가기 → "앱을 종료할까요?" 확인 다이얼로그 → 확인 시 `App.exitApp()`.
-2. 홈이 아닌 화면 → 라우터 히스토리 한 단계 뒤로 (예: chat → create, create → home).
-3. Chat 화면에서 대화 내용이 있으면 기존 "나가기" 확인 다이얼로그 유지, 승인 시 create 화면으로 복귀.
-4. 웹앱(브라우저) 동작은 변경하지 않음 — `Capacitor.isNativePlatform()` 가드로 네이티브에서만 활성화.
+## 수정 계획
+
+### A. `src/lib/nativeSTT.ts` 재설계
+1. **`error` 리스너 추가** — Capacitor 플러그인의 error 이벤트를 잡아 `onError(err)` + `onEnd()` 순서로 발화해서 UI 상태를 반드시 풀어준다.
+2. **watchdog 타이머** — `start()` 후 일정 시간(예: 8초) 내에 `partialResults`가 하나도 안 오면 강제로 stop → 다음 재시작 훅을 태운다. 무발화로 인한 얼음 상태 방지.
+3. **재시작(continuous) 옵션** — `startNativeSTT`에 `autoRestart` 옵션 추가. 자연 종료 시 사용자가 명시적으로 stop한 게 아니면 자동으로 다시 `SpeechRecognition.start()` 재호출 (웹의 `shouldRestartRef`와 동등한 UX). `stopNativeSTT()`가 호출됐거나 권한/치명적 에러면 재시작하지 않음.
+4. **누적 텍스트 처리** — 각 재시작 세션의 partial은 새 세션 기준이므로, `baseInputRef` 방식과 맞물리도록 세션 종료 시점의 partial을 확정 텍스트로 chat.tsx에 넘긴다 (`onCommit(text)` 콜백 추가). 재시작 후 partial은 다시 확정 텍스트 뒤에 이어붙게 됨.
+5. **세션 상태 머신** — `idle | starting | listening | stopping` 내부 상태를 두어 중복 start/stop, 리스너 누수, 오래된 세션 이벤트 무시.
+
+### B. `src/routes/chat.tsx` `toggleMic()` 네이티브 분기 정리
+1. `startNativeSTT`에 `autoRestart: true` 전달.
+2. 새 `onCommit(txt)` 훅에서 `baseInputRef.current = (baseInputRef.current + txt).replace(/\s*$/, "") + " "`로 갱신 → 다음 세션의 partial이 그 뒤에 붙음.
+3. `onEnd`는 autoRestart 종결(사용자 stop 또는 fatal error) 시에만 `setListening(false)`.
+4. `onError`에서 권한 오류(`not-allowed` 계열)는 toast + 강제 stop, 그 외는 로그만 남기고 재시작에 맡김.
+5. 버튼 재탭 대응: `toggleMic()`에서 이미 `recGenRef.current++`로 세대 무효화 → `stopNativeSTT()` 내부에서 리스너/타이머 확실히 정리하도록 보강.
+
+### C. 유지보수용 상세 콘솔 로그 (프로세스별 태그 통일)
+모든 로그는 `[STT-native]` prefix + step 태그.
+- `[STT-native] available? { supported }`
+- `[STT-native] permission { before, after, granted }`
+- `[STT-native] start requested { lang, gen, autoRestart }`
+- `[STT-native] listeners attached { partial, state, error }`
+- `[STT-native] plugin.start OK / FAIL { err }`
+- `[STT-native] partial#N { len, text }`  (긴 텍스트는 앞 40자만)
+- `[STT-native] listeningState { status }`
+- `[STT-native] error event { code, message }`
+- `[STT-native] watchdog fired (no partial in Xs) → restart`
+- `[STT-native] session end { reason: user|silence|error|watchdog, willRestart }`
+- `[STT-native] restart attempt #N`
+- `[STT-native] stop requested { reason }`
+- `[STT-native] listeners detached`
+
+`chat.tsx`쪽 `toggleMic` 네이티브 분기에도 `[mic native]` 태그로 진입/토글/콜백별 로그를 남긴다.
+
+### D. 웹 경로는 손대지 않음
+`createRecognition()`/`armSilenceTimer()` 등 브라우저 경로는 정상 작동 중이므로 수정 없음.
 
 ## 변경 파일
-
-### 1) `src/lib/nativeBack.ts` (신규)
-- `App.addListener('backButton', handler)` 를 감싸는 유틸.
-- `handler({ canGoBack })` 시:
-  - 전역 리스너 스택(LIFO)에 등록된 임시 핸들러가 있으면 그 핸들러가 우선 처리 (예: chat 나가기 확인).
-  - 없으면 기본 규칙: `location.pathname === "/"` → 종료 확인 콜백 호출, 그 외 → `window.history.back()`.
-- export: `pushNativeBackHandler(fn) → unregister`, `initGlobalNativeBack({onHomeExitRequest})`.
-
-### 2) `src/routes/__root.tsx`
-- `RootComponent`에 `useEffect`로 `initGlobalNativeBack` 등록.
-- 홈 종료 요청 시 shadcn `AlertDialog` 오픈 → 확인하면 `App.exitApp()`.
-- 웹에서는 `Capacitor.isNativePlatform()` false → 아무것도 하지 않음.
-
-### 3) `src/routes/chat.tsx`
-- 기존 웹용 `popstate` 기반 가드(779–856행)는 브라우저(웹앱) 동작 유지를 위해 그대로 둠. 단 네이티브에서는 중복 pushState가 스택을 오염시키므로 해당 두 `useEffect`를 `if (!Capacitor.isNativePlatform())` 가드로 감쌈.
-- 대신 네이티브에서는 `pushNativeBackHandler`를 사용해:
-  - preview 열려 있으면 `setPreviewIdx(null)` 후 소비,
-  - `hasConversation && !generating` 이면 `setConfirmLeave(true)` 후 소비,
-  - 그 외에는 unregister하여 전역 핸들러가 `history.back()` 수행하도록.
-- 764행 `window.history.replaceState({}, "", "/")` 제거 — `navigate({to: "/album/$id"})`가 URL을 알아서 관리하고, 이 replaceState가 뒤로가기 스택을 망가뜨리는 주요 원인.
-
-### 4) (변경 없음) `create.tsx`, `index.tsx`
-- 기본 규칙(`history.back()`)으로 자연스럽게 create → home, chat → create로 이동.
-
-## 기술 세부
-
-```ts
-// src/lib/nativeBack.ts
-import { Capacitor } from "@capacitor/core";
-import { App } from "@capacitor/app";
-
-type Handler = () => boolean | Promise<boolean>; // true = consumed
-const stack: Handler[] = [];
-
-export function pushNativeBackHandler(h: Handler) {
-  stack.push(h);
-  return () => {
-    const i = stack.lastIndexOf(h);
-    if (i >= 0) stack.splice(i, 1);
-  };
-}
-
-export function initGlobalNativeBack(opts: { onHomeExitRequest: () => void }) {
-  if (!Capacitor.isNativePlatform()) return () => {};
-  const sub = App.addListener("backButton", async () => {
-    for (let i = stack.length - 1; i >= 0; i--) {
-      if (await stack[i]()) return;
-    }
-    if (window.location.pathname === "/") opts.onHomeExitRequest();
-    else window.history.back();
-  });
-  return () => { sub.then(s => s.remove()); };
-}
-```
-
-`__root.tsx` 확인 다이얼로그는 상태(`exitOpen`) + `AlertDialog` 조합. 확인 시 `import('@capacitor/app').then(({App}) => App.exitApp())`.
+- `src/lib/nativeSTT.ts` — 재설계 (autoRestart, error 리스너, watchdog, onCommit, 상태머신, 상세 로그)
+- `src/routes/chat.tsx` — `toggleMic()` 네이티브 분기만 수정 (autoRestart + onCommit 처리 + 로그)
 
 ## 검증
-
-- `bun run build:capacitor && bunx cap sync android` 후 실기기에서:
-  1. 홈 → 뒤로 → 종료 확인 → 확인 → 종료.
-  2. 홈 → create → chat(대화없음) → 뒤로 → create → 뒤로 → 홈.
-  3. 홈 → create → chat(대화있음) → 뒤로 → 나가기 확인 → 승인 → create.
-  4. 웹앱(브라우저)에서 기존 동작 그대로.
-
-## 건드리지 않는 것
-
-- STT / AI 스트리밍 / App Check / gemini finishReason / functions 코드.
-- 기타 라우트 로직.
+- `bunx tsgo`로 타입체크
+- 앱 재빌드 후: (1) 말하는 도중 1~2초 침묵해도 세션이 이어지는지, (2) 버튼 눌러놓고 말 안 해도 다시 눌러 끌 수 있는지, (3) 다시 켰을 때 이전 확정 텍스트가 유지되는지, (4) 콘솔에 프로세스 별 로그가 나오는지 확인
