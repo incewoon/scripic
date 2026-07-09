@@ -644,13 +644,16 @@ function Chat() {
     // 스스로 끝난다. 자동 재시작을 하지 않고, 사용자가 다시 마이크 버튼을
     // 눌러 이어 말하도록 한다. (침묵 타이머도 네이티브에서는 사용하지 않음)
     if (isNativePlatform()) {
+      console.log("[mic native] toggleMic → start requested");
       const available = await isNativeSTTAvailable();
       if (!available) {
+        console.warn("[mic native] STT not available on this device");
         toast.error(t.micNotSupported);
         return;
       }
       const ok = await ensureSTTPermission();
       if (!ok) {
+        console.warn("[mic native] permission denied");
         toast.error(t.micPermissionDenied);
         return;
       }
@@ -658,24 +661,47 @@ function Chat() {
       shouldRestartRef.current = false;
       const myGen = ++recGenRef.current;
       const lang = getLang() === "ko" ? "ko-KR" : "en-US";
+      console.log("[mic native] starting", { lang, gen: myGen, baseLen: baseInputRef.current.length });
 
       try {
-        await startNativeSTT(lang, {
-          onPartial: (txt) => {
-            if (myGen !== recGenRef.current) return;
-            setInput(baseInputRef.current + txt);
-            moveCursorEnd();
+        await startNativeSTT(
+          lang,
+          {
+            onPartial: (txt) => {
+              if (myGen !== recGenRef.current) return;
+              setInput(baseInputRef.current + txt);
+              moveCursorEnd();
+            },
+            // 각 (자동 재시작되는) 세션이 끝날 때 그 세션의 최종 텍스트를
+            // baseInputRef 에 확정으로 붙여서, 다음 세션의 partial 이
+            // 이어붙게 만든다. (웹 경로의 onend 재시작 로직과 동일한 UX)
+            onCommit: (txt) => {
+              if (myGen !== recGenRef.current) return;
+              if (!txt) return;
+              const next = (baseInputRef.current + txt).replace(/\s*$/, "") + " ";
+              baseInputRef.current = next;
+              setInput(next);
+              moveCursorEnd();
+              console.log("[mic native] onCommit → base updated", { addedLen: txt.length, baseLen: next.length });
+            },
+            onEnd: () => {
+              if (myGen !== recGenRef.current) return;
+              console.log("[mic native] onEnd → mic off");
+              setListening(false);
+            },
+            onError: (err: any) => {
+              console.error("[mic native] onError", err);
+              // 권한 등 치명적 에러는 UI 즉시 해제 + 안내
+              if (err?.fatal) {
+                setListening(false);
+                toast.error(t.micPermissionDenied);
+              }
+            },
           },
-          onEnd: () => {
-            if (myGen !== recGenRef.current) return;
-            // 세션 자연 종료 (침묵 감지) → 그대로 종료. 재시작 없음.
-            setListening(false);
-          },
-          onError: (err) => {
-            console.error("[mic native] error", err);
-          },
-        });
+          { autoRestart: true },
+        );
         setListening(true);
+        console.log("[mic native] started OK");
       } catch (err) {
         console.error("[mic native] start failed", err);
         setListening(false);
