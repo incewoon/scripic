@@ -228,12 +228,15 @@ function handleSessionEnd(gen: number, reason: "user" | "silence" | "error" | "w
   state = "starting";
   console.log(`${TAG} restart attempt`, { consecutiveEmptyRestarts });
 
+  // Android SpeechRecognizer가 이전 세션을 완전히 정리할 시간을 주기 위해 딜레이
+  await new Promise(resolve => setTimeout(resolve, 450));
+  
   SpeechRecognition.start({
     language: currentLang,
     partialResults: true,
     popup: false,
   })
-    .then(() => {
+    .then(() => {  
       if (gen !== currentGen) return;
       state = "listening";
       console.log(`${TAG} plugin.start OK (restart)`);
@@ -301,7 +304,7 @@ export async function startNativeSTT(
       (data: { matches?: string[] }) => {
         if (gen !== currentGen) return;
         const m = data?.matches?.[0];
-        if (typeof m !== "string") return;
+        if (typeof m !== "string" || m.length === 0) return;   // 빈 문자열 무시
         sawPartialThisSession = true;
         lastPartialText = m;
         partialCount++;
