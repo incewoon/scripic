@@ -390,28 +390,36 @@ export async function startNativeSTT(
 export async function stopNativeSTT(): Promise<void> {
   console.log(`${TAG} stop requested`, { state });
   if (state === "idle") {
-    // Nothing to stop, but make sure any dangling listeners are gone.
     await detachListeners();
     clearWatchdog();
     return;
   }
+
   userRequestedStop = true;
   state = "stopping";
   clearWatchdog();
-  try {
-    await SpeechRecognition.stop();
-  } catch (e) {
-    console.warn(`${TAG} plugin.stop threw`, e);
-  }
-  // The "listeningState: stopped" event should fire and drive handleSessionEnd.
-  // But if the plugin swallowed it, force cleanup after a short grace window.
+
   const gen = currentGen;
-  setTimeout(() => {
-    if (gen !== currentGen) return;
-    if (state !== "idle") {
-      console.warn(`${TAG} stop grace elapsed without stopped event → force end`);
-      handleSessionEnd(gen, "user");
-    }
-  }, 500);
+
+  // SpeechRecognition.stop()이 응답하지 않을 수 있으므로 타임아웃 적용
+  const stopPromise = SpeechRecognition.stop().catch((e) => {
+    console.warn(`${TAG} plugin.stop threw`, e);
+  });
+
+  const timeoutPromise = new Promise<"timeout">((resolve) =>
+    setTimeout(() => resolve("timeout"), 1500)
+  );
+
+  const result = await Promise.race([stopPromise, timeoutPromise]);
+
+  if (result === "timeout") {
+    console.warn(`${TAG} plugin.stop timed out → forcing cleanup`);
+  }
+
   await detachListeners();
+
+  // stopped 이벤트가 오지 않았을 경우를 대비해 강제 종료 처리
+  if (gen === currentGen && state !== "idle") {
+    handleSessionEnd(gen, "user");
+  }
 }
