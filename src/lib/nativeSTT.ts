@@ -122,7 +122,13 @@ function armWatchdog(gen: number) {
   watchdogTimer = setTimeout(() => {
     if (gen !== currentGen) return;
     // if (sawPartialThisSession) return;
-    console.warn(`${TAG} watchdog fired (no partial in ${WATCHDOG_MS}ms) → force stop for restart`);
+    console.warn(`${TAG} [WATCHDOG] fired`, {
+      gen,
+      currentGen,
+      state,
+      sawPartialThisSession,
+      lastPartialText: lastPartialText?.slice(0, 30),
+    });
     // Force plugin.stop() so the stopped event fires and the restart branch
     // in the state listener kicks in.
     SpeechRecognition.stop().catch(() => {
@@ -155,9 +161,18 @@ async function detachListeners() {
 // Decides whether to autoRestart or terminate the whole mic UX session.
 function handleSessionEnd(gen: number, reason: "user" | "silence" | "error" | "watchdog") {
   if (gen !== currentGen) {
-    console.log(`${TAG} session end ignored (stale gen)`, { gen, currentGen, reason });
+    console.log(`${TAG} [END] ignored (stale gen)`, { gen, currentGen, reason });
     return;
   }
+  
+  console.log(`${TAG} [END] triggered`, {
+    reason,
+    state,
+    sawPartialThisSession,
+    consecutiveEmptyRestarts,
+    willRestart: currentAutoRestart && !userRequestedStop && reason !== "error" && consecutiveEmptyRestarts < MAX_CONSECUTIVE_EMPTY_RESTARTS,
+  }
+  
   clearWatchdog();
 
   const handlers = currentHandlers;
@@ -370,7 +385,7 @@ export async function startNativeSTT(
     });
     if (gen !== currentGen) return;
     state = "listening";
-    console.log(`${TAG} plugin.start OK`);
+    console.log(`${TAG} [START] plugin.start OK`, { gen, state });
     armWatchdog(gen);
   } catch (err) {
     console.error(`${TAG} plugin.start FAIL`, err);
@@ -413,7 +428,7 @@ export async function stopNativeSTT(): Promise<void> {
   const result = await Promise.race([stopPromise, timeoutPromise]);
 
   if (result === "timeout") {
-    console.warn(`${TAG} plugin.stop timed out → forcing cleanup`);
+    console.error(`${TAG} [STOP] plugin.stop TIMED OUT (1500ms)`, { state, gen });
   }
 
   await detachListeners();
