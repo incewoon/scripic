@@ -282,15 +282,26 @@ export const chat = onCall(
       WRAP_HINT_KO.test(prevAssistantText) ||
       WRAP_HINT_EN.test(prevAssistantText);
 
+    console.log(`[chat] validated rid=${rid} elapsedMs=${Date.now() - chatT0}`);
+
     let full = "";
+    const geminiT0 = Date.now();
+    let firstTokenAt: number | null = null;
+    let chunkCount = 0;
     try {
+      console.log(`[chat] gemini.connect rid=${rid}`);
       for await (const delta of geminiStreamText(body)) {
+        chunkCount++;
+        if (firstTokenAt == null) {
+          firstTokenAt = Date.now();
+          console.log(`[chat] gemini.firstToken rid=${rid} elapsedMs=${firstTokenAt - geminiT0}`);
+        }
         full += delta;
-        // Forward raw model output to the client in real time so the user
-        // sees text appear immediately instead of waiting for full generation.
         if (response?.sendChunk) response.sendChunk({ delta });
       }
+      console.log(`[chat] gemini.done rid=${rid} streamMs=${Date.now() - geminiT0} chunks=${chunkCount} chars=${full.length}`);
     } catch (e: any) {
+      console.error(`[chat] fail rid=${rid} kind=${e?.constructor?.name} status=${e?.status} elapsedMs=${Date.now() - chatT0} msg=${e?.message}`);
       if (e instanceof GeminiUnavailableError) {
         throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
       }
@@ -299,6 +310,7 @@ export const chat = onCall(
       }
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
+
 
     // Defensive: if the model produced almost nothing and no server-injected
     // finish token was present, treat as transient upstream failure so the
@@ -357,12 +369,18 @@ export const chat = onCall(
     // If post-processing changed the text (stripped wrap sentence or appended
     // a server-injected tail), reconcile the client by sending a final
     // replacement chunk. The client treats `replace` as the authoritative full text.
-    if (response?.sendChunk && full !== streamed) {
+    // If post-processing changed the text (stripped wrap sentence or appended
+    // a server-injected tail), reconcile the client by sending a final
+    // replacement chunk. The client treats `replace` as the authoritative full text.
+    const postReplaced = full !== streamed;
+    if (response?.sendChunk && postReplaced) {
       response.sendChunk({ replace: full });
     }
+    console.log(`[chat] done rid=${rid} totalMs=${Date.now() - chatT0} replaced=${postReplaced} finalChars=${full.length}`);
     return { text: full };
   },
 );
+
 
 // ---------------- generateAlbum ----------------
 
