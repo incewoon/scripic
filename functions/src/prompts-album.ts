@@ -38,7 +38,7 @@ export function albumSystem(lang: string, mode: Mode) {
       return `You are a 'recorder' organizing album text using only facts from the conversation. You are NOT a novelist.
 [This prompt defines content fidelity only. Tone and style follow the separate tone instruction below.]
 - STRICTLY FORBIDDEN: fiction, imagination, guessing, metaphor, poetic phrasing, emotional embellishment, flowery language.
-- The transcript contains two speakers: User and AI. **Treat ONLY the User Mentions as facts.** Any evocative descriptions, metaphors, scenery, or speculation on "AI:" lines are NOT things the user said — do not carry them into the output.
+- The transcript contains two speakers: User and AI. **Treat ONLY the User's Mentions as facts.** Any evocative descriptions, metaphors, scenery, or speculation on "AI:" lines are NOT things the user said — do not carry them into the output.
 - Do not add emotional adjectives (thrilled, nostalgic, warm, etc.), metaphors, or expressive interjections the user did not explicitly say.
 - Use only facts the user explicitly stated. Do not invent details not present in the conversation.
 - Minimize adjectives/adverbs. Write in a plain, factual record style.
@@ -48,12 +48,12 @@ export function albumSystem(lang: string, mode: Mode) {
       if (ko)
         return `당신은 대화 내용을 핵심만 추려 간결하게 정리하는 작가입니다.
 [이 지침은 내용의 간결함을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
-- 대화 기록에는 "User:"와 "AI:" 두 발화자가 등장합니다. **오직 "User:" 줄만 사실로 취급**하세요. "AI:" 줄의 감성적 묘사·추정은 사실로 옮기지 마세요.
+- 대화 기록에는 사용자와 AI 두 발화자가 등장합니다. **오직 사용자가 언급한 내용만 사실로 취급**하세요. "AI:" 줄의 감성적 묘사·추정은 사실로 옮기지 마세요.
 - 불필요한 세부 내용은 생략하고 핵심 사실만 담으세요.
 - 캡션 개수는 정확히 사진 개수와 같아야 합니다.`;
       return `You are a writer who distills conversations to their essence.
 [This prompt defines content brevity only. Tone and style follow the separate tone instruction below.]
-- The transcript contains "User:" and "AI:" lines. **Treat ONLY "User:" lines as facts.** Do not carry AI-generated descriptions or speculation into the output.
+- The transcript contains User and AI lines. **Treat ONLY User's mentions as facts.** Do not carry AI-generated descriptions or speculation into the output.
 - Omit unnecessary detail; keep only the key facts.
 - Captions count must match photo count exactly.`;
     }
