@@ -23,6 +23,8 @@ import { ScripicSTT } from "@/plugins/scripic-stt";
 const TAG = "[STT-native]";
 
 const WATCHDOG_MS = 8000;
+const SILENCE_TIMEOUT_MS = 5000;
+let silenceTimer: ReturnType<typeof setTimeout> | null = null;
 const MAX_CONSECUTIVE_EMPTY_RESTARTS = 3;
 const RESTART_DELAY_MS = 300;
 const BUSY_RETRY_DELAY_MS = 500;
@@ -105,8 +107,26 @@ function clearWatchdog() {
   }
 }
 
+function clearSilenceTimer() {
+  if (silenceTimer) {
+    clearTimeout(silenceTimer);
+    silenceTimer = null;
+  }
+}
+
+function armSilenceTimer(gen: number) {
+  clearSilenceTimer();
+  silenceTimer = setTimeout(() => {
+    if (gen !== currentGen) return;
+    console.log(`${TAG} [SILENCE] no speech for ${SILENCE_TIMEOUT_MS}ms → userRequestedStop=true, stopping`);
+    userRequestedStop = true;
+    ScripicSTT.stop().catch(() => handleSessionEnd(gen, "silence"));
+  }, SILENCE_TIMEOUT_MS);
+}
+
 function armWatchdog(gen: number) {
   clearWatchdog();
+  clearSilenceTimer();
   watchdogTimer = setTimeout(() => {
     if (gen !== currentGen) return;
     console.warn(`${TAG} [WATCHDOG] fired`, {
@@ -165,6 +185,7 @@ async function handleSessionEnd(
   });
 
   clearWatchdog();
+  clearSilenceTimer();
 
   const handlers = currentHandlers;
 
@@ -210,6 +231,7 @@ async function handleSessionEnd(
     if (gen !== currentGen) return;
     console.log(`${TAG} plugin.start OK (restart)`);
     armWatchdog(gen);
+    armSilenceTimer(gen);
   } catch (err: any) {
     const msg = String(err?.message ?? err ?? "");
     if (/busy/i.test(msg)) {
@@ -220,6 +242,7 @@ async function handleSessionEnd(
         await doStart();
         console.log(`${TAG} plugin.start OK (busy retry)`);
         armWatchdog(gen);
+        armSilenceTimer(gen);
         return;
       } catch (err2) {
         console.error(`${TAG} plugin.start FAIL (busy retry)`, err2);
@@ -262,6 +285,7 @@ export async function startNativeSTT(
     }
     await detachListeners();
     clearWatchdog();
+    clearSilenceTimer();
     state = "idle";
     userRequestedStop = false;
   }
@@ -295,6 +319,7 @@ export async function startNativeSTT(
         });
       }
       armWatchdog(gen);
+      armSilenceTimer(gen);
       try {
         h.onPartial(m);
       } catch (e) {
@@ -352,6 +377,7 @@ export async function startNativeSTT(
     if (gen !== currentGen) return;
     console.log(`${TAG} [START] plugin.start OK`, { gen });
     armWatchdog(gen);
+    armSilenceTimer(gen);
   } catch (err: any) {
     const msg = String(err?.message ?? err ?? "");
     if (/busy/i.test(msg)) {
@@ -362,6 +388,7 @@ export async function startNativeSTT(
         await ScripicSTT.start({ language: lang, partialResults: true });
         console.log(`${TAG} [START] plugin.start OK (busy retry)`);
         armWatchdog(gen);
+        armSilenceTimer(gen);
         return;
       } catch (err2) {
         err = err2;
@@ -369,7 +396,8 @@ export async function startNativeSTT(
     }
     console.error(`${TAG} plugin.start FAIL`, err);
     await detachListeners();
-    clearWatchdog();
+    clearWatchdog(); //
+    clearSilenceTimer();
     state = "idle";
     currentHandlers = null;
     try {
@@ -386,12 +414,14 @@ export async function stopNativeSTT(): Promise<void> {
   if (state === "idle") {
     await detachListeners();
     clearWatchdog();
+    clearSilenceTimer();
     return;
   }
 
   userRequestedStop = true;
   state = "stopping";
   clearWatchdog();
+  clearSilenceTimer();
 
   const gen = currentGen;
 
