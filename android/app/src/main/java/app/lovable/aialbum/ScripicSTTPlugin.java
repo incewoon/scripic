@@ -335,7 +335,7 @@ public class ScripicSTTPlugin extends Plugin {
         @Override
         public void onResults(Bundle results) {
             long now = System.currentTimeMillis();
-            String msg = errorMessage(error);
+            String msg = errorMessage(results);
             Log.d(TAG, "onResults ts=" + now + " code=" + results + " (" + msg + ")");
             ArrayList<String> matches = results != null
                     ? results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
