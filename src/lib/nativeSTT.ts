@@ -1,42 +1,29 @@
-// Native Speech-to-Text wrapper (Capacitor).
+// Native Speech-to-Text wrapper (Android, custom plugin).
 //
 // The web app keeps using window.webkitSpeechRecognition; this module is only
-// used when running inside the Android/iOS shell where the Web Speech API is
+// used when running inside the Android shell where the Web Speech API is
 // blocked by the WebView permission bridge.
 //
-// Android's underlying SpeechRecognizer is single-utterance: after a short
-// silence the plugin emits `listeningState: "stopped"` and the session ends.
-// To give the user a "continuous mic" UX equivalent to the web
-// (webkitSpeechRecognition + shouldRestartRef restart loop), this module
-// supports autoRestart: on natural end (silence / no-match / speech-timeout)
-// it re-invokes SpeechRecognition.start() unless the user pressed stop or a
-// fatal error occurred (permission denied, etc.).
+// This wraps the in-house ScripicSTT plugin (android/.../ScripicSTTPlugin.java),
+// which enforces main-thread execution + state locking + forced-destroy
+// timeouts so recognizer sessions can no longer become zombies.
 //
-// The caller receives:
-//   - onPartial(text)  — live interim transcript for the CURRENT session only
-//   - onCommit(text)   — final transcript of a session, right before it ends
-//                        (so the caller can push it into its base buffer and
-//                        the next session's partials append cleanly)
-//   - onEnd()          — the WHOLE mic session is over (autoRestart exhausted
-//                        or stop() was called); UI should turn the mic off.
-//   - onError(err)     — non-fatal or fatal error from the plugin.
-//
-// Every step logs with the `[STT-native]` prefix so field issues on the built
-// APK can be diagnosed from adb logcat / Chrome remote devtools.
+// Public API (unchanged for chat.tsx):
+//   - isNativePlatform()
+//   - isNativeSTTAvailable()
+//   - ensureSTTPermission()
+//   - startNativeSTT(lang, handlers, { autoRestart })
+//   - stopNativeSTT()
 
-import { Capacitor } from "@capacitor/core";
-import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
+import { ScripicSTT } from "@/plugins/scripic-stt";
 
 const TAG = "[STT-native]";
 
-// If no partialResults arrive within this window, we assume the recognizer
-// silently died (Android SPEECH_TIMEOUT / NO_MATCH without a stopped event)
-// and force a restart so the mic button doesn't freeze.
 const WATCHDOG_MS = 8000;
-
-// Guardrail: never restart more than this in a row without a partial. Prevents
-// a hot loop when the mic is truly broken (e.g. permission revoked mid-session).
 const MAX_CONSECUTIVE_EMPTY_RESTARTS = 3;
+const RESTART_DELAY_MS = 300;
+const BUSY_RETRY_DELAY_MS = 500;
 
 type SessionState = "idle" | "starting" | "listening" | "stopping";
 
@@ -49,15 +36,13 @@ type Handlers = {
 
 type StartOptions = { autoRestart?: boolean };
 
-type ListenerHandle = { remove?: () => Promise<void> | void };
-
-// --- module-level session state (only one session at a time) ---
+// --- module-level session state ---
 let state: SessionState = "idle";
-let currentGen = 0; // increments on every start; stale events are dropped
+let currentGen = 0;
 
-let partialHandle: ListenerHandle | null = null;
-let stateHandle: ListenerHandle | null = null;
-let errorHandle: ListenerHandle | null = null;
+let partialHandle: PluginListenerHandle | null = null;
+let stateHandle: PluginListenerHandle | null = null;
+let errorHandle: PluginListenerHandle | null = null;
 
 let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
 let sawPartialThisSession = false;
@@ -69,6 +54,7 @@ let userRequestedStop = false;
 let currentLang = "en-US";
 let currentAutoRestart = false;
 let currentHandlers: Handlers | null = null;
+let lastErrorWasFatal = false;
 
 export function isNativePlatform(): boolean {
   return Capacitor.isNativePlatform();
@@ -80,7 +66,7 @@ export async function isNativeSTTAvailable(): Promise<boolean> {
     return false;
   }
   try {
-    const r = await SpeechRecognition.available();
+    const r = await ScripicSTT.available();
     console.log(`${TAG} available?`, { supported: !!r?.available });
     return !!r.available;
   } catch (e) {
@@ -91,12 +77,12 @@ export async function isNativeSTTAvailable(): Promise<boolean> {
 
 export async function ensureSTTPermission(): Promise<boolean> {
   try {
-    const before = await SpeechRecognition.checkPermissions();
+    const before = await ScripicSTT.checkPermissions();
     if (before.speechRecognition === "granted") {
-      console.log(`${TAG} permission`, { before: before.speechRecognition, granted: true });
+      console.log(`${TAG} permission granted (pre-check)`);
       return true;
     }
-    const after = await SpeechRecognition.requestPermissions();
+    const after = await ScripicSTT.requestPermissions();
     const granted = after.speechRecognition === "granted";
     console.log(`${TAG} permission`, {
       before: before.speechRecognition,
@@ -121,29 +107,23 @@ function armWatchdog(gen: number) {
   clearWatchdog();
   watchdogTimer = setTimeout(() => {
     if (gen !== currentGen) return;
-    // if (sawPartialThisSession) return;
     console.warn(`${TAG} [WATCHDOG] fired`, {
       gen,
-      currentGen,
       state,
       sawPartialThisSession,
-      lastPartialText: lastPartialText?.slice(0, 30),
     });
-    // Force plugin.stop() so the stopped event fires and the restart branch
-    // in the state listener kicks in.
-    SpeechRecognition.stop().catch(() => {
-      // If stop fails, synthesize an end so the UI is not left stuck.
+    ScripicSTT.stop().catch(() => {
       handleSessionEnd(gen, "watchdog");
     });
   }, WATCHDOG_MS);
 }
 
 async function detachListeners() {
-  const targets = [
+  const targets: Array<[string, PluginListenerHandle | null]> = [
     ["partial", partialHandle],
     ["state", stateHandle],
     ["error", errorHandle],
-  ] as const;
+  ];
   for (const [name, h] of targets) {
     try {
       await h?.remove?.();
@@ -157,28 +137,35 @@ async function detachListeners() {
   console.log(`${TAG} listeners detached`);
 }
 
-// Called exactly once per underlying plugin session when it truly ends.
-// Decides whether to autoRestart or terminate the whole mic UX session.
-async function handleSessionEnd(gen: number, reason: "user" | "silence" | "error" | "watchdog") {
+async function handleSessionEnd(
+  gen: number,
+  reason: "user" | "silence" | "error" | "watchdog",
+) {
   if (gen !== currentGen) {
     console.log(`${TAG} [END] ignored (stale gen)`, { gen, currentGen, reason });
     return;
   }
-  
-  console.log(`${TAG} [END] triggered`, {
+
+  const wasFatal = lastErrorWasFatal;
+  const willRestart =
+    currentAutoRestart &&
+    !userRequestedStop &&
+    !wasFatal &&
+    reason !== "error" &&
+    consecutiveEmptyRestarts < MAX_CONSECUTIVE_EMPTY_RESTARTS;
+
+  console.log(`${TAG} [END]`, {
     reason,
-    state,
+    willRestart,
     sawPartialThisSession,
     consecutiveEmptyRestarts,
-    willRestart: currentAutoRestart && !userRequestedStop && reason !== "error" && consecutiveEmptyRestarts < MAX_CONSECUTIVE_EMPTY_RESTARTS,
+    partialCount,
   });
-  
+
   clearWatchdog();
 
   const handlers = currentHandlers;
 
-  // Push whatever partial we had as a "commit" so the caller can freeze it
-  // into its base buffer before the next session starts fresh.
   if (handlers?.onCommit && lastPartialText) {
     try {
       handlers.onCommit(lastPartialText);
@@ -187,25 +174,11 @@ async function handleSessionEnd(gen: number, reason: "user" | "silence" | "error
     }
   }
 
-  const willRestart =
-    currentAutoRestart &&
-    !userRequestedStop &&
-    reason !== "error" &&
-    consecutiveEmptyRestarts < MAX_CONSECUTIVE_EMPTY_RESTARTS;
-
-  console.log(`${TAG} session end`, {
-    reason,
-    willRestart,
-    sawPartialThisSession,
-    consecutiveEmptyRestarts,
-    partialCount,
-  });
-
   if (!willRestart) {
-    // Full stop: detach and notify caller.
     state = "idle";
     userRequestedStop = false;
     consecutiveEmptyRestarts = 0;
+    lastErrorWasFatal = false;
     void detachListeners();
     try {
       handlers?.onEnd();
@@ -216,52 +189,60 @@ async function handleSessionEnd(gen: number, reason: "user" | "silence" | "error
     return;
   }
 
-  // Restart in place: reuse the same gen/handlers, reset per-session fields.
-  if (!sawPartialThisSession) {
-    consecutiveEmptyRestarts++;
-  } else {
-    consecutiveEmptyRestarts = 0;
-  }
+  if (!sawPartialThisSession) consecutiveEmptyRestarts++;
+  else consecutiveEmptyRestarts = 0;
+
   sawPartialThisSession = false;
   lastPartialText = "";
   partialCount = 0;
   state = "starting";
   console.log(`${TAG} restart attempt`, { consecutiveEmptyRestarts });
 
-  // Android SpeechRecognizer가 이전 세션을 완전히 정리할 시간을 주기 위해 딜레이
-  await new Promise(resolve => setTimeout(resolve, 450));
-  
-  SpeechRecognition.start({
-    language: currentLang,
-    partialResults: true,
-    popup: false,
-  })
-    .then(() => {  
+  await new Promise((r) => setTimeout(r, RESTART_DELAY_MS));
+
+  const doStart = () =>
+    ScripicSTT.start({ language: currentLang, partialResults: true });
+
+  try {
+    await doStart();
+    if (gen !== currentGen) return;
+    console.log(`${TAG} plugin.start OK (restart)`);
+    armWatchdog(gen);
+  } catch (err: any) {
+    const msg = String(err?.message ?? err ?? "");
+    if (/busy/i.test(msg)) {
+      console.warn(`${TAG} restart got busy → retry in ${BUSY_RETRY_DELAY_MS}ms`);
+      await new Promise((r) => setTimeout(r, BUSY_RETRY_DELAY_MS));
       if (gen !== currentGen) return;
-      state = "listening";
-      console.log(`${TAG} plugin.start OK (restart)`);
-      armWatchdog(gen);
-    })
-    .catch((err) => {
-      if (gen !== currentGen) return;
+      try {
+        await doStart();
+        console.log(`${TAG} plugin.start OK (busy retry)`);
+        armWatchdog(gen);
+        return;
+      } catch (err2) {
+        console.error(`${TAG} plugin.start FAIL (busy retry)`, err2);
+        err = err2;
+      }
+    } else {
       console.error(`${TAG} plugin.start FAIL (restart)`, err);
-      // Give up on the whole mic session.
-      state = "idle";
-      userRequestedStop = false;
-      consecutiveEmptyRestarts = 0;
-      void detachListeners();
-      try {
-        handlers?.onError?.(err);
-      } catch {
-        /* noop */
-      }
-      try {
-        handlers?.onEnd();
-      } catch {
-        /* noop */
-      }
-      currentHandlers = null;
-    });
+    }
+    state = "idle";
+    userRequestedStop = false;
+    consecutiveEmptyRestarts = 0;
+    lastErrorWasFatal = false;
+    void detachListeners();
+    try {
+      handlers?.onError?.(err);
+    } catch {
+      /* noop */
+    }
+    try {
+      handlers?.onEnd();
+    } catch {
+      /* noop */
+    }
+    currentHandlers = null;
+  }
 }
 
 export async function startNativeSTT(
@@ -269,12 +250,11 @@ export async function startNativeSTT(
   h: Handlers,
   opts: StartOptions = {},
 ): Promise<void> {
-  // If a previous session is still around, tear it down first.
   if (state !== "idle") {
     console.log(`${TAG} start requested while state=${state} → tearing down previous`);
     userRequestedStop = true;
     try {
-      await SpeechRecognition.stop();
+      await ScripicSTT.stop();
     } catch {
       /* noop */
     }
@@ -293,78 +273,64 @@ export async function startNativeSTT(
   lastPartialText = "";
   partialCount = 0;
   consecutiveEmptyRestarts = 0;
+  lastErrorWasFatal = false;
   state = "starting";
 
   console.log(`${TAG} start requested`, { lang, gen, autoRestart: currentAutoRestart });
 
-  // --- attach listeners BEFORE start() so no event is missed ---
   try {
-    partialHandle = await SpeechRecognition.addListener(
-      "partialResults",
-      (data: { matches?: string[] }) => {
-        if (gen !== currentGen) return;
-        const m = data?.matches?.[0];
-        if (typeof m !== "string" || m.length === 0) return;   // 빈 문자열 무시
-        sawPartialThisSession = true;
-        lastPartialText = m;
-        partialCount++;
-        if (partialCount <= 3 || partialCount % 10 === 0) {
-          console.log(`${TAG} partial#${partialCount}`, {
-            len: m.length,
-            text: m.length > 40 ? m.slice(0, 40) + "…" : m,
-          });
-        }
-        // Reset watchdog every time we hear something.
-        armWatchdog(gen);
-        try {
-          h.onPartial(m);
-        } catch (e) {
-          console.warn(`${TAG} onPartial threw`, e);
-        }
-      },
-    );
+    partialHandle = await ScripicSTT.addListener("partialResults", (data) => {
+      if (gen !== currentGen) return;
+      const m = data?.matches?.[0];
+      if (typeof m !== "string" || m.length === 0) return;
+      sawPartialThisSession = true;
+      lastPartialText = m;
+      partialCount++;
+      if (partialCount <= 3 || partialCount % 10 === 0) {
+        console.log(`${TAG} partial#${partialCount}`, {
+          len: m.length,
+          text: m.length > 40 ? m.slice(0, 40) + "…" : m,
+        });
+      }
+      armWatchdog(gen);
+      try {
+        h.onPartial(m);
+      } catch (e) {
+        console.warn(`${TAG} onPartial threw`, e);
+      }
+    });
 
-    stateHandle = await SpeechRecognition.addListener(
-      "listeningState",
-      (data: { status?: string }) => {
-        if (gen !== currentGen) return;
-        console.log(`${TAG} listeningState`, data);
-        if (data?.status === "stopped") {
-          handleSessionEnd(gen, userRequestedStop ? "user" : "silence");
-        }
-      },
-    );
+    stateHandle = await ScripicSTT.addListener("listeningState", (data) => {
+      if (gen !== currentGen) return;
+      console.log(`${TAG} listeningState`, data);
+      if (data?.status === "started") {
+        state = "listening";
+      } else if (data?.status === "stopped") {
+        handleSessionEnd(
+          gen,
+          userRequestedStop ? "user" : lastErrorWasFatal ? "error" : "silence",
+        );
+      }
+    });
 
-    // Not all platform versions emit this, but subscribe defensively — this
-    // is the fix for "mic button freezes when user doesn't speak".
-    try {
-      errorHandle = await (SpeechRecognition as any).addListener(
-        "error",
-        (data: any) => {
-          if (gen !== currentGen) return;
-          console.warn(`${TAG} error event`, data);
-          const code = data?.code ?? data?.error ?? "unknown";
-          const message = data?.message ?? String(code);
-          const fatal =
-            String(code).includes("not-allowed") ||
-            String(code).includes("permission") ||
-            code === 9 /* INSUFFICIENT_PERMISSIONS on Android */;
-          try {
-            h.onError?.({ code, message, fatal });
-          } catch {
-            /* noop */
-          }
-          if (fatal) {
-            userRequestedStop = true; // suppress autoRestart
-          }
-          handleSessionEnd(gen, "error");
-        },
-      );
-    } catch (e) {
-      // Plugin version may not expose "error" — that's ok, watchdog covers it.
-      console.log(`${TAG} error listener not supported by plugin`, e);
-      errorHandle = null;
-    }
+    errorHandle = await ScripicSTT.addListener("error", (data) => {
+      if (gen !== currentGen) return;
+      console.warn(`${TAG} error event`, data);
+      const code = data?.code;
+      const msg = data?.message ?? String(code);
+      const fatal =
+        msg === "insufficient_permissions" ||
+        msg === "client_error" ||
+        msg === "audio";
+      lastErrorWasFatal = fatal;
+      try {
+        h.onError?.({ code, message: msg, fatal });
+      } catch {
+        /* noop */
+      }
+      if (fatal) userRequestedStop = true;
+      // "stopped" listener will drive handleSessionEnd afterwards.
+    });
 
     console.log(`${TAG} listeners attached`, {
       partial: !!partialHandle,
@@ -379,18 +345,26 @@ export async function startNativeSTT(
     throw err;
   }
 
-  // --- actually start the recognizer ---
   try {
-    await SpeechRecognition.start({
-      language: lang,
-      partialResults: true,
-      popup: false,
-    });
+    await ScripicSTT.start({ language: lang, partialResults: true });
     if (gen !== currentGen) return;
-    state = "listening";
-    console.log(`${TAG} [START] plugin.start OK`, { gen, state });
+    console.log(`${TAG} [START] plugin.start OK`, { gen });
     armWatchdog(gen);
-  } catch (err) {
+  } catch (err: any) {
+    const msg = String(err?.message ?? err ?? "");
+    if (/busy/i.test(msg)) {
+      console.warn(`${TAG} initial start got busy → retry in ${BUSY_RETRY_DELAY_MS}ms`);
+      await new Promise((r) => setTimeout(r, BUSY_RETRY_DELAY_MS));
+      if (gen !== currentGen) return;
+      try {
+        await ScripicSTT.start({ language: lang, partialResults: true });
+        console.log(`${TAG} [START] plugin.start OK (busy retry)`);
+        armWatchdog(gen);
+        return;
+      } catch (err2) {
+        err = err2;
+      }
+    }
     console.error(`${TAG} plugin.start FAIL`, err);
     await detachListeners();
     clearWatchdog();
@@ -419,25 +393,23 @@ export async function stopNativeSTT(): Promise<void> {
 
   const gen = currentGen;
 
-  // SpeechRecognition.stop()이 응답하지 않을 수 있으므로 타임아웃 적용
-  const stopPromise = SpeechRecognition.stop().catch((e) => {
+  const stopPromise = ScripicSTT.stop().catch((e) => {
     console.warn(`${TAG} plugin.stop threw`, e);
   });
 
   const timeoutPromise = new Promise<"timeout">((resolve) =>
-    setTimeout(() => resolve("timeout"), 1500)
+    setTimeout(() => resolve("timeout"), 1500),
   );
 
   const result = await Promise.race([stopPromise, timeoutPromise]);
 
   if (result === "timeout") {
-    console.error(`${TAG} [STOP] plugin.stop TIMED OUT (1500ms)`, { state, gen });
+    console.error(`${TAG} [STOP] plugin.stop TIMED OUT (1500ms)`);
+    // Force-terminate the session client-side; the native plugin's own
+    // force-kill will fire independently.
+    if (gen === currentGen) {
+      await handleSessionEnd(gen, "user");
+    }
   }
-
-  await detachListeners();
-
-  // stopped 이벤트가 오지 않았을 경우를 대비해 강제 종료 처리
-  if (gen === currentGen && state !== "idle") {
-    handleSessionEnd(gen, "user");
-  }
+  // On normal path, the plugin's "stopped" event drives handleSessionEnd.
 }
