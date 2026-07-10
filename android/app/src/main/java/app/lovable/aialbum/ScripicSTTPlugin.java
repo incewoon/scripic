@@ -1,3 +1,5 @@
+//android/app/src/main/java/app/lovable/aialbum/ScripicSTTPlugin.java
+
 package app.lovable.aialbum;
 
 import android.Manifest;
