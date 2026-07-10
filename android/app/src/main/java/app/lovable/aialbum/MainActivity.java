@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(AppCheckPlugin.class);
+        registerPlugin(ScripicSTTPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Edge-to-edge: let the WebView extend behind status & navigation bars,
