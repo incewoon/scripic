@@ -337,12 +337,9 @@ public class ScripicSTTPlugin extends Plugin {
             long now = System.currentTimeMillis();
             ArrayList<String> matches = results != null
                     ? results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    : null;
-
+                    : null;  
             Log.d(TAG, "onResults ts=" + now + " results=" + matches);
-            ArrayList<String> matches = results != null
-                    ? results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    : null;
+                
             emitPartial(matches);
             destroyAndReset();
             runOnMain(ScripicSTTPlugin.this::emitStopped);
