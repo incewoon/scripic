@@ -126,7 +126,6 @@ function armSilenceTimer(gen: number) {
 
 function armWatchdog(gen: number) {
   clearWatchdog();
-  clearSilenceTimer();
   watchdogTimer = setTimeout(() => {
     if (gen !== currentGen) return;
     console.warn(`${TAG} [WATCHDOG] fired`, {
