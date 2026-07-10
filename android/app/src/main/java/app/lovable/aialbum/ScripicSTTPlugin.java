@@ -114,6 +114,7 @@ public class ScripicSTTPlugin extends Plugin {
                 recognizer = null;
             }
             state = State.IDLE;
+            Log.d(TAG, "destroyAndReset() completed, ts=" + System.currentTimeMillis());
         });
     }
 
@@ -261,7 +262,7 @@ public class ScripicSTTPlugin extends Plugin {
             }
 
             recognizer.startListening(intent);
-            Log.d(TAG, "startListening dispatched (lang=" + language + ", partial=" + partial + ")");
+            Log.d(TAG, "startListening dispatched (lang=" + language + ", partial=" + partial + ", ts=" + System.currentTimeMillis() + ")");
             call.resolve();
         } catch (Throwable t) {
             Log.e(TAG, "doStart threw", t);
@@ -304,7 +305,8 @@ public class ScripicSTTPlugin extends Plugin {
     private class Listener implements RecognitionListener {
         @Override
         public void onReadyForSpeech(Bundle params) {
-            Log.d(TAG, "onReadyForSpeech");
+            long now = System.currentTimeMillis();
+            Log.d(TAG, "onReadyForSpeech ts=" + now + " state=" + state);
             state = State.LISTENING;
             emitStarted();
         }
@@ -320,8 +322,9 @@ public class ScripicSTTPlugin extends Plugin {
 
         @Override
         public void onError(int error) {
+            long now = System.currentTimeMillis();
             String msg = errorMessage(error);
-            Log.w(TAG, "onError code=" + error + " (" + msg + ")");
+            Log.w(TAG, "onError ts=" + now + " code=" + error + " (" + msg + ")");
             cancelForceKill();
             emitError(error, msg);
             destroyAndReset();
@@ -331,7 +334,9 @@ public class ScripicSTTPlugin extends Plugin {
 
         @Override
         public void onResults(Bundle results) {
-            Log.d(TAG, "onResults");
+            long now = System.currentTimeMillis();
+            String msg = errorMessage(error);
+            Log.d(TAG, "onResults ts=" + now + " code=" + results + " (" + msg + ")");
             ArrayList<String> matches = results != null
                     ? results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     : null;
@@ -342,10 +347,12 @@ public class ScripicSTTPlugin extends Plugin {
 
         @Override
         public void onPartialResults(Bundle partialResults) {
+            long now = System.currentTimeMillis();
             if (!partialResultsEnabled) return;
             ArrayList<String> matches = partialResults != null
                     ? partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     : null;
+            Log.d(TAG, "onPartialResults ts=" + now + " len=" + (matches != null ? matches.size()
             emitPartial(matches);
         }
 
