@@ -1,80 +1,70 @@
-# AI 연결/응답 지연 진단 로그 보강 계획
+## 목표
+`@capacitor-community/speech-recognition`을 제거하고 Android 전용 커스텀 Capacitor 플러그인 `ScripicSTT`를 자체 구현하여, 메인 스레드 강제 + 상태 잠금 + 강제 destroy 타임아웃으로 음성인식 안정성을 근본 해결한다. iOS/웹 경로는 손대지 않는다.
 
-## 목적
-"AI 연결 준비가 덜 된 채 대화로 넘어가서 첫 응답이 끊기거나 지연되는가?"와 "응답 스트림이 왜 늦거나 중간에 끊기는가?"를 개발자 콘솔만 보고 확실히 판별할 수 있게 로그를 재설계합니다. 로직/기능은 건드리지 않고 **관측(observability)** 만 강화합니다.
+---
 
-## 현재 로그의 한계
-- `[AI Client]`는 요청 시작~끝만 봄. 사진 업로드 화면의 **사전 워밍(prewarm)** 이 언제 시작/완료되었는지, 대화 진입 시점에 그것이 **이미 완료 상태였는지**를 알 수 없음.
-- App Check 토큰이 캐시 히트인지/신규 발급인지, 발급에 몇 ms 걸렸는지 로그 없음.
-- Firebase Functions 스트림에서 **첫 토큰까지 시간(TTFB)**, **토큰 간 최대 공백(silence gap)**, **총 스트리밍 시간** 이 클라이언트/서버 양쪽에서 상관관계로 안 잡힘.
-- 서버(`functions/src/index.ts`)의 chat 핸들러는 단계별 시간 로그가 없어서, 지연 원인이 (인증검증 · 페이로드검증 · Gemini 접속 · Gemini 스트리밍 · 후처리) 중 어디인지 구분 불가.
+## 작업 순서
 
-## 변경 개요 (5개 파일, 로그만 추가)
+### 1. AndroidManifest 확인
+`android/app/src/main/AndroidManifest.xml` — `RECORD_AUDIO` 권한과 `<queries><intent><action android:name="android.speech.RecognitionService" /></intent></queries>` 블록이 이미 존재함(현재 컨텍스트로 확인). **변경 불필요, 스킵.**
 
-### 1) `src/routes/create.tsx` — Prewarm 관측 지점
-`ensureFirebaseUser()` 사전 호출 부분을 상세 로깅으로 감쌈:
-- `[Prewarm] start ts=<ms>` — 사진 업로드 화면 마운트 직후.
-- `[Prewarm] ensureFirebaseUser ok uid=<...> elapsed=<ms>` / `[Prewarm] failed code=<...> msg=<...>`
-- `getFns()` + App Check 토큰까지 실제로 확보되게 워밍을 **강제 트리거**하는 로그 지점 추가 (`getToken(appCheck, false)` 호출 결과 로깅 — 로직 변경 없이 관측 목적으로만 호출).
-- 모듈 스코프에 `window.__AI_PREWARM__ = { startedAt, readyAt, ok }` 를 기록해두어 chat 화면에서 "사전 워밍 대비 얼마나 빨리 대화로 넘어갔는지" 를 상관 분석할 수 있게 함.
+### 2. 네이티브 플러그인 생성
+**신규:** `android/app/src/main/java/app/lovable/aialbum/ScripicSTTPlugin.java`
 
-### 2) `src/integrations/firebase/client.ts` — App Check 토큰 발급 관측
-`CustomProvider.getToken` / `ReCaptchaV3Provider` 초기화 및 native bridge 호출을 각각 계측:
-- `[AppCheck] init provider=<recaptcha|native|none>`
-- native bridge: `[AppCheck] native.getToken start` → `ok tokenLen=<> expIn=<ms> elapsed=<ms>` / `failed code=<> msg=<>`
-- reCAPTCHA 경로도 동일한 시작/완료/실패 로그.
-- 토큰이 **캐시 히트인지(빠름)** vs **신규 발급인지(느림)** 를 elapsed로 구분할 수 있게 됨.
+- `@CapacitorPlugin(name = "ScripicSTT", permissions = { @Permission(alias = "microphone", strings = { Manifest.permission.RECORD_AUDIO }) })`
+- 필드: `Handler mainHandler = new Handler(Looper.getMainLooper())`, `SpeechRecognizer recognizer`, `enum State { IDLE, STARTING, LISTENING, STOPPING }`, `volatile State state = IDLE`, `Runnable forceKillRunnable`, `boolean partialResultsEnabled`.
+- **메인 스레드 강제:** `createSpeechRecognizer`, `startListening`, `stopListening`, `cancel`, `destroy` 호출은 모두 `mainHandler.post(...)`로 감싼다. 스레드명을 매 진입점에서 로그.
+- **상태 잠금:** `start()` 진입 시 state ≠ IDLE 이면 내부적으로 `forceDestroy()` 실행 → `mainHandler.postDelayed`로 150ms 후 재확인 → 여전히 IDLE 아니면 `call.reject("busy")`. IDLE이면 STARTING으로 전환 후 새 인스턴스 생성.
+- **매 세션 새 인스턴스:** 재사용 금지. `onResults/onError/onEndOfSpeech` 등 종료 경로 모두 `destroyAndReset()` 호출 → `recognizer = null`, state = IDLE, "stopped" 이벤트.
+- **강제 타임아웃:** `stop()`에서 `cancel()` 발행 후 1200ms `forceKillRunnable` 예약. 정상 종료 콜백 도착 시 `mainHandler.removeCallbacks(forceKillRunnable)`. 타임아웃 만료 시 강제 `destroy()` + state=IDLE + "stopped" 이벤트.
+- **RecognitionListener:** `onReadyForSpeech`→listeningState:"started"·state=LISTENING. `onPartialResults`→`partialResults{matches}`. `onResults`→최종 partial 한 번 더 발행 후 destroyAndReset. `onError`→error 이벤트(코드+메시지 매핑: 1 network_timeout, 2 network, 3 audio, 4 server, 5 client_error, 6 speech_timeout, 7 no_match, 8 recognizer_busy, 9 insufficient_permissions) → destroyAndReset → "stopped" 이벤트(에러 이벤트 먼저, stopped 나중).
+- **메서드:**
+  - `available()` → `{ available: SpeechRecognizer.isRecognitionAvailable(context) }`
+  - `checkPermissions()` / `requestPermissions()` → Capacitor 표준 권한 API로 `microphone` alias 사용, `{ speechRecognition: "granted"|"denied"|"prompt" }` 형태로 매핑
+  - `start({ language, partialResults })` → 위 상태 가드 후 `RecognizerIntent.ACTION_RECOGNIZE_SPEECH` Intent 구성(`EXTRA_LANGUAGE`, `EXTRA_PARTIAL_RESULTS`, `EXTRA_LANGUAGE_MODEL=LANGUAGE_MODEL_FREE_FORM`)
+  - `stop()` → 위 취소 + 타임아웃 로직
+  - `addListener` / `removeAllListeners` (Capacitor 기본 지원)
+- **생명주기:** `handleOnDestroy()` 오버라이드 → recognizer 존재 시 `forceDestroy()`.
+- 로그 태그 `ScripicSTT`, 진입 시 `Thread.currentThread().getName()` 포함.
 
-### 3) `src/lib/aiClient.ts` — 클라이언트 스트림 계측 재정비
-기존 `[AI Client]` 로그를 유지하되 **연결 준비 상태** 와 **스트림 지속성** 관점 로그를 추가:
-- 진입 시 `window.__AI_PREWARM__` 스냅샷 로깅: `[AI Client] prewarm snapshot { startedAt, readyAt, wasReady, msSincePrewarmStart }` — "사전 워밍이 안 끝난 상태에서 대화로 넘어왔는가?"를 한 줄로 판별 가능.
-- `ensureFirebaseUser` → `httpsCallable` → `call.stream()` → 첫 chunk 사이 각 구간 시간 분리 로그:
-  - `phase=auth elapsed=<ms>`
-  - `phase=callable_setup elapsed=<ms>`
-  - `phase=stream_connect elapsed=<ms>` (call.stream() 반환까지)
-  - `phase=first_chunk elapsed=<ms>` (TTFB)
-- **inter-chunk gap 감시**: 이전 chunk 이후 500ms 이상 침묵이 발생하면 `[AI Client] ⚠ silence gap chunk#<n> gap=<ms>` 로그. → "단어가 뚝뚝 끊긴다"의 원인(네트워크 stall / 서버 stall)을 구분.
-- 종료 시 요약: `chunks=<> deltaChars=<> ttfbMs=<> streamMs=<> maxGapMs=<> avgGapMs=<>`.
-- `aiGenerateAlbum` 에도 동일하게 `phase=auth / callable / roundtrip / total` 4단계 계측.
+### 3. MainActivity 등록
+`android/app/src/main/java/app/lovable/aialbum/MainActivity.java`
+- `onCreate` 안 `registerPlugin(AppCheckPlugin.class);` 다음 줄에 `registerPlugin(ScripicSTTPlugin.class);` 추가. 그 외 코드는 유지.
 
-### 4) `functions/src/index.ts` — 서버 측 단계별 시간 로그 (chat, generateAlbum)
-콘솔(Cloud Functions 로그)에 남기지만, 클라이언트가 `requestId` 를 헤더/데이터로 함께 보내 상관관계를 맞출 수 있게 함.
-- 진입: `[chat] recv rid=<id> msgs=<> photos=<> photoBytes=<>`
-- 검증 완료: `[chat] validated rid=<id> elapsed=<ms>`
-- Gemini 스트림 시작 직전/직후:
-  - `[chat] gemini.connect rid=<id> …`
-  - `[chat] gemini.firstToken rid=<id> elapsed=<ms>` (TTFB from server view)
-  - `[chat] gemini.done rid=<id> streamMs=<ms> chunks=<> chars=<>`
-- 후처리(정규식/tail 주입) 소요: `[chat] postprocess rid=<id> elapsed=<ms> replaced=<bool>`
-- 종료: `[chat] done rid=<id> totalMs=<ms>`
-- 실패 경로: `GeminiUnavailableError` / `GeminiQuotaError` / 기타 각각 `[chat] fail rid=<id> kind=<> status=<> elapsed=<ms>`.
-- `generateAlbum` 도 동일 패턴(`[album] recv/gemini/postprocess/done/fail`).
+### 4. JS 플러그인 타입 정의
+**신규:** `src/plugins/scripic-stt.ts`
+- `registerPlugin<ScripicSTTPlugin>("ScripicSTT")` 익스포트.
+- 인터페이스: `available()`, `checkPermissions()`, `requestPermissions()`, `start(opts)`, `stop()`, `addListener("partialResults"|"listeningState"|"error", cb)`.
 
-### 5) `src/routes/chat.tsx` — 대화 진입 시점 로그
-`send()` 첫 호출 직전에:
-- `[Chat] first send prewarm { wasReady, msSincePrewarmStart, uid? }`
-- 첫 응답 수신까지 시간, 마지막 chunk 이후 완료까지 시간 요약 로그를 send() 종료 시 남김.
+### 5. nativeSTT.ts 전면 교체
+`src/lib/nativeSTT.ts`
+- `@capacitor-community/speech-recognition` import 제거 → `ScripicSTT` 사용.
+- Public API(`isNativePlatform`, `isNativeSTTAvailable`, `ensureSTTPermission`, `startNativeSTT`, `stopNativeSTT`) 시그니처 유지 → `chat.tsx` 무수정.
+- 유지: gen 관리, watchdog, `onCommit`, 빈 partial 무시, autoRestart, MAX_CONSECUTIVE_EMPTY_RESTARTS.
+- 변경: 재시작 딜레이 450ms → 300ms. `start()`가 `"busy"`로 reject되면 500ms 지연 후 1회 재시도(그래도 실패 시 onError+onEnd).
+- `error` 이벤트는 새 플러그인이 실제로 발동하므로 `try/catch` 방어 제거하고 정식 리스너로.
+- 로그 태그 `[STT-native]` 유지.
 
-## 상관관계용 requestId
-클라이언트에서 `crypto.randomUUID()` 로 `rid` 생성 → `aiChatStream`/`aiGenerateAlbum` 페이로드 필드로 전달 → 서버가 같은 rid로 로그 → 클라이언트/서버 로그를 rid로 조인 가능. (기존 필드에 optional로 추가, 서버는 그대로 통과.)
+### 6. 의존성 정리
+- `package.json`에서 `@capacitor-community/speech-recognition` 제거.
+- `android/capacitor.settings.gradle`의 해당 include 줄은 `cap sync` 시 자동 재생성되므로 수동 편집 불필요(다음 sync에서 정리됨).
+- 프로젝트 전역에서 `@capacitor-community/speech-recognition` import 잔재 grep 후 제거.
 
-## 판별표 (콘솔만 보고 원인 결론)
-| 증상 | 결정적 로그 |
-|---|---|
-| 대화 첫 응답이 지연 | `[AI Client] prewarm snapshot wasReady=false` + `phase=auth elapsed` 큼 → 사전 워밍 실패/미완료 |
-| 스트림 중간 단어 끊김 | `⚠ silence gap gap=<ms>`, 서버 로그 `gemini.firstToken` 정상인데 클라 gap 크면 네트워크/워커 스톨 |
-| 서버측 지연 | 서버 `gemini.firstToken elapsed` 크면 Gemini 업스트림 원인 확정 |
-| App Check 지연 | `[AppCheck] native.getToken elapsed` 큼 → Play Integrity 지연 |
-| 앨범 생성 지연 | `[album] gemini.done streamMs` vs `postprocess elapsed` 로 구분 |
+### 7. 검증
+- `tsgo` 타입체크로 컴파일 확인.
+- `chat.tsx`의 STT 호출부는 API 동일성 재확인만.
 
-## 비변경 사항
-- 비즈니스 로직, 프롬프트, 에러 처리 흐름, UI, 재시도 정책은 그대로.
-- `firestore` 규칙/함수 배포/의존성 추가 없음.
-- 서버 함수 변경은 로그 추가만이므로 재배포 시 부작용 없음.
+---
 
-## 파일
-- edit `src/routes/create.tsx` (prewarm 관측 지점 강화)
-- edit `src/integrations/firebase/client.ts` (App Check 토큰 계측)
-- edit `src/lib/aiClient.ts` (phase / TTFB / silence-gap / summary 로그, rid 전달)
-- edit `src/routes/chat.tsx` (대화 진입 시 prewarm 상태 로그)
-- edit `functions/src/index.ts` (chat / generateAlbum 단계별 rid 로그)
+## 변경/생성 파일 목록
+- **신규** `android/app/src/main/java/app/lovable/aialbum/ScripicSTTPlugin.java`
+- **신규** `src/plugins/scripic-stt.ts`
+- **수정** `android/app/src/main/java/app/lovable/aialbum/MainActivity.java` (registerPlugin 1줄 추가)
+- **수정** `src/lib/nativeSTT.ts` (플러그인 교체, 재시작 딜레이/busy 재시도 조정)
+- **수정** `package.json` (의존성 1줄 제거)
+
+## 손대지 않는 것
+- `src/routes/chat.tsx` (API 동일)
+- 웹/iOS 경로 (`webkitSpeechRecognition`)
+- AndroidManifest (이미 요건 충족)
+- 기타 라우트·프롬프트·서버 로직
