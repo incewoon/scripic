@@ -352,7 +352,7 @@ public class ScripicSTTPlugin extends Plugin {
             ArrayList<String> matches = partialResults != null
                     ? partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     : null;
-            Log.d(TAG, "onPartialResults ts=" + now + " len=" + (matches != null ? matches.size()
+            Log.d(TAG, "onPartialResults ts=" + now + " len=" + (matches != null ? matches.size() : 0));
             emitPartial(matches);
         }
 
