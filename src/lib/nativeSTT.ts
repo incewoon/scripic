@@ -345,10 +345,15 @@ export async function startNativeSTT(
       console.warn(`${TAG} error event`, data);
       const code = data?.code;
       const msg = data?.message ?? String(code);
-      const fatal =
-        msg === "insufficient_permissions" ||
-        msg === "client_error" ||
-        msg === "audio";
+    
+      // ★ 사용자가 stopNativeSTT()로 의도적으로 멈춘 경우 (cancel()로 인한 client_error 등)
+      //    에러로 간주하지 않고 무시 (토스트 방지 핵심)
+      if (userRequestedStop) {
+        console.log(`${TAG} error suppressed (userRequestedStop=true)`, { msg, code });
+        return;
+      }
+    
+      const fatal = msg === "insufficient_permissions"; // client_error, audio는 제외
       lastErrorWasFatal = fatal;
       try {
         h.onError?.({ code, message: msg, fatal });
@@ -356,7 +361,6 @@ export async function startNativeSTT(
         /* noop */
       }
       if (fatal) userRequestedStop = true;
-      // "stopped" listener will drive handleSessionEnd afterwards.
     });
 
     console.log(`${TAG} listeners attached`, {
