@@ -75,29 +75,71 @@ export function getFirebase() {
 
     if (nativeBridge?.getToken) {
       console.log("[AppCheck] init provider=native");
+    
+      // 토큰 캐시 (메모리)
+      let cachedToken: { token: string; expireTimeMillis: number } | null = null;
+      let inflight: Promise<{ token: string; expireTimeMillis: number }> | null = null;
+    
       _appCheck = initializeAppCheck(_app, {
         provider: new CustomProvider({
           getToken: async () => {
-            const t0 = performance.now();
-            console.log("[AppCheck] native.getToken start");
-            try {
-              const t = await nativeBridge.getToken();
-              const elapsed = Math.round(performance.now() - t0);
-              console.log("[AppCheck] native.getToken ok", {
-                elapsedMs: elapsed,
-                tokenLen: t?.token?.length,
-                expireInMs: t?.expireTimeMillis ? t.expireTimeMillis - Date.now() : null,
-              });
-              return { token: t.token, expireTimeMillis: t.expireTimeMillis };
-            } catch (e: any) {
-              const elapsed = Math.round(performance.now() - t0);
-              console.error("[AppCheck] native.getToken failed", {
-                elapsedMs: elapsed,
-                code: e?.code,
-                message: e?.message,
-              });
-              throw e;
+            const now = Date.now();
+    
+            // 1. 캐시가 있고 만료 5분 이상 남았으면 캐시 반환 (네이티브 호출 없음)
+            if (cachedToken && cachedToken.expireTimeMillis - now > 5 * 60 * 1000) {
+              return {
+                token: cachedToken.token,
+                expireTimeMillis: cachedToken.expireTimeMillis,
+              };
             }
+    
+            // 2. 이미 네이티브 호출 중이면 같은 Promise 재사용 (동시 호출 방지)
+            if (inflight) {
+              return inflight;
+            }
+    
+            // 3. 실제 네이티브 호출
+            const t0 = performance.now();
+            console.log("[AppCheck] native.getToken start (cache miss)");
+    
+            inflight = (async () => {
+              try {
+                const t = await nativeBridge.getToken();
+                const elapsed = Math.round(performance.now() - t0);
+    
+                // 방어 코드: expireTimeMillis가 이상하면 1시간으로 강제 설정
+                let expire = Number(t?.expireTimeMillis);
+                if (!Number.isFinite(expire) || expire <= Date.now()) {
+                  expire = Date.now() + 60 * 60 * 1000; // 1시간 폴백
+                  console.warn("[AppCheck] invalid expireTimeMillis from native, using 1h fallback");
+                }
+    
+                cachedToken = {
+                  token: t.token,
+                  expireTimeMillis: expire,
+                };
+    
+                console.log("[AppCheck] native.getToken ok", {
+                  elapsedMs: elapsed,
+                  tokenLen: t?.token?.length,
+                  expireInMs: expire - Date.now(),
+                });
+    
+                return cachedToken;
+              } catch (e: any) {
+                const elapsed = Math.round(performance.now() - t0);
+                console.error("[AppCheck] native.getToken failed", {
+                  elapsedMs: elapsed,
+                  code: e?.code,
+                  message: e?.message,
+                });
+                throw e;
+              } finally {
+                inflight = null;
+              }
+            })();
+    
+            return inflight;
           },
         }),
         isTokenAutoRefreshEnabled: true,
