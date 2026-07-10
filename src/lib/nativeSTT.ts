@@ -1,3 +1,5 @@
+// src/lib/nativSTT.ts
+
 // Native Speech-to-Text wrapper (Android, custom plugin).
 //
 // The web app keeps using window.webkitSpeechRecognition; this module is only
