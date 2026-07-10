@@ -219,17 +219,17 @@ async function handleSessionEnd(
   lastPartialText = "";
   partialCount = 0;
   state = "starting";
-  console.log(`${TAG} restart attempt`, { consecutiveEmptyRestarts });
+  console.log(`${TAG} restart attempt`, { consecutiveEmptyRestarts, ts: Date.now() });
 
   await new Promise((r) => setTimeout(r, RESTART_DELAY_MS));
 
-  const doStart = () =>
-    ScripicSTT.start({ language: currentLang, partialResults: true });
+  const doStart = () => ScripicSTT.start({ language: currentLang, partialResults: true });
 
   try {
+    const restartStartTs = Date.now();
     await doStart();
     if (gen !== currentGen) return;
-    console.log(`${TAG} plugin.start OK (restart)`);
+    console.log(`${TAG} plugin.start OK (restart)`, { elapsedMs: Date.now() - restartStartTs });
     armWatchdog(gen);
     armSilenceTimer(gen);
   } catch (err: any) {
@@ -313,7 +313,7 @@ export async function startNativeSTT(
       lastPartialText = m;
       partialCount++;
       if (partialCount <= 3 || partialCount % 10 === 0) {
-        console.log(`${TAG} partial#${partialCount}`, {
+        console.log(`${TAG} [${Date.now()}] partial#${partialCount}`, {
           len: m.length,
           text: m.length > 40 ? m.slice(0, 40) + "…" : m,
         });
@@ -342,7 +342,7 @@ export async function startNativeSTT(
 
     errorHandle = await ScripicSTT.addListener("error", (data) => {
       if (gen !== currentGen) return;
-      console.warn(`${TAG} error event`, data);
+      console.warn(`${TAG} [${Date.now()}] error event`, { data, userRequestedStop });
       const code = data?.code;
       const msg = data?.message ?? String(code);
     
@@ -377,9 +377,10 @@ export async function startNativeSTT(
   }
 
   try {
+    const startTs = Date.now();
     await ScripicSTT.start({ language: lang, partialResults: true });
     if (gen !== currentGen) return;
-    console.log(`${TAG} [START] plugin.start OK`, { gen });
+    console.log(`${TAG} [START] plugin.start OK`, { gen, elapsedMs: Date.now() - startTs });
     armWatchdog(gen);
     armSilenceTimer(gen);
   } catch (err: any) {
