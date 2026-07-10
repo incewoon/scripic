@@ -516,9 +516,20 @@ function Chat() {
   async function onSend() {
     const v = input.trim();
     if (!v || busy) return;
+  
+    // ★ 네이티브 STT 세션 강제 종료 (가장 중요)
+    if (listening) {
+      recGenRef.current++;           // gen 무효화
+      if (isNativePlatform()) {
+        await stopNativeSTT().catch(() => {});
+      } else {
+        try { recognitionRef.current?.stop(); } catch {}
+      }
+      setListening(false);
+    }
+  
     inputRef.current?.blur();
     setInput("");
-    // Typing a new message clears any incomplete-response banner.
     setIncomplete(null);
     await send(v);
   }
