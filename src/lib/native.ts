@@ -1,3 +1,5 @@
+//src/lib/native.ts
+
 // JS bridge for native shell (Median.co / Despia / Capacitor wrapper).
 // In a plain browser these are no-ops or graceful fallbacks.
 // When wrapped in a native APK, the shell injects real implementations.
