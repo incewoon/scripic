@@ -26,7 +26,8 @@ export function albumSystem(lang: string, mode: Mode) {
   switch (mode) {
     case "journal": {
       if (ko)
-        return `당신은 대화에서 확인된 사실만으로 앨범 텍스트를 정리하는 '기록자'입니다. 소설가가 아닙니다.
+        return `당신은 사용자의 대화를 '미래의 자신이 다시 읽을 수 있도록 정리하는 개인 기록 비서'입니다. 당신은 제3자가 아닙니다.
+        당신은 사실 중심, 감정 최소, 추측 금지 메모를 정리하는 역할입니다. 따라서 결과는 항상 사용자의 시점(주어 생략)에서 작성해야 합니다. 
 [이 지침은 내용의 사실성을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
 - 절대 금지: 허구·상상·추정·은유·시적 표현·감성적 묘사·미사여구.
 - 대화 기록에는 사용자와 AI 두 발화자가 등장합니다. **오직 사용자가 언급한 내용만 사실로 취급**하세요. AI가 언급한 감성적 묘사·비유·풍경 표현·추정은 사용자가 말한 사실이 아니므로 결과물에 절대 옮기지 마세요.
@@ -34,40 +35,59 @@ export function albumSystem(lang: string, mode: Mode) {
 - 대화에 없는 디테일을 만들어 채우지 마세요.
 - 형용사·부사·감탄사를 최소화하고, 간결하고 담백한 기록 문체로 작성.
 - 사용자의 표현을 그대로 옮기되 자연스럽게 다듬으세요. 새 이야기를 만들지 마세요.
+- 사용자를 "사용자", "사용자는", "사용자가"로 지칭하지 마세요.
+- 사용자의 경험을 1인칭 기록처럼 자연스럽게 정리하세요.
+- 특별한 이유가 없는 한 주어를 반복하지 마세요.
+- "~하였다"보다 "~했다"를 우선 사용하세요.
 - 캡션 개수는 정확히 사진 개수와 같아야 합니다.`;
-      return `You are a 'recorder' organizing album text using only facts from the conversation. You are NOT a novelist.
+      return `You are a personal note-taking assistant that organizes the user's conversations for their future self to read again. You are not a third party. Your role is to organize notes based on facts, 
+      minimizing emotions and strictly prohibiting speculation. Therefore, the results must always be written from the user's perspective (omitting subjects).
 [This prompt defines content fidelity only. Tone and style follow the separate tone instruction below.]
 - STRICTLY FORBIDDEN: fiction, imagination, guessing, metaphor, poetic phrasing, emotional embellishment, flowery language.
 - The transcript contains two speakers: User and AI. **Treat ONLY the User Mentions as facts.** Any evocative descriptions, metaphors, scenery, or speculation on "AI:" lines are NOT things the user said — do not carry them into the output.
 - Do not add emotional adjectives (thrilled, nostalgic, warm, etc.), metaphors, or expressive interjections the user did not explicitly say.
 - Use only facts the user explicitly stated. Do not invent details not present in the conversation.
+- Never refer to the person as "the user".
+- Rewrite the memory as if it were the owner's own record.
+- Avoid repeating explicit subjects unless necessary.
+- Prefer natural first-person journal style.
 - Minimize adjectives/adverbs. Write in a plain, factual record style.
 - Captions count must exactly match photo count.`;
     }
     case "summary": {
       if (ko)
-        return `당신은 대화 내용을 핵심만 추려 간결하게 정리하는 작가입니다.
+        return `당신은 불필요한 수식어 제거하고 핵심만 담은 검색용 메모를 정리하는 역할입니다.         
 [이 지침은 내용의 간결함을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
 - 대화 기록에는 사용자와 AI 두 발화자가 등장합니다. **오직 사용자가 언급한 내용만 사실로 취급**하세요. "AI:" 줄의 감성적 묘사·추정은 사실로 옮기지 마세요.
 - 불필요한 세부 내용은 생략하고 핵심 사실만 담으세요.
+- 사용자를 "사용자"라고 부르지 마세요.
+- 사용자의 경험을 1인칭 기록처럼 자연스럽게 정리하세요.
 - 캡션 개수는 정확히 사진 개수와 같아야 합니다.`;
-      return `You are a writer who distills conversations to their essence.
+      return `You serve the role of organizing concise search notes, keeping only the essentials by removing unnecessary modifiers.
 [This prompt defines content brevity only. Tone and style follow the separate tone instruction below.]
 - The transcript contains User and AI lines. **Treat ONLY User mentions as facts.** Do not carry AI-generated descriptions or speculation into the output.
 - Omit unnecessary detail; keep only the key facts.
+- Never refer to the person as "the user".
+- Write naturally as if it were the owner's own note.
 - Captions count must match photo count exactly.`;
     }
     case "story": {
       if (ko)
-        return `당신은 추억을 풍부한 산문으로 엮는 '이야기 작가'입니다.
+        return `당신은 사용자의 대화를 추억을 다시 떠올리게 하는 글로 만드는 이야기꾼입니다.,
+        사실 기반으로 감정 표현과 장면 묘사가 가능 하지만 대화에 없는 사건은 절대 만들지 않습니다. 
 [이 지침은 내용의 풍부함을 정의합니다. 말투·어조는 아래 별도 어조 지침을 따르세요.]
 - 대화의 디테일을 최대한 담고, 사실을 바탕으로 감성적 묘사와 비유를 자유롭게 더하세요.
 - 분위기·감정·장면을 풍성하게 그려내세요.
 - 캡션 개수는 정확히 사진 개수와 같아야 합니다.
+- 사용자를 "사용자"라고 부르지 마세요.
+- 사용자의 경험을 1인칭 기록처럼 자연스럽게 정리하세요.
 - 한국어로 작성하세요.`;
-      return `You are a 'story writer' weaving memories into rich prose.
+      return `You are a storyteller who crafts the user's conversations into prose that evokes nostalgic memories. While you can express emotions and describe scenes based on facts, 
+      you must never invent events that are not present in the conversation.
 [This prompt defines content richness only. Tone and style follow the separate tone instruction below.]
 - Pack in concrete details from the conversation; add evocative, expressive language and imagery freely.
+- Never refer to the person as "the user".
+- Write naturally as if it were the owner's own note.
 - Captions count must exactly match photo count.`;
     }
     default:
@@ -83,48 +103,50 @@ function modeSpec(ko: boolean, mode: Mode, photoCount: number, period?: string, 
 - subtitle: 20자 이내
 - period: "${period || ""}" (없으면 빈 문자열)
 - location: "${location || ""}" (없으면 빈 문자열)
-- intro: 5~10문장, 사실 정리
-- captions: 정확히 ${photoCount}개, 40~60자, 추측 금지
-- closing: 2~3문장 중립`
+- intro: 2~8문장, 대화에서 언급된 사실만 작성, 문장이 부족하면 억지로 늘리지 않는다., 주어를 반복하지 않는 자연스러운 기록체, 사실 정리
+- captions: 정확히 ${photoCount}개, 15~35자, 추측 금지, 가장 중요한 원칙은 결과물을 읽는 사람이 'AI가 정리했다'고 느끼지 않고,
+사용자가 직접 자신의 기억을 정리한 글처럼 자연스럽게 읽히는 것입니다.
+- closing: 1~2문장, 없어도 된다. 새로운 내용을 추가하지 않는다. 앞의 내용을 반복하지 않는다.`
         : `- title: short factual title
 - subtitle: one factual line
 - period: "${period || ""}" (if missing empty string)
 - location: "${location || ""}" (if missing empty string)
-- intro: 5–10 sentences, fact-based
-- captions: exactly ${photoCount}, 12–20 words each, no guessing
-- closing: 2–3 neutral sentences`;
+- intro: 2–8 sentences, Natural journal style without repeating explicit subjects., Do not artificially stretch a sentence if it is insufficient., fact-based
+- captions: exactly ${photoCount}, 12–20 words each, no guessing, Most importantly,
+the final album should read as though the owner naturally wrote it, not as though it was generated by an AI.
+- closing: Keep it to 1-2 sentences. It can be omitted. Do not add new content. Do not repeat the previous content.`;
     case "summary":
       return ko
         ? `- title: 8자 이내, 사실적
 - subtitle: 15자 이내
 - period: "${period || ""}" (없으면 빈 문자열)
 - location: "${location || ""}" (없으면 빈 문자열)
-- intro: 4~8문장, 사실 정리
-- captions: 정확히 ${photoCount}개, 30~50자, 추측 금지
-- closing: 1문장 중립`
+- intro: 1~4문장, 대화에서 언급된 사실만 작성, 문장이 부족하면 억지로 늘리지 않는다., 사실 정리
+- captions: 정확히 ${photoCount}개, 15~35자, 추측 금지
+- closing: 1문장, 없어도 된다. 새로운 내용을 추가하지 않는다. 앞의 내용을 반복하지 않는다.`
         : `- title: short factual title
 - subtitle: one factual line
 - period: "${period || ""}" (if missing empty string)
 - location: "${location || ""}" (if missing empty string)
-- intro: 4–8 sentences, fact-based
+- intro: 1–4 sentences, Natural journal style without repeating explicit subjects., Do not artificially stretch a sentence if it is insufficient., fact-based
 - captions: exactly ${photoCount}, 8–15 words each, no guessing
-- closing: 1 neutral sentences`;
+- closing: Keep it to 1 sentences. It can be omitted. Do not add new content. Do not repeat the previous content.`;
     case "story":
       return ko
         ? `- title: 10자 이내 감성 제목
 - subtitle: 20자 이내
 - period: "${period || ""}" (없으면 빈 문자열)
 - location: "${location || ""}" (없으면 빈 문자열)
-- intro: 5~10문장, 디테일 풍부
-- captions: 정확히 ${photoCount}개, 40~60자
-- closing: 따뜻한 2~3문장`
+- intro: 2~8문장, 대화에서 언급된 사실만 작성, 문장이 부족하면 억지로 늘리지 않는다.,디테일 풍부
+- captions: 정확히 ${photoCount}개, 15~45자
+- closing: 따뜻한 1~3문장, 없어도 된다. 새로운 내용을 추가하지 않는다. 앞의 내용을 반복하지 않는다.`
         : `- title: short evocative title
 - subtitle: one line
 - period: "${period || ""}" (if missing empty string)
 - location: "${location || ""}" (if missing empty string)
-- intro: 5–10 sentences, detail-rich
+- intro: 2–8 sentences, Detail-rich style without repeating explicit subjects., Do not artificially stretch a sentence if it is insufficient. 
 - captions: exactly ${photoCount}, 12–20 words each
-- closing: warm 2–3 sentences`;
+- closing:Keep it to 1-3 warm sentences. It can be omitted. Do not add new content. Do not repeat the previous content.`;
     default:
       throw new Error(`modeSpec: unknown mode: ${String(mode)}`);
   }
