@@ -60,11 +60,16 @@ function looksIncomplete(text: string): boolean {
 }
 
 function TypingDots() {
+  const dot = (delay: string) => (
+    <span className={`inline-flex items-center justify-center h-3 w-1 animate-bounce ${delay}`}>
+      <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+    </span>
+  );
   return (
     <div className="flex items-center gap-1" aria-label="Typing" role="status">
-      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce delay-75" />
-      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce delay-150" />
-      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce delay-200" />
+      {dot("delay-75")}
+      {dot("delay-150")}
+      {dot("delay-200")}
     </div>
   );
 }
