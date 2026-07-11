@@ -10,6 +10,8 @@ import { ReviewRewardDialog } from "@/components/ReviewRewardDialog";
 import { HomeUsageCoachmark, shouldShowHomeCoach } from "@/components/HomeUsageCoachmark";
 import { Hl, tokenize } from "@/lib/highlight";
 import { useOnlineStatus, requireOnline } from "@/lib/network";
+import { checkBackupReminder } from "@/lib/backupReminder";
+import { toast } from "sonner";
 
 const SORT_KEY = "moara_album_sort_v1";
 const SORT_DIR_KEY = "moara_album_sort_dir_v1";
@@ -169,7 +171,11 @@ function Home() {
     let cancelled = false;
     const reload = () => {
       getAlbums().then((list) => {
-        if (!cancelled) setAlbums(list);
+        if (cancelled) return;
+        setAlbums(list);
+        if (checkBackupReminder(list.length)) {
+          toast(t.backupReminder);
+        }
       });
     };
     reload();
