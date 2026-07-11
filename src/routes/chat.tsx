@@ -59,6 +59,16 @@ function looksIncomplete(text: string): boolean {
   return clean.length === 0;
 }
 
+function TypingDots() {
+  return (
+    <div className="flex items-center gap-1" aria-label="Typing" role="status">
+      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce delay-75" />
+      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce delay-150" />
+      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce delay-200" />
+    </div>
+  );
+}
+
 const AFFIRMATIVE_EN =
   /\b(yes|yeah|yep|yup|sure|ok|okay|sounds good|let'?s|go ahead|finish|done|wrap|that'?s (it|all)|i'?m done)\b/i;
 const AFFIRMATIVE_KO =
@@ -987,13 +997,19 @@ function Chat() {
                     : "glass text-foreground rounded-bl-sm border border-border/50"
                 }`}
               >
-                {sanitizeForDisplay(m.content || "...") || "..."}
+                {m.role === "assistant" && sanitizeForDisplay(m.content) === "" ? (
+                  <TypingDots />
+                ) : (
+                  sanitizeForDisplay(m.content)
+                )}
               </div>
             </div>
           ))}
         {busy && messages[messages.length - 1]?.role === "user" && (
           <div className="flex justify-start">
-            <div className="glass px-4 py-2.5 rounded-2xl text-sm border border-border/50">...</div>
+            <div className="glass px-4 py-2.5 rounded-2xl text-sm border border-border/50">
+              <TypingDots />
+            </div>
           </div>
         )}
         {incomplete && !busy && (
