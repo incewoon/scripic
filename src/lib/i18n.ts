@@ -146,6 +146,7 @@ const dict = {
     backupDone: (n: number) => `Restored ${n} album${n === 1 ? "" : "s"}`,
     backupExporting: "Preparing backup…",
     backupRestoring: "Restoring…",
+    backupReminder: "Your library keeps growing. Create a backup in Settings to keep it safe.",
     backupInfoDeviceTitle: "Device-only storage",
     backupInfoDeviceBody:
       "Backup files are saved only to your device. For privacy and security, cloud backup isn't supported.",
@@ -423,6 +424,7 @@ const dict = {
     backupDone: (n: number) => `${n}개의 앨범을 복원했어요`,
     backupExporting: "백업 파일을 준비하는 중…",
     backupRestoring: "복원하는 중…",
+    backupReminder: "앨범이 늘어나고 있어요. 안전하게 보관하려면 설정에서 백업을 만들어두세요.",
     backupInfoDeviceTitle: "기기 저장만 지원",
     backupInfoDeviceBody:
       "백업 파일은 사용자 기기에만 저장돼요. 보안과 개인정보 보호를 위해 클라우드 백업은 지원하지 않아요.",
