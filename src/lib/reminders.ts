@@ -1,3 +1,5 @@
+// src/lib/reminders.ts
+
 // Reminder logic: decide when to nudge the user to weave a new album,
 // then ask the native shell (or browser) to actually show the notification.
 //
