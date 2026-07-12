@@ -351,6 +351,39 @@ function SettingsPage() {
         onSubmit={submitPin}
       />
 
+      {/* Memory reminders */}
+      <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--gradient-warm)" }}>
+            <Bell size={18} className="text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-display text-[17px] warm-text leading-tight">{t.notifSectionTitle}</h2>
+            <p className="text-[12px] warm-muted mt-1 leading-relaxed">{t.notifSectionDesc}</p>
+          </div>
+        </div>
+        <label className="flex items-center justify-between gap-3 rounded-2xl bg-background/60 border border-border/60 px-4 py-3">
+          <span className="text-[13px] warm-text">{t.notifToggleLabel}</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={remindersOn}
+            disabled={remindersBusy}
+            onClick={() => onToggleReminders(!remindersOn)}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-60 ${
+              remindersOn ? "bg-primary" : "bg-muted"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                remindersOn ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </label>
+      </section>
+
+
       <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">
         <div className="flex items-start gap-3 mb-3">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--gradient-warm)" }}>
