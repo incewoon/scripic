@@ -38,11 +38,12 @@
                 <span class="px-3 py-1 bg-zinc-200 text-zinc-600 text-xs font-semibold rounded-full">ENGLISH</span>
                 <h2 class="text-3xl font-bold tracking-tighter">Privacy Policy</h2>
             </div>
-            <p class="text-sm text-zinc-500 mb-8">Last updated: June 25, 2026</p>
+            <p class="text-sm text-zinc-500 mb-8">Last updated: July 12, 2026</p>
 
             <div class="bg-zinc-100 border border-zinc-200 rounded-3xl p-6 mb-8 text-sm">
                 This app sends photos to <strong>Google Gemini API</strong> for AI analysis.<br>
-                Analysis results are stored <strong>only on the user's device</strong>.
+                Analysis results are stored <strong>only on the user's device</strong>.<br>
+                The app may access your device's camera roll in the background (with permission) solely to notify you when new photos accumulate.
             </div>
 
             <div class="space-y-6 text-sm">
@@ -55,6 +56,7 @@
                         <div>• <strong>Location</strong> (when the user adds a place to an album) — GPS coordinates and place name are collected to record the location of memories.</div>
                         <div>• <strong>Perceptual Hash of review screenshots</strong> (256-bit numeric fingerprint) – stored permanently on the server to prevent duplicate SNS review submissions.</div>
                         <div>• AI-generated summaries and comments (stored locally on device).</div>
+                        <div>• <strong>Background Camera Roll Access</strong> — The app periodically checks (using Android WorkManager in the background) the number of newly added photos in your device's camera roll since the last check. This is used solely to determine whether to show a local notification suggesting you create a new story. <strong>No actual photo content is read or transmitted</strong> outside the device. The count result is discarded immediately after the check.</div>
                     </div>
                 </div>
 
@@ -66,6 +68,7 @@
                         <div>• <strong>Device ID</strong>: Managing daily creation limits (1 album per day, +1 with SNS review verification) and preventing abuse.</div>
                         <div>• <strong>Location</strong>: Allowing users to attach location information to albums they create.</div>
                         <div>• <strong>Perceptual Hash</strong>: Preventing repeated use of the same review screenshot.</div>
+                        <div>• <strong>Background Photo Count Check</strong>: Detecting when 3 or more new photos have been added to the device’s camera roll while the app is closed, in order to send a local notification encouraging users to record new memories.</div>
                     </div>
                 </div>
 
@@ -77,6 +80,7 @@
                         <div>Photos are <strong>not stored</strong> on Scripic's servers.</div>
                         <div>Gemini processes images only for the request and deletes them after analysis. Images are not used for model training under Google's paid Gemini API policy.</div>
                         <div class="pt-1"><strong>For SNS review screenshots:</strong> the image is processed in server memory only and is not stored. Only a 256-bit perceptual hash (numeric fingerprint) is permanently stored to prevent duplicate submissions.</div>
+                        <div class="pt-1"><strong>Background camera roll checks:</strong> Only the count of new photos is determined locally on the device. No photo content is accessed or sent to any server.</div>
                     </div>
                 </div>
 
@@ -88,6 +92,7 @@
                         <div>• Location information attached to albums is retained as long as the album exists (until the user deletes the album).</div>
                         <div>• Perceptual hashes of review images are retained permanently for duplicate prevention purposes.</div>
                         <div>• Photos and conversation data are not stored on Scripic's servers.</div>
+                        <div>• Background photo count results are discarded immediately after each check and are not retained.</div>
                     </div>
                 </div>
 
@@ -105,7 +110,7 @@
                             Processor: Google LLC — Purpose: Storage and management of Device ID, location data attached to albums, daily usage limits, and review image perceptual hashes.<br>
                             <a href="https://firebase.google.com/support/privacy" class="text-amber-600 underline" target="_blank">Firebase Privacy Policy</a>
                         </div>
-                        <div>No personal information other than Device ID, location data, and perceptual hashes is shared with any third party.</div>
+                        <div>No personal information other than Device ID, location data, and perceptual hashes is shared with any third party. Background camera roll count checks are performed entirely on the device and are never transmitted.</div>
                     </div>
                 </div>
 
@@ -126,20 +131,20 @@
             </div>
         </div>
 
-        <!-- 구분선 -->
         <div class="border-t my-10"></div>
 
         <!-- 한국어 버전 -->
         <div>
             <div class="flex items-center gap-x-2 mb-6">
-                <span class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">한국어</span>
-                <h1 class="text-3xl font-bold tracking-tighter">개인정보처리방침</h1>
+                <span class="px-3 py-1 bg-zinc-200 text-zinc-600 text-xs font-semibold rounded-full">한국어</span>
+                <h2 class="text-3xl font-bold tracking-tighter">개인정보 처리방침</h2>
             </div>
-            <p class="text-sm text-zinc-500 mb-8">최종 수정일: 2026년 6월 25일</p>
+            <p class="text-sm text-zinc-500 mb-8">최종 수정일: 2026년 7월 12일</p>
 
             <div class="bg-zinc-100 border border-zinc-200 rounded-3xl p-6 mb-8 text-sm">
-                본 앱은 사진 분석을 위해 <strong>Google Gemini API</strong>를 사용합니다.<br>
-                분석 결과는 <strong>사용자 기기에만 저장</strong>됩니다.
+                본 앱은 AI 분석을 위해 사진을 <strong>Google Gemini API</strong>로 전송합니다.<br>
+                분석 결과는 <strong>사용자 기기에만 저장</strong>됩니다.<br>
+                앱은 사용자의 동의 하에 기기 종료 상태에서도 카메라 롤에 새 사진이 쌓였는지 확인하여 알림을 보낼 수 있습니다.
             </div>
 
             <div class="space-y-6 text-sm">
@@ -148,10 +153,11 @@
                     <h3 class="font-bold mb-3">1. 수집하는 개인정보</h3>
                     <div class="text-zinc-600 space-y-2">
                         <div>• 사용자가 업로드한 <strong>사진</strong> — 서버 메모리에서만 처리되며 저장되지 않습니다.</div>
-                        <div>• <strong>기기 식별자(Device ID)</strong> — 하루 1회 앨범 생성 제한 관리를 위해 자동 생성되는 UUID를 수집합니다.</div>
-                        <div>• <strong>위치 정보</strong> — 사용자가 앨범에 장소를 추가할 때 GPS 좌표 및 장소명을 수집합니다.</div>
-                        <div>• 리뷰 스크린샷의 <strong>지각 해시(Perceptual Hash)</strong> — 중복 제출 방지를 위해 서버에 영구 저장됩니다.</div>
-                        <div>• AI가 생성한 요약 및 코멘트 — 사용자 기기에만 저장됩니다.</div>
+                        <div>• <strong>기기 ID</strong> (기기에 저장되는 자동 생성 UUID) — 일일 앨범 생성 제한 관리에 사용됩니다.</div>
+                        <div>• <strong>위치 정보</strong> (사용자가 앨범에 장소를 추가할 때) — 기억의 장소를 기록하기 위해 수집됩니다.</div>
+                        <div>• <strong>리뷰 스크린샷의 지각 해시</strong> (256비트 숫자 지문) — 중복 제출 방지를 위해 서버에 영구 저장됩니다.</div>
+                        <div>• AI가 생성한 요약 및 코멘트 (기기에만 저장).</div>
+                        <div>• <strong>백그라운드 카메라 롤 접근</strong> — 앱이 종료된 상태에서도 Android WorkManager를 통해 기기의 카메라 롤에 새로 추가된 사진의 개수를 주기적으로 확인합니다. 이는 새로운 사진이 3장 이상 쌓였을 때 로컬 알림을 보내기 위한 목적으로만 사용되며, <strong>실제 사진 내용은 읽거나 외부로 전송되지 않습니다</strong>. 확인 결과는 알림 표시 여부 결정 후 즉시 폐기됩니다.</div>
                     </div>
                 </div>
 
@@ -159,10 +165,11 @@
                 <div class="bg-white rounded-3xl border p-7">
                     <h3 class="font-bold mb-3">2. 수집 및 이용 목적</h3>
                     <div class="text-zinc-600 space-y-1">
-                        <div>• AI를 활용한 사진 분석 및 스마트 앨범 자동 생성</div>
-                        <div>• <strong>기기 식별자</strong>: 하루 1회 앨범 생성 제한 관리 및 부정 이용 방지</div>
-                        <div>• <strong>위치 정보</strong>: 사용자가 생성한 앨범에 장소 정보를 첨부할 수 있도록 하기 위함</div>
-                        <div>• <strong>지각 해시</strong>: 동일한 리뷰 스크린샷의 중복 제출 방지</div>
+                        <div>• AI 사진 분석 및 스마트 앨범 생성</div>
+                        <div>• <strong>기기 ID</strong>: 일일 생성 제한 관리(하루 1개 앨범, SNS 리뷰 인증 시 +1) 및 악용 방지</div>
+                        <div>• <strong>위치 정보</strong>: 사용자가 생성한 앨범에 장소 정보를 첨부할 수 있도록 함</div>
+                        <div>• <strong>지각 해시</strong>: 동일한 리뷰 스크린샷의 반복 사용 방지</div>
+                        <div>• <strong>백그라운드 사진 개수 확인</strong>: 앱이 실행되지 않은 상태에서 기기에 새 사진이 3장 이상 추가되었는지 감지하여, 새로운 이야기를 기록할 수 있도록 로컬 알림을 제공하기 위함</div>
                     </div>
                 </div>
 
@@ -173,6 +180,8 @@
                         <div>업로드된 사진은 기기에서 base64로 변환된 후 Firebase Cloud Function을 통해 Google Gemini API로 전송됩니다(메모리에서만 처리).</div>
                         <div>사진은 <strong>Scripic 서버에 저장되지 않습니다</strong>.</div>
                         <div>Gemini는 요청에 대해서만 이미지를 처리하며, 분석 후 삭제합니다. Google의 유료 Gemini API 정책에 따라 모델 학습에 사용되지 않습니다.</div>
+                        <div class="pt-1"><strong>SNS 리뷰 스크린샷의 경우:</strong> 이미지는 서버 메모리에서만 처리되며 저장되지 않습니다. 중복 제출 방지를 위해 256비트 지각 해시(숫자 지문)만 영구 저장됩니다.</div>
+                        <div class="pt-1"><strong>백그라운드 카메라 롤 확인의 경우:</strong> 새 사진의 개수만 기기 내부에서 확인하며, 실제 사진 내용은 읽거나 서버로 전송되지 않습니다.</div>
                     </div>
                 </div>
 
@@ -180,10 +189,11 @@
                 <div class="bg-white rounded-3xl border p-7">
                     <h3 class="font-bold mb-3">4. 보관 기간</h3>
                     <div class="text-zinc-600 space-y-1">
-                        <div>• 기기 식별자는 앱 삭제 또는 제한 관리 목적이 종료될 때까지 보관됩니다.</div>
-                        <div>• 앨범에 첨부된 <strong>위치 정보</strong>는 사용자가 앨범을 삭제할 때까지 보관됩니다.</div>
+                        <div>• 기기 ID는 사용자가 앱을 삭제하거나 제한 관리 목적이 종료될 때까지 보관됩니다.</div>
+                        <div>• 앨범에 첨부된 위치 정보는 앨범이 존재하는 동안 보관됩니다(사용자가 앨범을 삭제할 때까지).</div>
                         <div>• 리뷰 이미지의 지각 해시는 중복 방지 목적으로 영구 보관됩니다.</div>
                         <div>• 사진과 대화 데이터는 Scripic 서버에 저장되지 않습니다.</div>
+                        <div>• 백그라운드 사진 개수 확인 결과는 매번 확인 후 즉시 폐기되며 보관되지 않습니다.</div>
                     </div>
                 </div>
 
@@ -194,14 +204,14 @@
                         <div>
                             <strong>① Google Gemini API</strong><br>
                             처리자: Google LLC — 목적: 이미지 분석 및 AI 콘텐츠 생성<br>
-                            <a href="https://policies.google.com/privacy" class="text-amber-600 underline" target="_blank">Google 개인정보처리방침</a>
+                            <a href="https://policies.google.com/privacy" class="text-amber-600 underline" target="_blank">Google 개인정보 처리방침</a>
                         </div>
                         <div>
                             <strong>② Firebase / Firestore (Google LLC)</strong><br>
-                            처리자: Google LLC — 목적: 기기 식별자, 앨범에 첨부된 위치 정보, 일일 사용 제한, 리뷰 이미지 지각 해시 저장 및 관리<br>
-                            <a href="https://firebase.google.com/support/privacy" class="text-amber-600 underline" target="_blank">Firebase 개인정보처리방침</a>
+                            처리자: Google LLC — 목적: 기기 ID, 앨범에 첨부된 위치 데이터, 일일 사용 제한, 리뷰 이미지 지각 해시의 저장 및 관리<br>
+                            <a href="https://firebase.google.com/support/privacy" class="text-amber-600 underline" target="_blank">Firebase 개인정보 처리방침</a>
                         </div>
-                        <div>기기 식별자, 위치 정보, 지각 해시 외의 개인정보는 제3자와 공유되지 않습니다.</div>
+                        <div>기기 ID, 위치 데이터, 지각 해시 외의 개인정보는 제3자에게 제공되지 않습니다. 백그라운드 카메라 롤 개수 확인은 전적으로 기기 내부에서 수행되며 외부로 전송되지 않습니다.</div>
                     </div>
                 </div>
 
@@ -209,8 +219,8 @@
                 <div class="bg-white rounded-3xl border p-7">
                     <h3 class="font-bold mb-3">6. 이용자의 권리</h3>
                     <div class="text-zinc-600 space-y-1">
-                        <div>• 앱 내에서 언제든지 사진, 앨범, 생성된 콘텐츠를 삭제할 수 있습니다.</div>
-                        <div>• 서버에 저장된 데이터(기기 식별자, 위치 정보, 사용 기록, 지각 해시)의 삭제를 원하시면 이메일로 요청해 주세요.</div>
+                        <div>• 사용자는 언제든지 앱 내에서 사진, 앨범, 생성된 콘텐츠를 삭제할 수 있습니다.</div>
+                        <div>• 서버에 저장된 데이터(기기 ID, 위치 데이터, 사용 기록, 지각 해시)의 삭제를 요청하려면 개발자에게 이메일로 문의해 주세요.</div>
                     </div>
                 </div>
 
