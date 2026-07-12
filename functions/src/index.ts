@@ -483,7 +483,7 @@ export const generateAlbum = onCall(
             : Array.isArray(msg.content)
               ? (msg.content.find?.((c: any) => c.type === "text")?.text ?? "(photos)")
               : "";
-        return `${msg.role === "user" ? "User" : "AI"}: ${t}`;
+        return `${msg.role === "user" ? "Me" : "AI"}: ${t}`;
       })
       .join("\n");
 
