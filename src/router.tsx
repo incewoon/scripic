@@ -63,5 +63,11 @@ export const getRouter = () => {
     defaultErrorComponent: DefaultErrorComponent,
   });
 
+  // Expose the router so native deep-link handoff (see src/lib/deepLink.ts)
+  // can navigate on cold start. Client-only; harmless during SSR.
+  if (typeof window !== "undefined") {
+    (window as unknown as { __scripicRouter?: typeof router }).__scripicRouter = router;
+  }
+
   return router;
 };

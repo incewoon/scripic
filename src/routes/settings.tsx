@@ -2,7 +2,7 @@
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Archive, Download, Upload, Palette, Check, Database, Smartphone, Lock, ListOrdered, AlertTriangle, ExternalLink } from "lucide-react";
+import { ChevronLeft, Archive, Download, Upload, Palette, Check, Database, Smartphone, Lock, ListOrdered, AlertTriangle, ExternalLink, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useTheme, type Theme } from "@/lib/theme";
@@ -11,6 +11,11 @@ import { getStorageDiagnostics, requestPersistentStorage } from "@/lib/storage";
 import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
 import { APP_VERSION } from "@/generated/app-version";
+import { getNotificationsEnabled, setNotificationsEnabled } from "@/lib/reminders";
+import {
+  requestPostNotificationsPermission,
+  setNativeRemindersEnabled,
+} from "@/plugins/notification-permission";
 
 
 export const Route = createFileRoute("/settings")({
@@ -50,10 +55,44 @@ function SettingsPage() {
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const [diag, setDiag] = useState<{ origin: string; persisted: boolean; usage: number; quota: number } | null>(null);
+  const [remindersOn, setRemindersOn] = useState<boolean>(false);
+  const [remindersBusy, setRemindersBusy] = useState(false);
   const version = APP_VERSION;
 
   const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
-  useEffect(() => { refreshDiag(); }, []);
+  useEffect(() => {
+    refreshDiag();
+    const enabled = getNotificationsEnabled();
+    setRemindersOn(enabled);
+    // Keep native side in sync on mount (e.g. after reinstall the pref may be stale).
+    void setNativeRemindersEnabled(enabled);
+  }, []);
+
+  const onToggleReminders = async (next: boolean) => {
+    if (remindersBusy) return;
+    setRemindersBusy(true);
+    try {
+      if (next) {
+        const granted = await requestPostNotificationsPermission();
+        if (!granted) {
+          setRemindersOn(false);
+          setNotificationsEnabled(false);
+          await setNativeRemindersEnabled(false);
+          toast.error(t.notifPermissionDenied);
+          return;
+        }
+        setRemindersOn(true);
+        setNotificationsEnabled(true);
+        await setNativeRemindersEnabled(true);
+      } else {
+        setRemindersOn(false);
+        setNotificationsEnabled(false);
+        await setNativeRemindersEnabled(false);
+      }
+    } finally {
+      setRemindersBusy(false);
+    }
+  };
 
   const onPersistRequest = async () => {
     const ok = await requestPersistentStorage();
@@ -311,6 +350,39 @@ function SettingsPage() {
         onClose={() => { setPinMode(null); pendingFileRef.current = null; }}
         onSubmit={submitPin}
       />
+
+      {/* Memory reminders */}
+      <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--gradient-warm)" }}>
+            <Bell size={18} className="text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-display text-[17px] warm-text leading-tight">{t.notifSectionTitle}</h2>
+            <p className="text-[12px] warm-muted mt-1 leading-relaxed">{t.notifSectionDesc}</p>
+          </div>
+        </div>
+        <label className="flex items-center justify-between gap-3 rounded-2xl bg-background/60 border border-border/60 px-4 py-3">
+          <span className="text-[13px] warm-text">{t.notifToggleLabel}</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={remindersOn}
+            disabled={remindersBusy}
+            onClick={() => onToggleReminders(!remindersOn)}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-60 ${
+              remindersOn ? "bg-primary" : "bg-muted"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                remindersOn ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </label>
+      </section>
+
 
       <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-[var(--shadow-soft)] mb-4">
         <div className="flex items-start gap-3 mb-3">

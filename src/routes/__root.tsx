@@ -100,6 +100,12 @@ function RootComponent() {
     }).then((fn) => {
       cleanup = fn;
     });
+    // One-shot: consume a pending deep link left by a notification tap.
+    import("@/lib/deepLink").then((m) => {
+      const router = (window as unknown as { __scripicRouter?: { navigate: (o: { to: string }) => unknown } })
+        .__scripicRouter;
+      m.consumePendingDeepLink(router);
+    });
     return () => {
       cleanup?.();
     };
