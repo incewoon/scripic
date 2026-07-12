@@ -1,3 +1,5 @@
+// functions/src/prompts-album.ts
+
 // Prompts for the album generation function. Ported from the original
 // Supabase edge function.
 
