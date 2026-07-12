@@ -2,7 +2,7 @@
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Archive, Download, Upload, Palette, Check, Database, Smartphone, Lock, ListOrdered, AlertTriangle, ExternalLink } from "lucide-react";
+import { ChevronLeft, Archive, Download, Upload, Palette, Check, Database, Smartphone, Lock, ListOrdered, AlertTriangle, ExternalLink, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useTheme, type Theme } from "@/lib/theme";
@@ -11,6 +11,11 @@ import { getStorageDiagnostics, requestPersistentStorage } from "@/lib/storage";
 import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
 import { APP_VERSION } from "@/generated/app-version";
+import { getNotificationsEnabled, setNotificationsEnabled } from "@/lib/reminders";
+import {
+  requestPostNotificationsPermission,
+  setNativeRemindersEnabled,
+} from "@/plugins/notification-permission";
 
 
 export const Route = createFileRoute("/settings")({
