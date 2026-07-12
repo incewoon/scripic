@@ -55,10 +55,44 @@ function SettingsPage() {
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const [diag, setDiag] = useState<{ origin: string; persisted: boolean; usage: number; quota: number } | null>(null);
+  const [remindersOn, setRemindersOn] = useState<boolean>(false);
+  const [remindersBusy, setRemindersBusy] = useState(false);
   const version = APP_VERSION;
 
   const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
-  useEffect(() => { refreshDiag(); }, []);
+  useEffect(() => {
+    refreshDiag();
+    const enabled = getNotificationsEnabled();
+    setRemindersOn(enabled);
+    // Keep native side in sync on mount (e.g. after reinstall the pref may be stale).
+    void setNativeRemindersEnabled(enabled);
+  }, []);
+
+  const onToggleReminders = async (next: boolean) => {
+    if (remindersBusy) return;
+    setRemindersBusy(true);
+    try {
+      if (next) {
+        const granted = await requestPostNotificationsPermission();
+        if (!granted) {
+          setRemindersOn(false);
+          setNotificationsEnabled(false);
+          await setNativeRemindersEnabled(false);
+          toast.error(t.notifPermissionDenied);
+          return;
+        }
+        setRemindersOn(true);
+        setNotificationsEnabled(true);
+        await setNativeRemindersEnabled(true);
+      } else {
+        setRemindersOn(false);
+        setNotificationsEnabled(false);
+        await setNativeRemindersEnabled(false);
+      }
+    } finally {
+      setRemindersBusy(false);
+    }
+  };
 
   const onPersistRequest = async () => {
     const ok = await requestPersistentStorage();
