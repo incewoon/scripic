@@ -81,6 +81,17 @@ function SettingsPage() {
           toast.error(t.notifPermissionDenied);
           return;
         }
+      
+        // ★ 미디어 권한 추가 요청 (사진 개수 확인을 위해 필요)
+        const mediaGranted = await requestMediaPermission();
+        if (!mediaGranted) {
+          setRemindersOn(false);
+          setNotificationsEnabled(false);
+          await setNativeRemindersEnabled(false);
+          toast.error("사진 접근 권한이 필요합니다.");   // 나중에 i18n으로 교체 추천
+          return;
+        }
+      
         setRemindersOn(true);
         setNotificationsEnabled(true);
         await setNativeRemindersEnabled(true);
