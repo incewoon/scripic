@@ -1,3 +1,5 @@
+// src/plugins/notification-permission.ts
+
 // Custom Capacitor plugin wrapper for POST_NOTIFICATIONS permission,
 // native SharedPreferences sync of the reminders_enabled flag, and
 // polling-based deep link handoff from a notification tap.
@@ -7,6 +9,7 @@ export interface NotificationPermissionPlugin {
   request(): Promise<{ granted: boolean }>;
   setRemindersEnabled(opts: { enabled: boolean }): Promise<void>;
   getPendingDeepLink(): Promise<{ path: string | null }>;
+  requestMedia(): Promise<{ granted: boolean }>;
 }
 
 export const NotificationPermission =
@@ -40,5 +43,14 @@ export async function getPendingDeepLink(): Promise<string | null> {
     return path ?? null;
   } catch {
     return null;
+  }
+}
+
+export async function requestMediaPermission(): Promise<boolean> {
+  try {
+    const r = await NotificationPermission.requestMedia();
+    return !!r?.granted;
+  } catch {
+    return false;
   }
 }
