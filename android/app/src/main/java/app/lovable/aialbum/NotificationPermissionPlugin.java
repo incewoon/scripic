@@ -1,3 +1,6 @@
+//android/app/src/main/java/app/lovable/aialbum/NotificationPermissionPlugin.java
+
+
 package app.lovable.aialbum;
 
 import android.Manifest;
@@ -21,7 +24,11 @@ import com.getcapacitor.annotation.PermissionCallback;
 @CapacitorPlugin(
         name = "NotificationPermission",
         permissions = {
-                @Permission(alias = "notifications", strings = { Manifest.permission.POST_NOTIFICATIONS })
+                @Permission(alias = "notifications", strings = { Manifest.permission.POST_NOTIFICATIONS }),
+                @Permission(alias = "media", strings = {
+                        Manifest.permission.READ_MEDIA_IMAGES,
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                })
         }
 )
 public class NotificationPermissionPlugin extends Plugin {
@@ -49,9 +56,34 @@ public class NotificationPermissionPlugin extends Plugin {
         requestPermissionForAlias("notifications", call, "notifCallback");
     }
 
-    @PermissionCallback
+    Callback
     private void notifCallback(PluginCall call) {
         PermissionState state = getPermissionState("notifications");
+        JSObject r = new JSObject();
+        r.put("granted", state == PermissionState.GRANTED);
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void requestMedia(PluginCall call) {
+        Context ctx = getContext();
+        String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? Manifest.permission.READ_MEDIA_IMAGES
+                : Manifest.permission.READ_EXTERNAL_STORAGE;
+
+        if (ContextCompat.checkSelfPermission(ctx, perm) == PackageManager.PERMISSION_GRANTED) {
+            JSObject r = new JSObject();
+            r.put("granted", true);
+            call.resolve(r);
+            return;
+        }
+
+        requestPermissionForAlias("media", call, "mediaCallback");
+    }
+
+    @PermissionCallback
+    private void mediaCallback(PluginCall call) {
+        PermissionState state = getPermissionState("media");
         JSObject r = new JSObject();
         r.put("granted", state == PermissionState.GRANTED);
         call.resolve(r);
