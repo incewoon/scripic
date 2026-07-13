@@ -53,10 +53,10 @@ public class NotificationPermissionPlugin extends Plugin {
             call.resolve(r);
             return;
         }
-        requestPermissionForAlias("notifications", call, "notifCallback");
+        requestPermissionForAlias("notifications", call, "notif");
     }
 
-    Callback
+    @PermissionCallback
     private void notifCallback(PluginCall call) {
         PermissionState state = getPermissionState("notifications");
         JSObject r = new JSObject();
