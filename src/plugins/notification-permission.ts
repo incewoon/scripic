@@ -46,11 +46,25 @@ export async function getPendingDeepLink(): Promise<string | null> {
   }
 }
 
+// 안전장치: 네이티브 호출이 멈추면 8초 후 강제로 실패 처리
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 export async function requestMediaPermission(): Promise<boolean> {
   try {
-    const r = await NotificationPermission.requestMedia();
+    const r = await withTimeout(
+      NotificationPermission.requestMedia(), 
+      8000, 
+      { granted: false }
+    );
     return !!r?.granted;
   } catch {
     return false;
   }
 }
+
+
