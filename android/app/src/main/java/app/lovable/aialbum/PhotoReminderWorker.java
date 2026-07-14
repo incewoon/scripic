@@ -169,4 +169,17 @@ public class PhotoReminderWorker extends Worker {
             return false;
         }
     }
+    
+    private String getMediaAccessLevel(Context ctx) {
+    if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_IMAGES)
+            == PackageManager.PERMISSION_GRANTED) {
+        return "full";
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+                    == PackageManager.PERMISSION_GRANTED) {
+        return "limited";
+    }
+    return "denied";
+}
 }
