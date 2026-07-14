@@ -111,4 +111,14 @@ public class NotificationPermissionPlugin extends Plugin {
         }
         call.resolve(r);
     }
+
+    @PluginMethod
+        public void openNotificationSettings(PluginCall call) {
+            Context ctx = getContext();
+            Intent intent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.getPackageName());
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(intent);
+            call.resolve();
+        }
 }
