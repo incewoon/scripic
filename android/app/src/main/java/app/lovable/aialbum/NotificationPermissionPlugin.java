@@ -25,10 +25,8 @@ import com.getcapacitor.annotation.PermissionCallback;
         name = "NotificationPermission",
         permissions = {
                 @Permission(alias = "notifications", strings = { Manifest.permission.POST_NOTIFICATIONS }),
-                @Permission(alias = "media", strings = {
-                        Manifest.permission.READ_MEDIA_IMAGES,
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                })
+                @Permission(alias = "media13", strings = { Manifest.permission.READ_MEDIA_IMAGES }),
+                @Permission(alias = "medialegacy", strings = { Manifest.permission.READ_EXTERNAL_STORAGE })
         }
 )
 public class NotificationPermissionPlugin extends Plugin {
@@ -65,29 +63,32 @@ public class NotificationPermissionPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void requestMedia(PluginCall call) {
-        Context ctx = getContext();
-        String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                ? Manifest.permission.READ_MEDIA_IMAGES
-                : Manifest.permission.READ_EXTERNAL_STORAGE;
-
-        if (ContextCompat.checkSelfPermission(ctx, perm) == PackageManager.PERMISSION_GRANTED) {
-            JSObject r = new JSObject();
-            r.put("granted", true);
-            call.resolve(r);
-            return;
+        public void requestMedia(PluginCall call) {
+            Context ctx = getContext();
+            String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    ? Manifest.permission.READ_MEDIA_IMAGES
+                    : Manifest.permission.READ_EXTERNAL_STORAGE;
+            String alias = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? "media13" : "medialegacy";
+        
+            if (ContextCompat.checkSelfPermission(ctx, perm) == PackageManager.PERMISSION_GRANTED) {
+                JSObject r = new JSObject();
+                r.put("granted", true);
+                call.resolve(r);
+                return;
+            }
+        
+            requestPermissionForAlias(alias, call, "mediaCallback");
         }
-
-        requestPermissionForAlias("media", call, "mediaCallback");
-    }
-
-    @PermissionCallback
-    private void mediaCallback(PluginCall call) {
-        PermissionState state = getPermissionState("media");
-        JSObject r = new JSObject();
-        r.put("granted", state == PermissionState.GRANTED);
-        call.resolve(r);
-    }
+        
+        @PermissionCallback
+        private void mediaCallback(PluginCall call) {
+            boolean isTiramisuPlus = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
+            String alias = isTiramisuPlus ? "media13" : "medialegacy";
+            PermissionState state = getPermissionState(alias);
+            JSObject r = new JSObject();
+            r.put("granted", state == PermissionState.GRANTED);
+            call.resolve(r);
+        }
 
     @PluginMethod
     public void setRemindersEnabled(PluginCall call) {
