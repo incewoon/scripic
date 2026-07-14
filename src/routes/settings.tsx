@@ -12,10 +12,7 @@ import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
 import { APP_VERSION } from "@/generated/app-version";
 import { getNotificationsEnabled, setNotificationsEnabled } from "@/lib/reminders";
-import {
-  requestPostNotificationsPermission,
-  setNativeRemindersEnabled,
-} from "@/plugins/notification-permission";
+import { requestPostNotificationsPermission, setNativeRemindersEnabled, requestMediaPermission } from "@/plugins/notification-permission";
 
 
 export const Route = createFileRoute("/settings")({
