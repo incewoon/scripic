@@ -75,7 +75,12 @@ function SettingsPage() {
           setRemindersOn(false);
           setNotificationsEnabled(false);
           await setNativeRemindersEnabled(false);
-          toast.error(t.notifPermissionDenied);
+          toast.error(t.notifPermissionDenied, {
+            action: {
+              label: "설정 열기",
+              onClick: () => openNotificationSettings(),
+            },
+          });
           return;
         }
       
