@@ -67,4 +67,8 @@ export async function requestMediaPermission(): Promise<boolean> {
   }
 }
 
-
+export async function openNotificationSettings(): Promise<void> {
+  try {
+    await NotificationPermission.openNotificationSettings();
+  } catch {}
+}
