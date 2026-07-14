@@ -110,6 +110,17 @@ function RootComponent() {
       const router = (window as any).__scripicRouter;
       m.consumePendingDeepLink(router);
     });
+
+    if (typeof localStorage !== "undefined") {
+      const asked = localStorage.getItem("notif_permission_prompted_once");
+      if (!asked && Capacitor.isNativePlatform()) {
+        localStorage.setItem("notif_permission_prompted_once", "1");
+        // 결과는 무시하고 그냥 한 번만 물어보기
+        import("@/plugins/notification-permission").then((m) => {
+          m.requestPostNotificationsPermission();
+        });
+      }
+    }
     return () => {
       delete (window as any).__scripicHandleDeepLink;
     };
