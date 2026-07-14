@@ -101,13 +101,17 @@ function RootComponent() {
       cleanup = fn;
     });
     // One-shot: consume a pending deep link left by a notification tap.
+    (window as any).__scripicHandleDeepLink = (path: string) => {
+      const router = (window as any).__scripicRouter;
+      if (router) router.navigate({ to: path });
+    };
+      
     import("@/lib/deepLink").then((m) => {
-      const router = (window as unknown as { __scripicRouter?: { navigate: (o: { to: string }) => unknown } })
-        .__scripicRouter;
+      const router = (window as any).__scripicRouter;
       m.consumePendingDeepLink(router);
     });
     return () => {
-      cleanup?.();
+      delete (window as any).__scripicHandleDeepLink;
     };
   }, []);
   return (
