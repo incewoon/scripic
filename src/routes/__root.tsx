@@ -100,16 +100,6 @@ function RootComponent() {
     }).then((fn) => {
       cleanup = fn;
     });
-    // One-shot: consume a pending deep link left by a notification tap.
-    (window as any).__scripicHandleDeepLink = (path: string) => {
-      const router = (window as any).__scripicRouter;
-      if (router) router.navigate({ to: path });
-    };
-      
-    import("@/lib/deepLink").then((m) => {
-      const router = (window as any).__scripicRouter;
-      m.consumePendingDeepLink(router);
-    });
 
     if (typeof localStorage !== "undefined") {
       const asked = localStorage.getItem("notif_permission_prompted_once");
@@ -121,6 +111,19 @@ function RootComponent() {
         });
       }
     }
+    
+    // One-shot: consume a pending deep link left by a notification tap.
+    (window as any).__scripicHandleDeepLink = (path: string) => {
+      const router = (window as any).__scripicRouter;
+      if (router) router.navigate({ to: path });
+    };
+      
+    import("@/lib/deepLink").then((m) => {
+      const router = (window as any).__scripicRouter;
+      m.consumePendingDeepLink(router);
+    });
+
+    
     return () => {
       delete (window as any).__scripicHandleDeepLink;
     };
