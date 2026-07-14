@@ -85,6 +85,8 @@ function SettingsPage() {
         }
       
         // ★ 미디어 권한 추가 요청 (사진 개수 확인을 위해 필요)
+        toast.info("새로 찍은 사진을 자동으로 감지하려면 '모든 사진 허용'을 선택해주세요.");
+        await new Promise(r => setTimeout(r, 1200));
         const mediaGranted = await requestMediaPermission();
         if (!mediaGranted) {
           setRemindersOn(false);
