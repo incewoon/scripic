@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
+import { Capacitor } from "@capacitor/core";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
