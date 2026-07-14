@@ -106,11 +106,16 @@ function RootComponent() {
     if (typeof localStorage !== "undefined") {
       const asked = localStorage.getItem("notif_permission_prompted_once");
       if (!asked && Capacitor.isNativePlatform()) {
-        localStorage.setItem("notif_permission_prompted_once", "1");
-        // 결과는 무시하고 그냥 한 번만 물어보기
-        import("@/plugins/notification-permission").then((m) => {
-          m.requestPostNotificationsPermission();
-        });
+        import("@/plugins/notification-permission")
+          .then(async (m) => {
+            await m.requestPostNotificationsPermission();
+            // 성공/실패와 무관하게 "시도는 했다"는 것만 기록 (재요청 스팸 방지)
+            localStorage.setItem("notif_permission_prompted_once", "1");
+          })
+          .catch((e) => {
+            console.error("[root] auto notif prompt failed", e);
+            // 에러 시엔 플래그를 세우지 않아, 다음 실행에서 다시 시도되게 함
+          });
       }
     }
     
