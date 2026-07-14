@@ -62,6 +62,15 @@ public class MainActivity extends BridgeActivity {
         super.onNewIntent(intent);
         setIntent(intent);
         handleDeepLinkIntent(intent);
+    
+        // 웜 리줌(앱이 이미 실행 중일 때) 즉시 처리
+        String deepLink = intent.getStringExtra("deepLink");
+        if (deepLink != null && bridge != null && bridge.getWebView() != null) {
+            String safe = deepLink.replace("'", "\\'");
+            bridge.getWebView().post(() ->
+                bridge.eval("window.__scripicHandleDeepLink && window.__scripicHandleDeepLink('" + safe + "');", null)
+            );
+        }
     }
 
     private void handleDeepLinkIntent(Intent intent) {
