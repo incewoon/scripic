@@ -75,8 +75,18 @@ public class PhotoReminderWorker extends Worker {
             String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                     ? Manifest.permission.READ_MEDIA_IMAGES
                     : Manifest.permission.READ_EXTERNAL_STORAGE;
-            if (ContextCompat.checkSelfPermission(ctx, perm) != PackageManager.PERMISSION_GRANTED) {
+
+            String accessLevel = getMediaAccessLevel(ctx);
+
+            if (accessLevel.equals("denied")) {
                 Log.d(TAG, "missing media permission: " + perm);
+                prefs.edit().putLong(KEY_LAST_CHECKED, now).apply();
+                return Result.success();
+            }
+            
+            if (accessLevel.equals("limited")) {
+                Log.w(TAG, "limited access — new photos may not be detected");
+                // limited 상태에서는 카운트를 시도하지 않고 그냥 넘김 (안전)
                 prefs.edit().putLong(KEY_LAST_CHECKED, now).apply();
                 return Result.success();
             }
