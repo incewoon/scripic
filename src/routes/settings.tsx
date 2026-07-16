@@ -77,14 +77,15 @@ function SettingsPage() {
           if (reason === "notif_denied") {
             toast.error(t.notifPermissionDenied, {
               action: {
-                label: "설정 열기",
+                label: t.openSettings,
                 onClick: () => openNotificationSettings(),
               },
             });
           } else {
-            toast.error("새로 찍은 사진을 감지하려면 '모든 사진 허용'이 필요합니다. (제한된 선택은 지원하지 않아요)", {
+            // media_denied (거부 또는 제한된 선택)
+            toast.error(t.notifMediaPermissionDenied, {
               action: {
-                label: "설정 열기",
+                label: t.openSettings,
                 onClick: () => openAppSettings(),
               },
             });
