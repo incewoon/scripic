@@ -18,10 +18,14 @@ export const NotificationPermission =
 /** Request POST_NOTIFICATIONS at runtime (Android 13+). Web/older: true. */
 export async function requestPostNotificationsPermission(): Promise<boolean> {
   try {
-    const r = await NotificationPermission.request();
+    const r = await withTimeout(
+      NotificationPermission.request(),
+      8000,
+      { granted: false }
+    );
     return !!r?.granted;
   } catch (e) {
-    console.error("[notif-permission] request() failed", e);  // 추가
+    console.error("[notif-permission] request() failed", e);
     return false;
   }
 }
