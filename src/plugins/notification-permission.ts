@@ -10,6 +10,8 @@ export interface NotificationPermissionPlugin {
   setRemindersEnabled(opts: { enabled: boolean }): Promise<void>;
   getPendingDeepLink(): Promise<{ path: string | null }>;
   requestMedia(): Promise<{ granted: boolean }>;
+  openNotificationSettings(): Promise<void>;
+  openAppSettings(): Promise<void>;
 }
 
 export const NotificationPermission =
@@ -75,5 +77,11 @@ export async function requestMediaPermission(): Promise<boolean> {
 export async function openNotificationSettings(): Promise<void> {
   try {
     await NotificationPermission.openNotificationSettings();
+  } catch {}
+}
+
+export async function openAppSettings(): Promise<void> {
+  try {
+    await NotificationPermission.openAppSettings();
   } catch {}
 }
