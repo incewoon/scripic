@@ -116,6 +116,8 @@ const dict = {
     notifSectionDesc: "We'll gently nudge you when photos start piling up — never more than once a week.",
     notifToggleLabel: "Get memory reminders",
     notifPermissionDenied: "Notifications are off in your phone's settings.",
+    notifMediaPermissionDenied: "Full photo access is required. Limited access is not supported.",
+    openSettings: "Open settings",
     backHome: "Back",
     storageNoticeTitle: "Stored only on this device",
     storageNoticeBody:
@@ -396,6 +398,8 @@ const dict = {
     notifSectionDesc: "사진이 많이 쌓이면 살며시 알려드릴게요. 일주일에 한 번을 넘지 않아요.",
     notifToggleLabel: "기억 알림 받기",
     notifPermissionDenied: "기기 설정에서 알림이 꺼져 있어요.",
+    notifMediaPermissionDenied: "모든 사진 허용이 필요합니다. (제한된 선택은 지원하지 않아요)",
+    openSettings: "설정 열기",
     backHome: "뒤로",
     storageNoticeTitle: "이 기기에만 저장돼요",
     storageNoticeBody: "사진과 정리된 대화 내용은 이 기기에만 저장되며, 다른 기기와는 연동되지 않아요.",
