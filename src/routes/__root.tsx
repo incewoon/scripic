@@ -106,20 +106,21 @@ function RootComponent() {
     if (typeof localStorage !== "undefined") {
       const asked = localStorage.getItem("notif_permission_prompted_once");
       console.log("[root] notif prompt check — asked:", asked, "isNative:", Capacitor.isNativePlatform());
+      
       if (!asked && Capacitor.isNativePlatform()) {
-        // Activity가 완전히 안정화된 뒤에 요청하도록 지연
         setTimeout(() => {
-          import("@/plugins/notification-permission")
+          import("@/lib/reminders")
             .then(async (m) => {
-              console.log("[root] calling requestPostNotificationsPermission...");
-              const granted = await m.requestPostNotificationsPermission();
-              console.log("[root] requestPostNotificationsPermission result:", granted);
+              console.log("[root] calling enableRemindersFlow...");
+              const result = await m.enableRemindersFlow();
+              console.log("[root] enableRemindersFlow result:", result);
               localStorage.setItem("notif_permission_prompted_once", "1");
             })
             .catch((e) => {
-              console.error("[root] auto notif prompt FAILED", e);
+              console.error("[root] auto enableRemindersFlow FAILED", e);
+              localStorage.setItem("notif_permission_prompted_once", "1"); // 실패해도 다시 안 물어보게
             });
-        }, 1200); // 1.2초 지연 — Activity가 완전히 resumed된 뒤 요청
+        }, 1200);
       }
     }
     
