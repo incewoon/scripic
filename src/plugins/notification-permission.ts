@@ -20,7 +20,8 @@ export async function requestPostNotificationsPermission(): Promise<boolean> {
   try {
     const r = await NotificationPermission.request();
     return !!r?.granted;
-  } catch {
+  } catch (e) {
+    console.error("[notif-permission] request() failed", e);  // 추가
     return false;
   }
 }
