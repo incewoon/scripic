@@ -262,7 +262,20 @@ function Home() {
         {epigraph && (
           <p
             key={epigraph}
-            className="mt-2 mb-1 italic text-[13px] leading-relaxed text-[#6B7280] dark:text-[#9CA3AF] animate-fade-in"
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              const next = pickEpigraph(lang === "ko" ? "ko" : "en");
+              setEpigraph(next);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                const next = pickEpigraph(lang === "ko" ? "ko" : "en");
+                setEpigraph(next);
+              }
+            }}
+            className="mt-2 mb-1 italic text-[13px] leading-relaxed text-[#6B7280] dark:text-[#9CA3AF] animate-fade-in cursor-pointer active:opacity-70 select-none"
           >
             &ldquo;{epigraph}&rdquo;
           </p>
