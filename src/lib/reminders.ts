@@ -9,6 +9,11 @@
 
 import { getRecentPhotoCount, sendPhotoReminderNotification } from "@/lib/native";
 import { getTrackedPhotoCount } from "@/lib/photoActivity";
+import {
+  requestPostNotificationsPermission,
+  requestMediaPermission,
+  setNativeRemindersEnabled,
+} from "@/plugins/notification-permission";
 
 const RECENT_DAYS = 30;
 const RECENT_PHOTO_THRESHOLD = 15;
@@ -74,4 +79,32 @@ export async function maybeSendPhotoReminder(): Promise<{ sent: boolean; reason?
 export async function recordAlbumCreated(): Promise<void> {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(LAST_ALBUM_KEY, String(Date.now()));
+}
+
+/**
+ * 알림 권한 → 미디어 권한을 순서대로 요청하고,
+ * 둘 다 허용되면 localStorage + 네이티브 플래그를 모두 켠다.
+ */
+export async function enableRemindersFlow(): Promise<{ enabled: boolean; reason?: string }> {
+  // 1. 알림 권한
+  const notifGranted = await requestPostNotificationsPermission();
+  if (!notifGranted) {
+    return { enabled: false, reason: "notif_denied" };
+  }
+
+  // 2. 안내 + 미디어 권한 (UX 팁)
+  // 첫 실행 시에는 toast가 안 보일 수 있으므로 선택적으로 사용
+  // toast.info("새로 찍은 사진을 자동으로 감지하려면 '모든 사진 허용'을 선택해주세요.");
+  // await new Promise((r) => setTimeout(r, 1200));
+
+  const mediaGranted = await requestMediaPermission();
+  if (!mediaGranted) {
+    return { enabled: false, reason: "media_denied" };
+  }
+
+  // 3. 양쪽 플래그 동기화
+  setNotificationsEnabled(true);
+  await setNativeRemindersEnabled(true);
+
+  return { enabled: true };
 }
