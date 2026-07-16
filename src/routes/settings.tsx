@@ -11,7 +11,7 @@ import { getStorageDiagnostics, requestPersistentStorage } from "@/lib/storage";
 import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
 import { APP_VERSION } from "@/generated/app-version";
-import { getNotificationsEnabled, setNotificationsEnabled } from "@/lib/reminders";
+import { getNotificationsEnabled, setNotificationsEnabled, enableRemindersFlow } from "@/lib/reminders";
 import { requestPostNotificationsPermission, setNativeRemindersEnabled, requestMediaPermission, openNotificationSettings } from "@/plugins/notification-permission";
 
 
@@ -52,7 +52,7 @@ function SettingsPage() {
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const [diag, setDiag] = useState<{ origin: string; persisted: boolean; usage: number; quota: number } | null>(null);
-  const [remindersOn, setRemindersOn] = useState<boolean>(false);
+  const [remindersOn, setRemindersOn] = useState<boolean>(() => getNotificationsEnabled());
   const [remindersBusy, setRemindersBusy] = useState(false);
   const version = APP_VERSION;
 
@@ -70,45 +70,35 @@ function SettingsPage() {
     setRemindersBusy(true);
     try {
       if (next) {
-        const granted = await requestPostNotificationsPermission();
-        if (!granted) {
+        const { enabled, reason } = await enableRemindersFlow();
+        
+        if (!enabled) {
           setRemindersOn(false);
-          setNotificationsEnabled(false);
-          await setNativeRemindersEnabled(false);
-          toast.error(t.notifPermissionDenied, {
-            action: {
-              label: "설정 열기",
-              onClick: () => openNotificationSettings(),
-            },
-          });
+          if (reason === "notif_denied") {
+            toast.error(t.notifPermissionDenied, {
+              action: {
+                label: "설정 열기",
+                onClick: () => openNotificationSettings(),
+              },
+            });
+          } else {
+            toast.error("사진 접근 권한이 필요합니다.");
+          }
           return;
         }
-      
-        // ★ 미디어 권한 추가 요청 (사진 개수 확인을 위해 필요)
-        toast.info("새로 찍은 사진을 자동으로 감지하려면 '모든 사진 허용'을 선택해주세요.");
-        await new Promise(r => setTimeout(r, 1200));
-        const mediaGranted = await requestMediaPermission();
-        if (!mediaGranted) {
-          setRemindersOn(false);
-          setNotificationsEnabled(false);
-          await setNativeRemindersEnabled(false);
-          toast.error("사진 접근 권한이 필요합니다.");   // 나중에 i18n으로 교체 추천
-          return;
-        }
-      
+        
         setRemindersOn(true);
-        setNotificationsEnabled(true);
-        await setNativeRemindersEnabled(true);
       } else {
-        setRemindersOn(false);
+        // 끌 때
         setNotificationsEnabled(false);
         await setNativeRemindersEnabled(false);
+        setRemindersOn(false);
       }
     } finally {
       setRemindersBusy(false);
     }
   };
-
+    
   const onPersistRequest = async () => {
     const ok = await requestPersistentStorage();
     refreshDiag();
