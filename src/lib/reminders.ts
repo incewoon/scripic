@@ -93,11 +93,7 @@ export async function enableRemindersFlow(): Promise<{ enabled: boolean; reason?
     return { enabled: false, reason: "notif_denied" };
   }
 
-  // 2. 안내 + 미디어 권한 (UX 팁)
-  // 첫 실행 시에는 toast가 안 보일 수 있으므로 선택적으로 사용
-  toast.info("새로 찍은 사진을 자동으로 감지하려면 '모든 사진 허용'을 선택해주세요.");
-  await new Promise((r) => setTimeout(r, 1200));
-
+  // 2. 미디어 권한 (사전 토스트 제거 — 실패 시에만 settings에서 안내)
   const mediaGranted = await requestMediaPermission();
   if (!mediaGranted) {
     return { enabled: false, reason: "media_denied" };
