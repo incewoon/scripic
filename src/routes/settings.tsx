@@ -82,7 +82,12 @@ function SettingsPage() {
               },
             });
           } else {
-            toast.error("사진 접근 권한이 필요합니다.");
+            toast.error("새로 찍은 사진을 감지하려면 '모든 사진 허용'이 필요합니다. (제한된 선택은 지원하지 않아요)", {
+              action: {
+                label: "설정 열기",
+                onClick: () => openAppSettings(),
+              },
+            });
           }
           return;
         }
