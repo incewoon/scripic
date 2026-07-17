@@ -68,21 +68,28 @@ public class NotificationPermissionPlugin extends Plugin {
     }
 
     @PluginMethod
+        @PluginMethod
         public void requestMedia(PluginCall call) {
             Context ctx = getContext();
-            String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                    ? Manifest.permission.READ_MEDIA_IMAGES
-                    : Manifest.permission.READ_EXTERNAL_STORAGE;
-            String alias = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? "media13" : "medialegacy";
-        
-            if (ContextCompat.checkSelfPermission(ctx, perm) == PackageManager.PERMISSION_GRANTED) {
-                JSObject r = new JSObject();
-                r.put("granted", true);
-                call.resolve(r);
-                return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_IMAGES)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    JSObject r = new JSObject();
+                    r.put("granted", true);
+                    call.resolve(r);
+                    return;
+                }
+                requestPermissionForAlias("media13", call, "mediaCallback");
+            } else {
+                if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_EXTERNAL_STORAGE)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    JSObject r = new JSObject();
+                    r.put("granted", true);
+                    call.resolve(r);
+                    return;
+                }
+                requestPermissionForAlias("medialegacy", call, "mediaCallback");
             }
-        
-            requestPermissionForAlias(alias, call, "mediaCallback");
         }
         
         @PermissionCallback
