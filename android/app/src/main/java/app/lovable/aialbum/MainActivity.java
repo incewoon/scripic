@@ -1,3 +1,5 @@
+// android/app/src/main/java/app/lovable/aialbum/MainActivity.java
+
 package app.lovable.aialbum;
 
 import android.content.Intent;
