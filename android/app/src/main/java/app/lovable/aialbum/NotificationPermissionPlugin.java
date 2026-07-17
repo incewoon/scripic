@@ -67,7 +67,6 @@ public class NotificationPermissionPlugin extends Plugin {
         call.resolve(r);
     }
 
-    @PluginMethod
         @PluginMethod
         public void requestMedia(PluginCall call) {
             Context ctx = getContext();
