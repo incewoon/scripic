@@ -14,6 +14,7 @@ import {
   requestMediaPermission,
   setNativeRemindersEnabled,
   openAppSettings,
+  checkMediaPermission,
 } from "@/plugins/notification-permission";
 import { toast } from "sonner";
 
@@ -88,10 +89,6 @@ export async function recordAlbumCreated(): Promise<void> {
   localStorage.setItem(LAST_ALBUM_KEY, String(Date.now()));
 }
 
-/**
- * 알림 권한 → 미디어 권한을 순서대로 요청하고,
- * 둘 다 허용되면 localStorage + 네이티브 플래그를 모두 켠다.
- */
 export async function enableRemindersFlow(
   messages?: ReminderMessages
 ): Promise<{ enabled: boolean; reason?: string }> {
@@ -101,19 +98,23 @@ export async function enableRemindersFlow(
     return { enabled: false, reason: "notif_denied" };
   }
 
-  // 2. 미디어 권한 요청 직전에 안내 토스트 표시
-  //    (사진 권한 다이얼로그와 동시에 보이게 하기 위함)
-  const guidance = messages?.mediaGuidance 
-    ?? "Full photo access is required. Limited access is not supported.";
-  const openLabel = messages?.openSettings ?? "Open settings";
+  // 2. 미디어 권한이 이미 있는지 먼저 조용히 확인
+  const alreadyGranted = await checkMediaPermission();
 
-  toast.info(guidance, {
-    action: {
-      label: openLabel,
-      onClick: () => openAppSettings(),
-    },
-  });
-  await new Promise((r) => setTimeout(r, 600));
+  if (!alreadyGranted) {
+    // 아직 권한이 없을 때만 안내 토스트 + 짧은 대기
+    const guidance = messages?.mediaGuidance 
+      ?? "Full photo access is required. Limited access is not supported.";
+    const openLabel = messages?.openSettings ?? "Open settings";
+
+    toast.info(guidance, {
+      action: {
+        label: openLabel,
+        onClick: () => openAppSettings(),
+      },
+    });
+    await new Promise((r) => setTimeout(r, 600));
+  }
 
   const mediaGranted = await requestMediaPermission();
   if (!mediaGranted) {
