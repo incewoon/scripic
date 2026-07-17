@@ -109,35 +109,26 @@ function RootComponent() {
       
       if (!asked && Capacitor.isNativePlatform()) {
         setTimeout(() => {
-          import("@/lib/reminders")
-            .then(async (m) => {
-              console.log("[root] calling enableRemindersFlow...");
-
-              import("@/lib/reminders")
-              .then(async (m) => {
-                console.log("[root] calling enableRemindersFlow...");
-            
-                // 현재 언어에 맞는 메시지 가져오기
-                const { getLang, dict } = await import("@/lib/i18n");
-                const lang = getLang(); // "en" | "ko"
-                const t = dict[lang];
-            
-                const result = await m.enableRemindersFlow({
-                  mediaGuidance: t.notifMediaPermissionDenied,
-                  openSettings: t.openSettings,
-                });
-            
-                console.log("[root] enableRemindersFlow result:", result);
-                localStorage.setItem("notif_permission_prompted_once", "1");
-              })
-              
-              console.log("[root] enableRemindersFlow result:", result);
-              localStorage.setItem("notif_permission_prompted_once", "1");
-            })
-            .catch((e) => {
-              console.error("[root] auto enableRemindersFlow FAILED", e);
-              localStorage.setItem("notif_permission_prompted_once", "1"); // 실패해도 다시 안 물어보게
+          Promise.all([
+            import("@/lib/reminders"),
+            import("@/lib/i18n"),
+          ]).then(async ([remindersMod, i18nMod]) => {
+            console.log("[root] calling enableRemindersFlow...");
+      
+            const lang = i18nMod.getLang(); // "en" | "ko"
+            const t = i18nMod.dict[lang];
+      
+            const result = await remindersMod.enableRemindersFlow({
+              mediaGuidance: t.notifMediaPermissionDenied,
+              openSettings: t.openSettings,
             });
+      
+            console.log("[root] enableRemindersFlow result:", result);
+            localStorage.setItem("notif_permission_prompted_once", "1");
+          }).catch((e) => {
+            console.error("[root] auto enableRemindersFlow FAILED", e);
+            localStorage.setItem("notif_permission_prompted_once", "1");
+          });
         }, 500);
       }
     }
