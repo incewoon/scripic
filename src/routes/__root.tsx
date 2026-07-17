@@ -94,6 +94,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const [exitOpen, setExitOpen] = useState(false);
+  const { t } = useT();
   useEffect(() => {
     applyThemeOnBoot();
     requestPersistentStorage();
