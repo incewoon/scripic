@@ -153,4 +153,5 @@ public class NotificationPermissionPlugin extends Plugin {
             r.put("granted", granted);
             call.resolve(r);
         }
+}
         
