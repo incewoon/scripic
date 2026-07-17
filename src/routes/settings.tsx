@@ -85,7 +85,10 @@ function SettingsPage() {
     setRemindersBusy(true);
     try {
       if (next) {
-        const { enabled, reason } = await enableRemindersFlow();
+        const { enabled, reason } = await enableRemindersFlow({
+          mediaGuidance: t.notifMediaPermissionDenied,
+          openSettings: t.openSettings,
+        });
         
         if (!enabled) {
           setRemindersOn(false);
