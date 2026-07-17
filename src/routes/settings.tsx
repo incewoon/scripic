@@ -105,15 +105,7 @@ function SettingsPage() {
                 onClick: () => openNotificationSettings(),
               },
             });
-          } else {
-            // media_denied (거부 또는 제한된 선택)
-            toast.error(t.notifMediaPermissionDenied, {
-              action: {
-                label: t.openSettings,
-                onClick: () => openAppSettings(),
-              },
-            });
-          }
+          } 
           return;
         }
         
