@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Capacitor } from "@capacitor/core";
 import appCss from "../styles.css?url";
+import { useT } from "@/lib/i18n";
 
 function NotFoundComponent() {
   return (
@@ -106,29 +107,27 @@ function RootComponent() {
     if (typeof localStorage !== "undefined") {
       const asked = localStorage.getItem("notif_permission_prompted_once");
       console.log("[root] notif prompt check — asked:", asked, "isNative:", Capacitor.isNativePlatform());
-      
+
       if (!asked && Capacitor.isNativePlatform()) {
         setTimeout(() => {
-          Promise.all([
-            import("@/lib/reminders"),
-            import("@/lib/i18n"),
-          ]).then(async ([remindersMod, i18nMod]) => {
-            console.log("[root] calling enableRemindersFlow...");
-      
-            const lang = i18nMod.getLang(); // "en" | "ko"
-            const t = i18nMod.dict[lang];
-      
-            const result = await remindersMod.enableRemindersFlow({
-              mediaGuidance: t.notifMediaPermissionDenied,
-              openSettings: t.openSettings,
+          import("@/lib/reminders")
+            .then(async (remindersMod) => {
+              console.log("[root] calling enableRemindersFlow...");
+              const result = await remindersMod.enableRemindersFlow({
+                mediaGuidance: t.notifMediaPermissionDenied,
+                openSettings: t.openSettings,
+              });
+              console.log("[root] enableRemindersFlow result:", result);
+
+              // 성공했을 때만 플래그 저장
+              if (result.enabled) {
+                localStorage.setItem("notif_permission_prompted_once", "1");
+              }
+            })
+            .catch((e) => {
+              console.error("[root] auto enableRemindersFlow FAILED", e);
+              // 실패 시 플래그를 절대 남기지 않음
             });
-      
-            console.log("[root] enableRemindersFlow result:", result);
-            localStorage.setItem("notif_permission_prompted_once", "1");
-          }).catch((e) => {
-            console.error("[root] auto enableRemindersFlow FAILED", e);
-            localStorage.setItem("notif_permission_prompted_once", "0");
-          });
         }, 1200);
       }
     }
@@ -148,7 +147,7 @@ function RootComponent() {
     return () => {
       delete (window as any).__scripicHandleDeepLink;
     };
-  }, []);
+  }, [t]);
   return (
     <>
       <Outlet />
