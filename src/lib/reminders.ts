@@ -93,7 +93,13 @@ export async function enableRemindersFlow(): Promise<{ enabled: boolean; reason?
     return { enabled: false, reason: "notif_denied" };
   }
 
-  // 2. 미디어 권한 (사전 토스트 제거 — 실패 시에만 settings에서 안내)
+  // 2. 미디어 권한 요청 직전에 안내 토스트 표시
+  //    (사진 권한 다이얼로그와 동시에 보이게 하기 위함)
+  toast.info(t.notifMediaPermissionDenied, {
+      action: { label: t.openSettings, onClick: () => openAppSettings() },
+    });
+  await new Promise((r) => setTimeout(r, 900)); // 사용자가 토스트를 읽을 시간 (너무 길면 줄여도 됨)
+  
   const mediaGranted = await requestMediaPermission();
   if (!mediaGranted) {
     return { enabled: false, reason: "media_denied" };
