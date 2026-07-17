@@ -17,6 +17,20 @@ import { App as CapacitorApp } from "@capacitor/app";
 
 
 export const Route = createFileRoute("/settings")({
+
+  useEffect(() => {
+    const sub = CapacitorApp.addListener("appStateChange", async ({ isActive }) => {
+      if (!isActive) return;
+      const stillGranted = await checkMediaPermission();
+      if (!stillGranted) {
+        setNotificationsEnabled(false);
+        await setNativeRemindersEnabled(false);
+        setRemindersOn(false);
+      }
+    });
+    return () => { sub.then(s => s.remove()); };
+  }, []);
+
   component: SettingsPage,
   head: () => ({
     meta: [
