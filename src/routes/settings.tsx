@@ -78,14 +78,29 @@ function SettingsPage() {
     return () => { sub.then(s => s.remove()); };
   }, []);
   const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
+  
   useEffect(() => {
     refreshDiag();
-    const enabled = getNotificationsEnabled();
-    setRemindersOn(enabled);
-    // Keep native side in sync on mount (e.g. after reinstall the pref may be stale).
-    void setNativeRemindersEnabled(enabled);
+  
+    (async () => {
+      const cachedEnabled = getNotificationsEnabled();
+  
+      if (cachedEnabled) {
+        // 캐시가 켜져 있으면 실제 OS 권한을 다시 확인
+        const stillGranted = await checkMediaPermission();
+        if (!stillGranted) {
+          setNotificationsEnabled(false);
+          await setNativeRemindersEnabled(false);
+          setRemindersOn(false);
+          return;
+        }
+      }
+  
+      setRemindersOn(cachedEnabled);
+      void setNativeRemindersEnabled(cachedEnabled);
+    })();
   }, []);
-
+  
   const onToggleReminders = async (next: boolean) => {
     if (remindersBusy) return;
     setRemindersBusy(true);
