@@ -98,7 +98,7 @@ export async function enableRemindersFlow(): Promise<{ enabled: boolean; reason?
   toast.info(t.notifMediaPermissionDenied, {
       action: { label: t.openSettings, onClick: () => openAppSettings() },
     });
-  await new Promise((r) => setTimeout(r, 300)); // 사용자가 토스트를 읽을 시간 (너무 길면 줄여도 됨)
+  await new Promise((r) => setTimeout(r, 600)); // 사용자가 토스트를 읽을 시간 (너무 길면 줄여도 됨)
   
   const mediaGranted = await requestMediaPermission();
   if (!mediaGranted) {
