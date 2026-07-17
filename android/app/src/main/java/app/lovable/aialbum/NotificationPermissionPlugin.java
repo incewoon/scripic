@@ -91,13 +91,14 @@ public class NotificationPermissionPlugin extends Plugin {
             }
         }
         
-        @PermissionCallback
+    @PermissionCallback
         private void mediaCallback(PluginCall call) {
-            boolean isTiramisuPlus = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
-            String alias = isTiramisuPlus ? "media13" : "medialegacy";
-            PermissionState state = getPermissionState(alias);
+            Context ctx = getContext();
+            boolean fullGranted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    ? ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
+                    : ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
             JSObject r = new JSObject();
-            r.put("granted", state == PermissionState.GRANTED);
+            r.put("granted", fullGranted);
             call.resolve(r);
         }
 
