@@ -120,7 +120,7 @@ function RootComponent() {
               console.error("[root] auto enableRemindersFlow FAILED", e);
               localStorage.setItem("notif_permission_prompted_once", "1"); // 실패해도 다시 안 물어보게
             });
-        }, 1200);
+        }, 500);
       }
     }
     
