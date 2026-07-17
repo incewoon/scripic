@@ -154,30 +154,3 @@ public class NotificationPermissionPlugin extends Plugin {
             call.resolve(r);
         }
         
-        @PluginMethod
-        public void openMediaPermissionSettings(PluginCall call) {
-            Context ctx = getContext();
-            Intent intent;
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                            ? Manifest.permission.READ_MEDIA_IMAGES
-                            : Manifest.permission.READ_EXTERNAL_STORAGE;
-                    intent = new Intent(Intent.ACTION_MANAGE_APP_PERMISSION);
-                    intent.putExtra(Intent.EXTRA_PERMISSION_NAME, perm);
-                    intent.putExtra(Intent.EXTRA_PACKAGE_NAME, ctx.getPackageName());
-                } else {
-                    intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                    intent.setData(android.net.Uri.parse("package:" + ctx.getPackageName()));
-                }
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                ctx.startActivity(intent);
-            } catch (Exception e) {
-                Intent fallback = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                fallback.setData(android.net.Uri.parse("package:" + ctx.getPackageName()));
-                fallback.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                ctx.startActivity(fallback);
-            }
-            call.resolve();
-        }
-}
