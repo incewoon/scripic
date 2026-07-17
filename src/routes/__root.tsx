@@ -127,9 +127,9 @@ function RootComponent() {
             localStorage.setItem("notif_permission_prompted_once", "1");
           }).catch((e) => {
             console.error("[root] auto enableRemindersFlow FAILED", e);
-            localStorage.setItem("notif_permission_prompted_once", "1");
+            localStorage.setItem("notif_permission_prompted_once", "0");
           });
-        }, 500);
+        }, 1200);
       }
     }
     
