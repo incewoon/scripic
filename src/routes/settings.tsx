@@ -61,8 +61,15 @@ function SettingsPage() {
   useEffect(() => {
     const sub = CapacitorApp.addListener("appStateChange", async ({ isActive }) => {
       if (!isActive) return;
-      const stillGranted = await checkMediaPermission();
-      if (!stillGranted) {
+  
+      const mediaGranted = await checkMediaPermission();
+      const currentlyEnabled = getNotificationsEnabled();
+  
+      if (mediaGranted && currentlyEnabled) {
+        // 권한이 있고 내부 플래그도 켜져 있으면 토글을 켠 상태로 맞춤
+        setRemindersOn(true);
+      } else if (!mediaGranted) {
+        // 권한이 없으면 토글과 플래그를 모두 끔
         setNotificationsEnabled(false);
         await setNativeRemindersEnabled(false);
         setRemindersOn(false);
@@ -70,7 +77,6 @@ function SettingsPage() {
     });
     return () => { sub.then(s => s.remove()); };
   }, []);
-
   const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
   useEffect(() => {
     refreshDiag();
