@@ -112,7 +112,25 @@ function RootComponent() {
           import("@/lib/reminders")
             .then(async (m) => {
               console.log("[root] calling enableRemindersFlow...");
-              const result = await m.enableRemindersFlow();
+
+              import("@/lib/reminders")
+              .then(async (m) => {
+                console.log("[root] calling enableRemindersFlow...");
+            
+                // 현재 언어에 맞는 메시지 가져오기
+                const { getLang, dict } = await import("@/lib/i18n");
+                const lang = getLang(); // "en" | "ko"
+                const t = dict[lang];
+            
+                const result = await m.enableRemindersFlow({
+                  mediaGuidance: t.notifMediaPermissionDenied,
+                  openSettings: t.openSettings,
+                });
+            
+                console.log("[root] enableRemindersFlow result:", result);
+                localStorage.setItem("notif_permission_prompted_once", "1");
+              })
+              
               console.log("[root] enableRemindersFlow result:", result);
               localStorage.setItem("notif_permission_prompted_once", "1");
             })
