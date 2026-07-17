@@ -1,3 +1,5 @@
+// android/app/src/main/java/app/lovable/aialbum/PhotoReminderWorker.java
+
 package app.lovable.aialbum;
 
 import android.Manifest;
