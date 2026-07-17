@@ -12,6 +12,8 @@ export interface NotificationPermissionPlugin {
   requestMedia(): Promise<{ granted: boolean }>;
   openNotificationSettings(): Promise<void>;
   openAppSettings(): Promise<void>;
+  checkMediaPermission(): Promise<{ granted: boolean }>;
+  openMediaPermissionSettings(): Promise<void>;
 }
 
 export const NotificationPermission =
@@ -83,5 +85,20 @@ export async function openNotificationSettings(): Promise<void> {
 export async function openAppSettings(): Promise<void> {
   try {
     await NotificationPermission.openAppSettings();
+  } catch {}
+}
+
+export async function checkMediaPermission(): Promise<boolean> {
+  try {
+    const r = await NotificationPermission.checkMediaPermission();
+    return !!r?.granted;
+  } catch {
+    return false;
+  }
+}
+
+export async function openMediaPermissionSettings(): Promise<void> {
+  try {
+    await NotificationPermission.openMediaPermissionSettings();
   } catch {}
 }
