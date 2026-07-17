@@ -27,7 +27,10 @@ import com.getcapacitor.annotation.PermissionCallback;
         name = "NotificationPermission",
         permissions = {
                 @Permission(alias = "notifications", strings = { Manifest.permission.POST_NOTIFICATIONS }),
-                @Permission(alias = "media13", strings = { Manifest.permission.READ_MEDIA_IMAGES }),
+                @Permission(alias = "media13", strings = {
+                        Manifest.permission.READ_MEDIA_IMAGES,
+                        Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+                }),
                 @Permission(alias = "medialegacy", strings = { Manifest.permission.READ_EXTERNAL_STORAGE })
         }
 )
