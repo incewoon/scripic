@@ -70,25 +70,21 @@ public class NotificationPermissionPlugin extends Plugin {
         @PluginMethod
         public void requestMedia(PluginCall call) {
             Context ctx = getContext();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_IMAGES)
-                        == PackageManager.PERMISSION_GRANTED) {
-                    JSObject r = new JSObject();
-                    r.put("granted", true);
-                    call.resolve(r);
-                    return;
-                }
-                requestPermissionForAlias("media13", call, "mediaCallback");
-            } else {
-                if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_EXTERNAL_STORAGE)
-                        == PackageManager.PERMISSION_GRANTED) {
-                    JSObject r = new JSObject();
-                    r.put("granted", true);
-                    call.resolve(r);
-                    return;
-                }
-                requestPermissionForAlias("medialegacy", call, "mediaCallback");
+            String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    ? Manifest.permission.READ_MEDIA_IMAGES : Manifest.permission.READ_EXTERNAL_STORAGE;
+            if (ContextCompat.checkSelfPermission(ctx, perm) == PackageManager.PERMISSION_GRANTED) {
+                JSObject r = new JSObject(); r.put("granted", true); call.resolve(r); return;
             }
+            boolean canShowDialog = ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), perm)
+                    || !hasEverRequestedBefore(); // 최초 요청인지 여부는 별도 SharedPreferences 플래그로 추적 필요
+            if (!canShowDialog) {
+                JSObject r = new JSObject();
+                r.put("granted", false);
+                r.put("permanentlyDenied", true); // JS가 이 값을 보고 곧바로 설정으로 안내
+                call.resolve(r);
+                return;
+            }
+            requestPermissionForAlias(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? "media13" : "medialegacy", call, "mediaCallback");
         }
         
     @PermissionCallback
