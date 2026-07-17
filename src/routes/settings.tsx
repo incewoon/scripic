@@ -12,7 +12,7 @@ import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
 import { APP_VERSION } from "@/generated/app-version";
 import { getNotificationsEnabled, setNotificationsEnabled, enableRemindersFlow } from "@/lib/reminders";
-import { requestPostNotificationsPermission, setNativeRemindersEnabled, requestMediaPermission, openNotificationSettings, openAppSettings, checkMediaPermission, openMediaPermissionSettings } from "@/plugins/notification-permission";
+import { requestPostNotificationsPermission, setNativeRemindersEnabled, requestMediaPermission, openNotificationSettings, openAppSettings, checkMediaPermission } from "@/plugins/notification-permission";
 import { App as CapacitorApp } from "@capacitor/app";
 
 
@@ -114,7 +114,7 @@ function SettingsPage() {
         setRemindersOn(true);
       } else {
         // OS 권한은 앱이 되돌릴 수 없으므로 시스템 사진 권한 설정으로 이동
-        await openMediaPermissionSettings();
+        await openAppSettings();
         // 토글 상태는 복귀 시 실제 권한값으로 재동기화
       }
     } finally {
