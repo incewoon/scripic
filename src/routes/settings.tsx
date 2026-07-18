@@ -61,43 +61,30 @@ function SettingsPage() {
   useEffect(() => {
     const sub = CapacitorApp.addListener("appStateChange", async ({ isActive }) => {
       if (!isActive) return;
-  
-      const mediaGranted = await checkMediaPermission();
-      const currentlyEnabled = getNotificationsEnabled();
-  
-      if (mediaGranted && currentlyEnabled) {
-        // 권한이 있고 내부 플래그도 켜져 있으면 토글을 켠 상태로 맞춤
-        setRemindersOn(true);
-      } else if (!mediaGranted) {
-        // 권한이 없으면 토글과 플래그를 모두 끔
-        setNotificationsEnabled(false);
-        await setNativeRemindersEnabled(false);
-        setRemindersOn(false);
-      }
+      const [notifOk, mediaOk] = await Promise.all([
+        checkNotificationPermission(),
+        checkMediaPermission(),
+      ]);
+      const trulyEnabled = notifOk && mediaOk;
+      setNotificationsEnabled(trulyEnabled);
+      await setNativeRemindersEnabled(trulyEnabled);
+      setRemindersOn(trulyEnabled);
     });
-    return () => { sub.then(s => s.remove()); };
+    return () => { sub.then((s) => s.remove()); };
   }, []);
   const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
   
   useEffect(() => {
     refreshDiag();
-  
     (async () => {
-      const cachedEnabled = getNotificationsEnabled();
-  
-      if (cachedEnabled) {
-        // 캐시가 켜져 있으면 실제 OS 권한을 다시 확인
-        const stillGranted = await checkMediaPermission();
-        if (!stillGranted) {
-          setNotificationsEnabled(false);
-          await setNativeRemindersEnabled(false);
-          setRemindersOn(false);
-          return;
-        }
-      }
-  
-      setRemindersOn(cachedEnabled);
-      void setNativeRemindersEnabled(cachedEnabled);
+      const [notifOk, mediaOk] = await Promise.all([
+        checkNotificationPermission(),
+        checkMediaPermission(),
+      ]);
+      const trulyEnabled = notifOk && mediaOk;
+      setNotificationsEnabled(trulyEnabled);
+      await setNativeRemindersEnabled(trulyEnabled);
+      setRemindersOn(trulyEnabled);
     })();
   }, []);
   
