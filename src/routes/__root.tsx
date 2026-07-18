@@ -108,24 +108,22 @@ function RootComponent() {
     if (typeof localStorage !== "undefined") {
       const asked = localStorage.getItem("notif_permission_prompted_once");
       console.log("[root] notif prompt check — asked:", asked, "isNative:", Capacitor.isNativePlatform());
-
+      
       if (!asked && Capacitor.isNativePlatform()) {
         setTimeout(() => {
-          import("@/lib/reminders")
-            .then(async (remindersMod) => {
-              console.log("[root] calling enableRemindersFlow...");
-              const result = await remindersMod.enableRemindersFlow({
-                mediaGuidance: t.notifMediaPermissionDenied,
-                openSettings: t.openSettings,
-              });
-              console.log("[root] enableRemindersFlow result:", result);
-
-              // 성공했을 때만 플래그 저장
-              if (result.enabled) {
-                localStorage.setItem("notif_permission_prompted_once", "1");
-              }
-            })
-            .catch((e) => {
+          import("@/lib/reminders").then(async (remindersMod) => {
+            // 이미 켜져 있으면 자동 유도 자체를 건너뛴다 — 토스트/재요청 없음
+            if (remindersMod.getNotificationsEnabled()) {
+              localStorage.setItem("notif_permission_prompted_once", "1");
+              return;
+            }
+            const result = await remindersMod.enableRemindersFlow({
+              mediaGuidance: t.notifMediaPermissionDenied,
+              openSettings: t.openSettings,
+            });
+            console.log("[root] enableRemindersFlow result:", result);
+            localStorage.setItem("notif_permission_prompted_once", "1");
+          }).catch((e) => {
               console.error("[root] auto enableRemindersFlow FAILED", e);
               // 실패 시 플래그를 절대 남기지 않음
             });
