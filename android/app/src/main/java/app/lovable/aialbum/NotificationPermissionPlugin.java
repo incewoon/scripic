@@ -153,4 +153,14 @@ public class NotificationPermissionPlugin extends Plugin {
         r.put("granted", granted);
         call.resolve(r);
     }
+
+        @PluginMethod
+        public void checkNotificationPermission(PluginCall call) {
+            Context ctx = getContext();
+            boolean granted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                    || ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+            JSObject r = new JSObject();
+            r.put("granted", granted);
+            call.resolve(r);
+        }
 }
