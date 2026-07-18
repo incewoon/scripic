@@ -1,6 +1,3 @@
-//android/app/src/main/java/app/lovable/aialbum/NotificationPermissionPlugin.java
-
-
 package app.lovable.aialbum;
 
 import android.Manifest;
@@ -10,7 +7,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
-
 
 import androidx.core.content.ContextCompat;
 
@@ -67,36 +63,43 @@ public class NotificationPermissionPlugin extends Plugin {
         call.resolve(r);
     }
 
-        @PluginMethod
-        public void requestMedia(PluginCall call) {
-            Context ctx = getContext();
-            String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                    ? Manifest.permission.READ_MEDIA_IMAGES : Manifest.permission.READ_EXTERNAL_STORAGE;
-            if (ContextCompat.checkSelfPermission(ctx, perm) == PackageManager.PERMISSION_GRANTED) {
-                JSObject r = new JSObject(); r.put("granted", true); call.resolve(r); return;
-            }
-            boolean canShowDialog = ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), perm)
-                    || !hasEverRequestedBefore(); // 최초 요청인지 여부는 별도 SharedPreferences 플래그로 추적 필요
-            if (!canShowDialog) {
-                JSObject r = new JSObject();
-                r.put("granted", false);
-                r.put("permanentlyDenied", true); // JS가 이 값을 보고 곧바로 설정으로 안내
-                call.resolve(r);
-                return;
-            }
-            requestPermissionForAlias(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? "media13" : "medialegacy", call, "mediaCallback");
+    @PluginMethod
+    public void requestMedia(PluginCall call) {
+        Context ctx = getContext();
+        String alias = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? "media13" : "medialegacy";
+        
+        // 이미 권한이 획득되었는지 확인
+        PermissionState state = getPermissionState(alias);
+        if (state == PermissionState.GRANTED) {
+            JSObject r = new JSObject();
+            r.put("granted", true);
+            call.resolve(r);
+            return;
         }
+
+        // 사용자가 권한을 완전히 거부(Denied)한 상태라면 무한 팝업을 띄우지 않고 바로 설정창 이동용 값을 리턴
+        if (state == PermissionState.DENIED) {
+            JSObject r = new JSObject();
+            r.put("granted", false);
+            r.put("permanentlyDenied", true); 
+            call.resolve(r);
+            return;
+        }
+
+        // 최초 요청이거나 검토 중일 때는 오동작하는 네이티브 로직 대신 Capacitor 표준 프레임워크 요청을 사용합니다.
+        requestPermissionForAlias(alias, call, "mediaCallback");
+    }
         
     @PermissionCallback
-        private void mediaCallback(PluginCall call) {
-            Context ctx = getContext();
-            boolean fullGranted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                    ? ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
-                    : ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-            JSObject r = new JSObject();
-            r.put("granted", fullGranted);
-            call.resolve(r);
-        }
+    private void mediaCallback(PluginCall call) {
+        Context ctx = getContext();
+        boolean fullGranted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
+                : ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+        JSObject r = new JSObject();
+        r.put("granted", fullGranted);
+        call.resolve(r);
+    }
 
     @PluginMethod
     public void setRemindersEnabled(PluginCall call) {
@@ -121,33 +124,33 @@ public class NotificationPermissionPlugin extends Plugin {
     }
 
     @PluginMethod
-        public void openNotificationSettings(PluginCall call) {
-            Context ctx = getContext();
-            Intent intent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-            intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.getPackageName());
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            ctx.startActivity(intent);
-            call.resolve();
-        }
+    public void openNotificationSettings(PluginCall call) {
+        Context ctx = getContext();
+        Intent intent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+        intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.getPackageName());
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        ctx.startActivity(intent);
+        call.resolve();
+    }
 
-        @PluginMethod
-        public void openAppSettings(PluginCall call) {
-            Context ctx = getContext();
-            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            intent.setData(android.net.Uri.parse("package:" + ctx.getPackageName()));
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            ctx.startActivity(intent);
-            call.resolve();
-        }
-        @PluginMethod
-        public void checkMediaPermission(PluginCall call) {
-            Context ctx = getContext();
-            boolean granted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                    ? ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
-                    : ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-            JSObject r = new JSObject();
-            r.put("granted", granted);
-            call.resolve(r);
-        }
+    @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        Context ctx = getContext();
+        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setData(android.net.Uri.parse("package:" + ctx.getPackageName()));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        ctx.startActivity(intent);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void checkMediaPermission(PluginCall call) {
+        Context ctx = getContext();
+        boolean granted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
+                : ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+        JSObject r = new JSObject();
+        r.put("granted", granted);
+        call.resolve(r);
+    }
 }
-        
