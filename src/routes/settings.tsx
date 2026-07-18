@@ -113,9 +113,12 @@ function SettingsPage() {
         
         setRemindersOn(true);
       } else {
-        // OS 권한은 앱이 되돌릴 수 없으므로 시스템 사진 권한 설정으로 이동
+        // 사용자가 끄겠다는 의 → 즉시 내부 상태 끄기
+        setNotificationsEnabled(false);
+        await setNativeRemindersEnabled(false);
+        setRemindersOn(false);
+        // 그 다음 설정 화면으로 이동 (사용자가 원하면 권한도 끌 수 있게)
         await openAppSettings();
-        // 토글 상태는 복귀 시 실제 권한값으로 재동기화
       }
     } finally {
       setRemindersBusy(false);
