@@ -13,6 +13,7 @@ export interface NotificationPermissionPlugin {
   openNotificationSettings(): Promise<void>;
   openAppSettings(): Promise<void>;
   checkMediaPermission(): Promise<{ granted: boolean }>;
+  checkNotificationPermission(): Promise<{ granted: boolean }>;
 }
 
 export const NotificationPermission =
