@@ -87,6 +87,11 @@ export async function openAppSettings(): Promise<void> {
   } catch {}
 }
 
+export async function checkNotificationPermission(): Promise<boolean> {
+  try { const r = await NotificationPermission.checkNotificationPermission(); return !!r?.granted; }
+  catch { return false; }
+}
+
 export async function checkMediaPermission(): Promise<boolean> {
   try {
     const r = await NotificationPermission.checkMediaPermission();
