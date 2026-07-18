@@ -89,41 +89,27 @@ export async function recordAlbumCreated(): Promise<void> {
   localStorage.setItem(LAST_ALBUM_KEY, String(Date.now()));
 }
 
-export async function enableRemindersFlow(
-  messages?: ReminderMessages
-): Promise<{ enabled: boolean; reason?: string }> {
-  // 1. 알림 권한
-  const notifGranted = await requestPostNotificationsPermission();
-  if (!notifGranted) {
-    return { enabled: false, reason: "notif_denied" };
+export async function enableRemindersFlow(messages?: ReminderMessages) {
+  // 이미 켜져 있으면 재확인 없이 그대로 성공 처리
+  if (getNotificationsEnabled()) {
+    return { enabled: true };
   }
 
-  // 2. 미디어 권한이 이미 있는지 먼저 조용히 확인
+  const notifGranted = await requestPostNotificationsPermission();
+  if (!notifGranted) return { enabled: false, reason: "notif_denied" };
+
   const alreadyGranted = await checkMediaPermission();
-
   if (!alreadyGranted) {
-    // 아직 권한이 없을 때만 안내 토스트 + 짧은 대기
-    const guidance = messages?.mediaGuidance 
-      ?? "Full photo access is required. Limited access is not supported.";
+    const guidance = messages?.mediaGuidance ?? "Full photo access is required. Limited access is not supported.";
     const openLabel = messages?.openSettings ?? "Open settings";
-
-    toast.info(guidance, {
-      action: {
-        label: openLabel,
-        onClick: () => openAppSettings(),
-      },
-    });
+    toast.info(guidance, { action: { label: openLabel, onClick: () => openAppSettings() } });
     await new Promise((r) => setTimeout(r, 600));
   }
 
   const mediaGranted = await requestMediaPermission();
-  if (!mediaGranted) {
-    return { enabled: false, reason: "media_denied" };
-  }
+  if (!mediaGranted) return { enabled: false, reason: "media_denied" };
 
-  // 3. 양쪽 플래그 동기화
   setNotificationsEnabled(true);
   await setNativeRemindersEnabled(true);
-
   return { enabled: true };
 }
