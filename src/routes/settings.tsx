@@ -61,33 +61,51 @@ function SettingsPage() {
   useEffect(() => {
     const sub = CapacitorApp.addListener("appStateChange", async ({ isActive }) => {
       if (!isActive) return;
-      const [notifOk, mediaOk] = await Promise.all([
-        checkNotificationPermission(),
-        checkMediaPermission(),
-      ]);
-      const trulyEnabled = notifOk && mediaOk;
-      setNotificationsEnabled(trulyEnabled);
-      await setNativeRemindersEnabled(trulyEnabled);
-      setRemindersOn(trulyEnabled);
+  
+      const wantsEnabled = getNotificationsEnabled(); // 사용자의 의도
+      if (!wantsEnabled) {
+        // 사용자가 끈 상태면 절대 자동으로 켜지 않음
+        setRemindersOn(false);
+        return;
+      }
+  
+      // 사용자가 켜고 싶은 상태일 때만 실제 권한을 확인
+      const mediaOk = await checkMediaPermission();
+      if (!mediaOk) {
+        // 권한이 없어졌으면 강제로 끔
+        setNotificationsEnabled(false);
+        await setNativeRemindersEnabled(false);
+        setRemindersOn(false);
+      } else {
+        setRemindersOn(true);
+      }
     });
     return () => { sub.then((s) => s.remove()); };
   }, []);
+  
   const refreshDiag = () => { getStorageDiagnostics().then(setDiag); };
   
   useEffect(() => {
     refreshDiag();
+  
     (async () => {
-      const [notifOk, mediaOk] = await Promise.all([
-        checkNotificationPermission(),
-        checkMediaPermission(),
-      ]);
-      const trulyEnabled = notifOk && mediaOk;
-      setNotificationsEnabled(trulyEnabled);
-      await setNativeRemindersEnabled(trulyEnabled);
-      setRemindersOn(trulyEnabled);
+      const wantsEnabled = getNotificationsEnabled();
+      if (!wantsEnabled) {
+        setRemindersOn(false);
+        return;
+      }
+  
+      const mediaOk = await checkMediaPermission();
+      if (!mediaOk) {
+        setNotificationsEnabled(false);
+        await setNativeRemindersEnabled(false);
+        setRemindersOn(false);
+      } else {
+        setRemindersOn(true);
+      }
     })();
   }, []);
-  
+    
   const onToggleReminders = async (next: boolean) => {
     if (remindersBusy) return;
     setRemindersBusy(true);
