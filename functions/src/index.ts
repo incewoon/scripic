@@ -613,7 +613,6 @@ export const grantReviewReward = onCall(
     const { imageDataUrl, lang = "en" } = (req.data ?? {}) as { imageDataUrl?: string; lang?: string };
     const isKo = lang === "ko";
     
-    const { imageDataUrl } = (req.data ?? {}) as { imageDataUrl?: string };
     if (!imageDataUrl || typeof imageDataUrl !== "string" || !imageDataUrl.startsWith("data:")) {
       throw new HttpsError("invalid-argument", "imageDataUrl required");
     }
