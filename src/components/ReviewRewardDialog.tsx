@@ -69,7 +69,7 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
     try {
       await ensureFirebaseUser();
       const call = httpsCallable<any, GrantResult>(getFns(), "grantReviewReward");
-      const res = await call({ imageDataUrl: preview, deviceId: getDeviceId(), localDate: getLocalDate() });
+      const res = await call({ imageDataUrl: preview, deviceId: getDeviceId(), localDate: getLocalDate(), lang: getLang() });
       const result = res.data;
       if (result.approved) {
         grantExtraAlbumToday();
@@ -134,11 +134,11 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
           {message && (
             <div
               className={`mb-4 px-3 py-2.5 rounded-xl text-[13px] leading-relaxed border ${
-                message.kind === "success"
-                  ? "bg-primary/10 border-primary/30 warm-text"
-                  : message.kind === "info"
-                  ? "bg-background/60 border-border/60 warm-muted"
-                  : "bg-destructive/10 border-destructive/30 text-destructive"
+                message.kind === "success" 
+                  ? "bg-primary/10 border-primary/30 warm-text" 
+                  : message.kind === "info" 
+                    ? "bg-background/60 border-border/60 warm-muted" 
+                    : "bg-destructive/10 border-destructive/30 text-destructive"
               }`}
             >
               {message.text}
