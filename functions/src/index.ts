@@ -2,14 +2,14 @@
 // Cloud Functions for Firebase — proxy for Gemini 2.5 Flash-Lite.
 //
 // All AI traffic from the app goes through these callable functions:
-// - chat : streaming interview turns
-// - generateAlbum : structured album JSON (title/intro/captions/closing/...)
+//   - chat            : streaming interview turns
+//   - generateAlbum   : structured album JSON (title/intro/captions/closing/...)
 //
 // Security:
-// - App Check is ENFORCED (Play Integrity in production, debug token in dev).
-// - Daily 1-album limit is counted in Firestore, keyed by App Check appId
-//   (falls back to a client-supplied deviceId if App Check is missing).
-// - The Gemini API key lives ONLY on the server (functions secret).
+//   - App Check is ENFORCED (Play Integrity in production, debug token in dev).
+//   - Daily 1-album limit is counted in Firestore, keyed by App Check appId
+//     (falls back to a client-supplied deviceId if App Check is missing).
+//   - The Gemini API key lives ONLY on the server (functions secret).
 
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
@@ -17,18 +17,12 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
 
-import { 
-  geminiGenerate, 
-  geminiStreamText, 
-  toGeminiRequest, 
-  GeminiRateLimitError, 
-  GeminiQuotaError, 
-  GeminiUnavailableError, 
-  type OpenAIMessage 
-} from "./gemini";
+import { geminiGenerate, geminiStreamText, toGeminiRequest, GeminiRateLimitError, GeminiQuotaError, GeminiUnavailableError, type OpenAIMessage } from "./gemini";
 import { chatSystemPrompt, turnLimitClause, type Mode } from "./prompts-chat";
 import { albumSystem, albumUserPrompt, toneInstruction, type Mode as AlbumMode, type Tone } from "./prompts-album";
 import { computePHash, minHammingDistance } from "./phash";
+
+import { searchPlaces } from "./places";
 
 // pHash duplicate detection thresholds for review screenshots.
 // 256-bit dHash: ~11% threshold. Legacy 64-bit hashes auto-skip via length mismatch.
@@ -56,7 +50,6 @@ setGlobalOptions({
  * of the server's UTC date (covers any timezone offset on Earth).
  */
 function validateClientDate(clientDate: unknown): string {
-  // 교정: 정규식 끝부분의 백틱 오타 구문(\d{2}$`)을 올바른 종료 앵커(\d{2}$)로 수정했습니다.
   if (typeof clientDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(clientDate)) {
     throw new HttpsError("invalid-argument", "invalid date format");
   }
@@ -79,14 +72,9 @@ function validateClientDate(clientDate: unknown): string {
  */
 function rateLimitKey(req: { app?: { appId?: string }; data?: any }): string {
   const deviceId = String(req.data?.deviceId ?? "").slice(0, 128);
-  // 교정: 깨진 문자열 및 분기 구문을 백틱과 올바른 개행 구조로 정비했습니다.
-  if (deviceId) {
-    return `dev:${deviceId}`;
-  }
+  if (deviceId) return `dev:${deviceId}`;
   const appId = req.app?.appId;
-  if (appId) {
-    return `app:${appId}`;
-  }
+  if (appId) return `app:${appId}`;
   throw new HttpsError("failed-precondition", "missing device id and app check token");
 }
 
@@ -177,13 +165,13 @@ export const chat = onCall(
     const photoBytes = Array.isArray(photos)
       ? photos.reduce((a, p) => a + (typeof p === "string" ? p.length : 0), 0)
       : 0;
-    
-    // 교정: 템플릿 리터럴 내부 변수 바인딩 구문 오류 수정
-    console.log(`[chat] recv rid=${rid} msgs=${messages?.length ?? 0} photoBytes=${photoBytes} lang=${lang} mode=${mode}`);
+    console.log(`[chat] recv rid=${rid} msgs=${Array.isArray(messages) ? messages.length : 0} photos=${photos?.length ?? 0} photoBytes=${photoBytes} lang=${lang} mode=${mode}`);
+
 
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
     }
+    // Size limits to prevent cost amplification via oversized payloads.
     if (messages.length > 20) {
       throw new HttpsError("invalid-argument", "too many messages (max 20)");
     }
@@ -214,7 +202,6 @@ export const chat = onCall(
       }
     }
 
-    // 교정: 리터럴 닫는 백틱 유실 문법 수정
     if (mode !== "story" && mode !== "journal" && mode !== "summary") {
       throw new HttpsError("invalid-argument", `invalid mode: ${String(mode)}`);
     }
@@ -222,6 +209,7 @@ export const chat = onCall(
     const maxTurnsPerPhoto = typeof rawCap === "number" && rawCap > 0 ? Math.min(20, Math.floor(rawCap)) : 3;
     const photoCount = typeof pcFromClient === "number" && pcFromClient > 0 ? pcFromClient : (photos?.length ?? 0);
 
+    // 사진 주입 로직 (기존과 동일)
     const enriched: OpenAIMessage[] = [...messages];
     const hasPhotos = enriched.some((msg) => Array.isArray(msg.content));
     if (!hasPhotos && photos?.length) {
@@ -232,8 +220,6 @@ export const chat = onCall(
           lang === "ko"
             ? `여기 ${photos.length}장의 사진이 있어요. 순서대로 사진 1부터 사진 ${photos.length}까지입니다.`
             : `Here are ${photos.length} photos, labeled Photo 1 through Photo ${photos.length} in order.`;
-        
-        // 교정: 잘못 표현된 표현식 및 문자열 바인딩 기호 교정
         const content: any[] = [{ type: "text", text: `${intro}\n${txt}` }];
         photos.forEach((url, i) => {
           content.push({ type: "text", text: lang === "ko" ? `사진 ${i + 1}:` : `Photo ${i + 1}:` });
@@ -244,8 +230,11 @@ export const chat = onCall(
     }
 
     const system = chatSystemPrompt(lang, photoCount, m) + turnLimitClause(lang, photoCount, maxTurnsPerPhoto);
+
     const body = toGeminiRequest([{ role: "system", content: system }, ...enriched]);
 
+    // === 턴 계산 ===
+    // totalCap = 어시스턴트 메시지 최대 개수. 전체 대화 12메시지(사용자 6 + AI 6) 기준 cap 12.
     const totalCap = Math.min(12, Math.max(1, photoCount * maxTurnsPerPhoto));
     const assistantSoFar = enriched.filter((msg) => msg.role === "assistant").length;
     const willBeLastTurn = assistantSoFar + 1 >= totalCap;
@@ -262,9 +251,11 @@ export const chat = onCall(
     const lastUserText = extractText([...enriched].reverse().find((m) => m.role === "user"));
     const prevAssistantText = extractText([...enriched].reverse().find((m) => m.role === "assistant"));
 
-    const EXPLICIT_FINISH_KO = /(마무리|정리|완성|마감|끝내|앨범\s만들)\s(해|해줘|해주세요|할래|할까|하자|부탁|좀)?/;
+    // 정규식 — 클라이언트와 동일 규칙
+    const EXPLICIT_FINISH_KO = /(마무리|정리|완성|마감|끝내|앨범\s*만들)\s*(해|해줘|해주세요|할래|할까|하자|부탁|좀)?/;
     const EXPLICIT_FINISH_EN =
       /\b(finish (it|this|the album)|wrap (it|this) up|wrap up|finalize|complete (it|the album)|put (it|this|them|these) together|create the album|make the album)\b/i;
+    // 공백·조사가 섞인 형태("어 정리해줘", "그래 만들어줘")도 잡도록 단어 경계 기반 매칭
     const POSITIVE_KO =
       /(^|\s)(네+|넵+|넹+|예+|응+|웅+|어+|ㅇㅇ+|ㅇㅋ+|오케이|콜|그래(요)?|좋아(요)?|좋습니다|좋지|해(줘|주세요)?|만들어(줘|주세요)?|정리해(줘|주세요)?|마무리해(줘|주세요)?)(\s|[!.~ㅋㅎ]|$)/;
     const POSITIVE_EN =
@@ -277,10 +268,11 @@ export const chat = onCall(
       /(앨범으로 (정리|마무리)|이대로 (정리|마무리)|정리할까요|마무리할까요|완성할까요|정리해 ?드릴까요|마무리해 ?드릴까요|완성해 ?드릴까요)/;
     const WRAP_HINT_EN =
       /(shall i (put|wrap|finish)|wrap (this|it) up|finish (the|your) album|put (this|these) together|create the album now)/i;
+    // 모델이 자체적으로 만든 마무리 제안/수락 문장 — 서버 tail과 중복 방지를 위해 제거
     const WRAP_SENT_KO =
-      /(?:^|\n)[^\n]?(?:정리|마무리|완성)\s?(?:해\s?)?(?:드릴까요??|드릴게요.?|할까요??|할게요.?)[^\n]/g;
+      /(?:^|\n)[^\n]*?(?:정리|마무리|완성)\s?(?:해\s?)?(?:드릴까요\??|드릴게요\.?|할까요\??|할게요\.?)[^\n]*/g;
     const WRAP_SENT_EN =
-      /(?:^|\n)[^\n]?(?:shall i (?:put|wrap|finish)|let me put|putting (?:it|this|these) together|wrap (?:this|it) up)[^\n]/gi;
+      /(?:^|\n)[^\n]*?(?:shall i (?:put|wrap|finish)|let me put|putting (?:it|this|these) together|wrap (?:this|it) up)[^\n]*/gi;
 
     const userExplicitFinish = EXPLICIT_FINISH_KO.test(lastUserText) || EXPLICIT_FINISH_EN.test(lastUserText);
     const userPositive = POSITIVE_KO.test(lastUserText) || POSITIVE_EN.test(lastUserText);
@@ -297,19 +289,19 @@ export const chat = onCall(
     let firstTokenAt: number | null = null;
     let chunkCount = 0;
     try {
-      console.log(`[chat] gemini.connect rid=${rid}`); 
-      for await (const delta of geminiStreamText(body)) { 
-        chunkCount++; 
-        if (firstTokenAt == null) { 
-          firstTokenAt = Date.now(); 
-          console.log(`[chat] gemini.firstToken rid=${rid} ms=${firstTokenAt - geminiT0}`); 
-        } 
-        full += delta; 
-        if (response?.sendChunk) response.sendChunk({ delta }); 
-      } 
-      console.log(`[chat] gemini.done rid=${rid} tokens=${chunkCount} chars=${full.length}`); 
-    } catch (e: any) { 
-      console.error(`[chat] fail rid=${rid} error=${e?.constructor?.name} elapsedMs=${Date.now() - chatT0} msg=${e?.message}`);
+      console.log(`[chat] gemini.connect rid=${rid}`);
+      for await (const delta of geminiStreamText(body)) {
+        chunkCount++;
+        if (firstTokenAt == null) {
+          firstTokenAt = Date.now();
+          console.log(`[chat] gemini.firstToken rid=${rid} elapsedMs=${firstTokenAt - geminiT0}`);
+        }
+        full += delta;
+        if (response?.sendChunk) response.sendChunk({ delta });
+      }
+      console.log(`[chat] gemini.done rid=${rid} streamMs=${Date.now() - geminiT0} chunks=${chunkCount} chars=${full.length}`);
+    } catch (e: any) {
+      console.error(`[chat] fail rid=${rid} kind=${e?.constructor?.name} status=${e?.status} elapsedMs=${Date.now() - chatT0} msg=${e?.message}`);
       if (e instanceof GeminiUnavailableError) {
         throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
       }
@@ -319,6 +311,10 @@ export const chat = onCall(
       throw new HttpsError("internal", e?.message ?? "gemini stream failed");
     }
 
+
+    // Defensive: if the model produced almost nothing and no server-injected
+    // finish token was present, treat as transient upstream failure so the
+    // client shows a retry-able "busy" state instead of an empty bubble.
     const trimmedFull = full.trim();
     if (!/\[(READY_TO_FINISH|PROPOSE_FINISH)\]/.test(full) && trimmedFull.length < 6) {
       throw new HttpsError("unavailable", "ai_unavailable", {
@@ -327,41 +323,64 @@ export const chat = onCall(
       });
     }
 
+    // Capture the raw streamed text (what the client has accumulated) so we
+    // can decide whether to issue a final "replace" reconciliation chunk.
     const streamed = full;
+
+    // AI 생성 토큰 제거 후 서버 로직으로만 주입
     full = full.replace(/\[(READY_TO_FINISH|PROPOSE_FINISH)\]/g, "").trimEnd();
 
     const stripWrapSentences = (s: string) =>
       s.replace(WRAP_SENT_KO, "").replace(WRAP_SENT_EN, "").replace(/\n{3,}/g, "\n\n").trim();
 
-    // 후처리 테일 삽입 로직 정비
+    // 우선순위 (unchanged)
     if (userNegative) {
-      // 일반 대화 진행
+      // 일반 대화 진행 — 모델 응답 그대로 사용
     } else if (wrapProposedPrev && (userPositive || userExplicitFinish)) {
       full = stripWrapSentences(full);
-      const tail = lang === "ko" ? "네, 바로 정리해드릴게요.\n[READY_TO_FINISH]" : "Got it, putting it together now.\n[READY_TO_FINISH]";
-      full = full ? `${full}\n\n${tail}` : tail; 
-    } else if (userExplicitFinish) { 
-      full = stripWrapSentences(full); 
-      const tail = lang === "ko" ? "그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?\n[PROPOSE_FINISH]" : "Shall I put together the album based on what we've shared so far?\n[PROPOSE_FINISH]"; 
-      full = full ? `${full}\n\n${tail}` : tail; 
-    } else if (assistantSoFar + 1 > totalCap) { 
-      full = stripWrapSentences(full); 
-      const tail = lang === "ko" ? "이제 앨범으로 정리해드릴게요.\n[READY_TO_FINISH]" : "Let me put this together as your album now.\n[READY_TO_FINISH]"; 
-      full = full ? `${full}\n\n${tail}` : tail; 
-    } else if (willBeLastTurn) { 
-      full = stripWrapSentences(full); 
-      const tail = lang === "ko" ? "이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[PROPOSE_FINISH]" : "I think we have enough now. Shall I put these together into your album?\n[PROPOSE_FINISH]"; 
+      const tail =
+        lang === "ko"
+          ? "네, 바로 정리해드릴게요.\n[READY_TO_FINISH]"
+          : "Got it, putting it together now.\n[READY_TO_FINISH]";
+      full = full ? `${full}\n\n${tail}` : tail;
+    } else if (userExplicitFinish) {
+      full = stripWrapSentences(full);
+      const tail =
+        lang === "ko"
+          ? "그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?\n[PROPOSE_FINISH]"
+          : "Shall I put together the album based on what we've shared so far?\n[PROPOSE_FINISH]";
+      full = full ? `${full}\n\n${tail}` : tail;
+    } else if (assistantSoFar + 1 > totalCap) {
+      full = stripWrapSentences(full);
+      const tail =
+        lang === "ko"
+          ? "이제 앨범으로 정리해드릴게요.\n[READY_TO_FINISH]"
+          : "Let me put this together as your album now.\n[READY_TO_FINISH]";
+      full = full ? `${full}\n\n${tail}` : tail;
+    } else if (willBeLastTurn) {
+      full = stripWrapSentences(full);
+      const tail =
+        lang === "ko"
+          ? "이 정도면 충분히 담을 수 있을 것 같아요. 이대로 앨범으로 정리해드릴까요?\n[PROPOSE_FINISH]"
+          : "I think we have enough now. Shall I put these together into your album?\n[PROPOSE_FINISH]";
       full = full ? `${full}\n\n${tail}` : tail;
     }
 
+    // If post-processing changed the text (stripped wrap sentence or appended
+    // a server-injected tail), reconcile the client by sending a final
+    // replacement chunk. The client treats `replace` as the authoritative full text.
+    // If post-processing changed the text (stripped wrap sentence or appended
+    // a server-injected tail), reconcile the client by sending a final
+    // replacement chunk. The client treats `replace` as the authoritative full text.
     const postReplaced = full !== streamed;
     if (response?.sendChunk && postReplaced) {
       response.sendChunk({ replace: full });
     }
-    console.log(`[chat] done rid=${rid} replaced=${postReplaced} finalChars=${full.length}`);
+    console.log(`[chat] done rid=${rid} totalMs=${Date.now() - chatT0} replaced=${postReplaced} finalChars=${full.length}`);
     return { text: full };
   },
 );
+
 
 // ---------------- generateAlbum ----------------
 
@@ -414,7 +433,8 @@ export const generateAlbum = onCall(
       tone?: Tone;
     };
     const rid = typeof ridRaw === "string" && ridRaw.length ? ridRaw.slice(0, 64) : "-";
-    console.log(`[album] recv rid=${rid} msgs=${messages?.length ?? 0} photoCount=${photoCount} lang=${lang} mode=${mode} tone=${tone}`);
+    console.log(`[album] recv rid=${rid} msgs=${Array.isArray(messages) ? messages.length : 0} photoCount=${photoCount} lang=${lang} mode=${mode} tone=${tone}`);
+
 
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpsError("invalid-argument", "messages required");
@@ -442,14 +462,15 @@ export const generateAlbum = onCall(
     if (!photoCount || photoCount < 1) throw new HttpsError("invalid-argument", "photoCount required");
 
     if (mode !== "story" && mode !== "journal" && mode !== "summary") {
-      throw new HttpsError("invalid-argument", `invalid mode: ${String(mode)}`); 
-    } 
-    if (tone !== "politely" && tone !== "friendly" && tone !== "short") { 
+      throw new HttpsError("invalid-argument", `invalid mode: ${String(mode)}`);
+    }
+    if (tone !== "politely" && tone !== "friendly" && tone !== "short") {
       throw new HttpsError("invalid-argument", `invalid tone: ${String(tone)}`);
     }
     const m: AlbumMode = mode;
     const tn: Tone = tone;
 
+    // Enforce 1 album / day BEFORE we burn a Gemini call.
     const key = rateLimitKey(req);
     const today = validateClientDate(req.data?.localDate);
     await reserveDailyAlbum(key, today, true);
@@ -501,33 +522,34 @@ export const generateAlbum = onCall(
     };
 
     let result: any;
+    const geminiT0 = Date.now();
     try {
-      console.log(`[album] gemini.start rid=${rid}`);
+      console.log(`[album] gemini.start rid=${rid} validatedMs=${geminiT0 - albumT0}`);
       result = await geminiGenerate(body);
-      console.log(`[album] gemini.done rid=${rid} elapsedMs=${Date.now() - albumT0}`); 
-    } catch (e: any) { 
-      console.error(`[album] fail rid=${rid} kind=${e?.status} msg=${e?.message}`); 
-      await rollbackDailyCount(); 
-      if (e instanceof GeminiUnavailableError) { 
-        throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status }); 
-      } 
-      if (e instanceof GeminiQuotaError || e instanceof GeminiRateLimitError) { 
-        throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status }); 
-      } 
-      throw new HttpsError("internal", e?.message ?? "gemini failed"); 
-    } 
-
-    const parts = result?.candidates?.[0]?.content?.parts ?? []; 
-    const fc = parts.find((p: any) => p.functionCall)?.functionCall; 
-    if (!fc?.args) { 
-      await rollbackDailyCount(); 
-      console.error(`[album] fail rid=${rid} error=no_function_call elapsedMs=${Date.now() - albumT0}`); 
-      throw new HttpsError("internal", "gemini did not return album"); 
-    } 
-    console.log(`[album] done rid=${rid} totalElapsedMs=${Date.now() - albumT0}`);
+      console.log(`[album] gemini.done rid=${rid} elapsedMs=${Date.now() - geminiT0}`);
+    } catch (e: any) {
+      console.error(`[album] fail rid=${rid} kind=${e?.constructor?.name} status=${e?.status} elapsedMs=${Date.now() - albumT0} msg=${e?.message}`);
+      await rollbackDailyCount();
+      if (e instanceof GeminiUnavailableError) {
+        throw new HttpsError("unavailable", "ai_unavailable", { kind: "ai_unavailable", status: e.status });
+      }
+      if (e instanceof GeminiQuotaError || e instanceof GeminiRateLimitError) {
+        throw new HttpsError("resource-exhausted", "ai_quota_exhausted", { kind: "ai_quota", status: e.status });
+      }
+      throw new HttpsError("internal", e?.message ?? "gemini failed");
+    }
+    const parts = result?.candidates?.[0]?.content?.parts ?? [];
+    const fc = parts.find((p: any) => p.functionCall)?.functionCall;
+    if (!fc?.args) {
+      await rollbackDailyCount();
+      console.error(`[album] fail rid=${rid} reason=no_function_call totalMs=${Date.now() - albumT0}`);
+      throw new HttpsError("internal", "gemini did not return album");
+    }
+    console.log(`[album] done rid=${rid} totalMs=${Date.now() - albumT0}`);
     return fc.args;
   },
 );
+
 
 // ---------------- dailyStatus (peek) ----------------
 
@@ -541,6 +563,10 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
 });
 
 // ---------------- grantReviewReward ----------------
+//
+// Verifies a screenshot of a social-media review of the app via Gemini Vision,
+// and on approval marks today's daily-limit doc with `bonusGranted: true`,
+// raising the per-device cap from 1 → 2 albums for the rest of the day.
 
 const REVIEW_SYSTEM_PROMPT = `You are the Reward System Agent for a photo-to-album app.
 IMPORTANT - The CURRENT brand is ONLY one of these names/domains:
@@ -586,7 +612,7 @@ export const grantReviewReward = onCall(
   async (req) => {
     const { imageDataUrl, lang = "en" } = (req.data ?? {}) as { imageDataUrl?: string; lang?: string };
     const isKo = lang === "ko";
-
+    
     if (!imageDataUrl || typeof imageDataUrl !== "string" || !imageDataUrl.startsWith("data:")) {
       throw new HttpsError("invalid-argument", "imageDataUrl required");
     }
@@ -597,6 +623,7 @@ export const grantReviewReward = onCall(
     const key = rateLimitKey(req);
     const today = validateClientDate(req.data?.localDate);
 
+    // Short-circuit: bonus already granted today.
     const existing = await db.collection("daily_limits").doc(key).get();
     const exData = existing.data();
     if (exData?.lastDate === today && exData?.bonusGranted === true) {
@@ -604,12 +631,15 @@ export const grantReviewReward = onCall(
         approved: false,
         reason: "already_granted",
         success_message: "",
-        daily_limit_info: isKo
-          ? "오늘 이미 추가 앨범을 사용하셨습니다. (자정에 초기화됩니다)"
+        daily_limit_info: isKo 
+          ? "오늘 이미 추가 앨범을 사용하셨습니다. (자정에 초기화됩니다)" 
           : "You have already used your extra album today. (Resets at midnight)",
       };
     }
 
+    // --- Perceptual-hash duplicate check (persistent, not daily) ---
+    // Reject screenshots that look near-identical to one this device already
+    // used for a previous reward, regardless of date.
     let phash: string | null = null;
     try {
       phash = await computePHash(imageDataUrl);
@@ -625,8 +655,8 @@ export const grantReviewReward = onCall(
         console.log("[reviewReward] duplicate screenshot, distance=", dist);
         return {
           approved: false,
-          reason: isKo
-            ? "이미 사용한 후기 이미지예요. 새로운 후기 스크린샷을 올려주세요."
+          reason: isKo 
+            ? "이미 사용한 후기 이미지예요. 새로운 후기 스크린샷을 올려주세요." 
             : "This review screenshot has already been used. Please upload a new screenshot.",
           success_message: "",
           daily_limit_info: "",
@@ -634,6 +664,7 @@ export const grantReviewReward = onCall(
       }
     }
 
+    // Verify the screenshot with Gemini Vision.
     const body = toGeminiRequest([
       { role: "system", content: REVIEW_SYSTEM_PROMPT },
       {
@@ -656,7 +687,8 @@ export const grantReviewReward = onCall(
         .trim();
       console.log("[reviewReward] image bytes:", imageDataUrl.length, "raw:", rawText.slice(0, 500));
       const cleaned = rawText
-        .replace(/^(?:json)?\s*/i, "").replace(/\s*$/i, "")
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "")
         .trim();
       try {
         parsed = JSON.parse(cleaned);
@@ -679,14 +711,16 @@ export const grantReviewReward = onCall(
       }
       return {
         approved: false,
-        reason: isKo
-          ? "AI 응답을 해석하지 못했어요. 다른 스크린샷으로 다시 시도해주세요."
+        reason: isKo 
+          ? "AI 응답을 해석하지 못했어요. 다른 스크린샷으로 다시 시도해주세요." 
           : "Could not interpret AI response. Please try again with another screenshot.",
         success_message: "",
         daily_limit_info: "",
       };
     }
 
+    // Server-side brand guard: even if the model approved, the response must
+    // claim the current brand. Reject old "Memory Weaver" / generic-only cases.
     const detected = String(parsed.detected_brand ?? "").toLowerCase();
     const isCurrentBrand = detected === "scripic";
     const isOldOrGeneric = detected === "memory_weaver" || detected === "generic" || detected === "none";
@@ -697,11 +731,11 @@ export const grantReviewReward = onCall(
         approved: false,
         reason: isKo
           ? (isOldOrGeneric || !detected
-            ? "이 앱의 현재 브랜드(Scripic / 스크립픽)가 보이지 않아요. 앱이름이 보이는 후기 스크린샷을 올려주세요."
-            : "앱이름을 확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.")
+              ? "이 앱의 현재 브랜드(Scripic / 스크립픽)가 보이지 않아요. 앱이름이 보이는 후기 스크린샷을 올려주세요."
+              : "앱이름을 확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.")
           : (isOldOrGeneric || !detected
-            ? "The current brand name (Scripic) cannot be found. Please upload a screenshot showing the app name."
-            : "Could not verify the app name. Please try another screenshot."),
+              ? "The current brand name (Scripic) cannot be found. Please upload a screenshot showing the app name."
+              : "Could not verify the app name. Please try another screenshot."),
         success_message: "",
         daily_limit_info: "",
       };
@@ -711,8 +745,8 @@ export const grantReviewReward = onCall(
       console.log("[reviewReward] rejected by AI:", parsed.reason, "detected:", detected);
       return {
         approved: false,
-        reason: parsed.reason ?? (isKo
-          ? "후기 내용을 인식하지 못했어요. 'Scripic'이 보이게 캡처해 주세요."
+        reason: parsed.reason ?? (isKo 
+          ? "후기 내용을 인식하지 못했어요. 'Scripic'이 보이게 캡처해 주세요." 
           : "Review content could not be recognized. Please capture it so 'Scripic' is visible."),
         success_message: "",
         daily_limit_info: "",
@@ -721,6 +755,7 @@ export const grantReviewReward = onCall(
 
     await grantDailyBonus(key, today);
 
+    // Persist the approved screenshot's pHash so future duplicates are rejected.
     if (phash) {
       try {
         await hashesRef.set(
@@ -731,6 +766,7 @@ export const grantReviewReward = onCall(
           },
           { merge: true },
         );
+        // Trim the stored list if it grew unbounded.
         const after = await hashesRef.get();
         const arr: string[] = Array.isArray(after.data()?.hashes) ? (after.data()!.hashes as string[]) : [];
         if (arr.length > PHASH_MAX_STORED) {
@@ -744,10 +780,10 @@ export const grantReviewReward = onCall(
     return {
       approved: true,
       reason: parsed.reason ?? "ok",
-      success_message: parsed.success_message ?? (isKo
-        ? "🎁 와우! 멋진 후기 감사해요! 추가 앨범이 지급되었어요."
+      success_message: parsed.success_message ?? (isKo 
+        ? "🎁 와우! 멋진 후기 감사해요! 추가 앨범이 지급되었어요." 
         : "🎁 Wow! Thanks for the great review! An additional album has been provided to you."),
-      // 해결: 중복 속성이었던 daily_limit_info 행을 단 하나만 남기고 청소했습니다 (TS1117 제거).
+      daily_limit_info: "",
       daily_limit_info: "",
     };
   },
