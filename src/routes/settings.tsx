@@ -111,12 +111,17 @@ function SettingsPage() {
     setRemindersBusy(true);
     try {
       if (next) {
+        // 켤 때는 기존 flow를 시도 (최초에는 시스템 다이얼로그가 뜰 수 있음)
         const { enabled, reason } = await enableRemindersFlow({
           mediaGuidance: t.notifMediaPermissionDenied,
           openSettings: t.openSettings,
         });
-        
-        if (!enabled) {
+  
+        if (enabled) {
+          setRemindersOn(true);
+        } else {
+          // 실패해도 플래그를 강제로 false로 두지 않음.
+          // 나중에 설정에서 권한을 주고 돌아오면 sync가 맞춰줌.
           setRemindersOn(false);
           if (reason === "notif_denied") {
             toast.error(t.notifPermissionDenied, {
@@ -125,17 +130,10 @@ function SettingsPage() {
                 onClick: () => openNotificationSettings(),
               },
             });
-          } 
-          return;
+          }
         }
-        
-        setRemindersOn(true);
       } else {
-        // 사용자가 끄겠다는 의 → 즉시 내부 상태 끄기
-        setNotificationsEnabled(false);
-        await setNativeRemindersEnabled(false);
-        setRemindersOn(false);
-        // 그 다음 설정 화면으로 이동 (사용자가 원하면 권한도 끌 수 있게)
+        // 끌 때는 설정 화면만 열어줌 (플래그를 미리 바꾸지 않음)
         await openAppSettings();
       }
     } finally {
