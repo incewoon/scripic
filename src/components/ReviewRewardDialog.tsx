@@ -1,3 +1,5 @@
+//src/components/ReviewRewardDialog.tsx
+
 import { useState } from "react";
 import { Gift, X, Upload, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
