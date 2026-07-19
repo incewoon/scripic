@@ -215,6 +215,10 @@ const dict = {
     reviewRewardAlreadyUsed: "You've already claimed today's extra album. Come back tomorrow.",
     reviewRewardError: "Couldn't verify. Please try another screenshot.",
     reviewRewardSuccess: "+1 extra album granted!",
+    reviewRewardAiQuota: "AI daily quota has been used up. Please try again after UTC midnight (Korea 9 AM).",
+    reviewRewardDeviceNotReady: "Device authentication is not ready yet. Please try again in a moment.",
+    reviewRewardServerNotDeployed: "Review reward feature is not deployed yet. (grantReviewReward)",
+    reviewRewardNetworkError: "Could not connect to the server. The function may not be deployed or there is a network issue.",
     // Backup PIN
     backupPinTitle: "Set a 4-digit backup PIN",
     backupPinHint: "This PIN encrypts your backup file. Keep it safe — without it the file can't be restored.",
@@ -495,6 +499,10 @@ const dict = {
     reviewRewardAlreadyUsed: "오늘은 이미 추가 앨범을 사용하셨어요. 자정에 초기화돼요.",
     reviewRewardError: "확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
     reviewRewardSuccess: "추가 앨범 1개가 지급되었어요!",
+    reviewRewardAiQuota: "AI 서비스의 일일 한도가 모두 사용되었어요. UTC 자정 이후(한국 시간 오전 9시) 다시 시도해주세요.",
+    reviewRewardDeviceNotReady: "디바이스 인증이 아직 준비되지 않았어요. 잠시 후 다시 시도해 주세요.",
+    reviewRewardServerNotDeployed: "후기 보상 기능이 아직 서버에 배포되지 않았어요. (grantReviewReward)",
+    reviewRewardNetworkError: "서버에 연결하지 못했어요. 함수가 배포되지 않았거나 네트워크 문제일 수 있어요.",
     // Backup PIN
     backupPinTitle: "4자리 백업 PIN을 설정해주세요",
     backupPinHint: "이 PIN으로 백업 파일이 암호화돼요. 잃어버리면 복원할 수 없으니 잘 기억해주세요.",
