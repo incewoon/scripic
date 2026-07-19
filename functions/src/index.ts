@@ -586,7 +586,7 @@ APPROVE only if BOTH are true:
    (in text, caption, URL, app header, or screenshot embedded in the post).
 
 REJECT (approved=false) when:
-- Only generic phrases like "AI 앨범" appear without Scripic / 스크립픽.
+- Only generic phrases like "AI album" / "AI 앨범" appear without Scripic / 스크립픽.
 - The image is unrelated (food, pet, meme, blank, random screenshot).
 - It is just an app screenshot with no review/post wrapper.
 
@@ -594,15 +594,15 @@ Output STRICT JSON only — no markdown fences, no commentary:
 {
   "approved": true | false,
   "detected_brand": "scripic" | "generic" | "none",
-  "reason": "one short sentence (Korean) explaining your decision",
-  "success_message": "Korean celebration message if approved, otherwise empty string"
+  "reason": "one short sentence explaining your decision on the user's language ",
+  "success_message": "celebration message if approved, otherwise empty string"
 }
 
-Pick a success_message similar to:
-- "🎉 와우! 멋진 후기 감사해요! 추가 앨범이 지급되었어요."
-- "❤️ 후기 공유 정말 감사합니다! 추가 앨범이 지급되었어요!"
-- "🌟 최고의 리뷰예요! 오늘 하나 더 만들 수 있게 됐어요."
-- "🎁 후기 업로드 확인 완료! 추가 앨범 생성권이 지급되었습니다."`;
+Pick a success_message similar to(on the user's language):
+- "🎉 Wow! Thanks for the great review! An additional album has been provided to you."
+- "❤️ Thanks a ton for the review! We've sent an extra album your way."
+- "🌟 This is the best review! It made my day to create one more today."
+- "🎁 Review verified! You've been granted another album credit." `;
 
 export const grantReviewReward = onCall(
   {
@@ -610,6 +610,9 @@ export const grantReviewReward = onCall(
     secrets: [GEMINI_API_KEY],
   },
   async (req) => {
+    const { imageDataUrl, lang = "en" } = (req.data ?? {}) as { imageDataUrl?: string; lang?: string };
+    const isKo = lang === "ko";
+    
     const { imageDataUrl } = (req.data ?? {}) as { imageDataUrl?: string };
     if (!imageDataUrl || typeof imageDataUrl !== "string" || !imageDataUrl.startsWith("data:")) {
       throw new HttpsError("invalid-argument", "imageDataUrl required");
@@ -629,7 +632,9 @@ export const grantReviewReward = onCall(
         approved: false,
         reason: "already_granted",
         success_message: "",
-        daily_limit_info: "오늘 이미 추가 앨범을 사용하셨습니다. (자정에 초기화됩니다)",
+        daily_limit_info: isKo 
+          ? "오늘 이미 추가 앨범을 사용하셨습니다. (자정에 초기화됩니다)" 
+          : "You have already used your extra album today. (Resets at midnight)",
       };
     }
 
@@ -651,13 +656,14 @@ export const grantReviewReward = onCall(
         console.log("[reviewReward] duplicate screenshot, distance=", dist);
         return {
           approved: false,
-          reason: "이미 사용한 후기 이미지예요. 새로운 후기 스크린샷을 올려주세요.",
+          reason: isKo 
+            ? "이미 사용한 후기 이미지예요. 새로운 후기 스크린샷을 올려주세요." 
+            : "This review screenshot has already been used. Please upload a new screenshot.",
           success_message: "",
           daily_limit_info: "",
         };
       }
     }
-
 
     // Verify the screenshot with Gemini Vision.
     const body = toGeminiRequest([
@@ -706,7 +712,9 @@ export const grantReviewReward = onCall(
       }
       return {
         approved: false,
-        reason: "AI 응답을 해석하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
+        reason: isKo 
+          ? "AI 응답을 해석하지 못했어요. 다른 스크린샷으로 다시 시도해주세요." 
+          : "Could not interpret AI response. Please try again with another screenshot.",
         success_message: "",
         daily_limit_info: "",
       };
@@ -722,10 +730,13 @@ export const grantReviewReward = onCall(
       console.log("[reviewReward] override-reject: model approved but detected_brand=", detected);
       return {
         approved: false,
-        reason:
-          isOldOrGeneric || !detected
-            ? "이 앱의 현재 브랜드(Scripic / 스크립픽)가 보이지 않아요. 앱이름이 보이는 후기 스크린샷을 올려주세요."
-            : "앱이름을 확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.",
+        reason: isKo
+          ? (isOldOrGeneric || !detected
+              ? "이 앱의 현재 브랜드(Scripic / 스크립픽)가 보이지 않아요. 앱이름이 보이는 후기 스크린샷을 올려주세요."
+              : "앱이름을 확인하지 못했어요. 다른 스크린샷으로 다시 시도해주세요.")
+          : (isOldOrGeneric || !detected
+              ? "The current brand name (Scripic) cannot be found. Please upload a screenshot showing the app name."
+              : "Could not verify the app name. Please try another screenshot."),
         success_message: "",
         daily_limit_info: "",
       };
@@ -735,7 +746,9 @@ export const grantReviewReward = onCall(
       console.log("[reviewReward] rejected by AI:", parsed.reason, "detected:", detected);
       return {
         approved: false,
-        reason: parsed.reason ?? "후기 내용을 인식하지 못했어요. 'Scripic'이 보이게 캡처해 주세요.",
+        reason: parsed.reason ?? (isKo 
+          ? "후기 내용을 인식하지 못했어요. 'Scripic'이 보이게 캡처해 주세요." 
+          : "Review content could not be recognized. Please capture it so 'Scripic' is visible."),
         success_message: "",
         daily_limit_info: "",
       };
@@ -768,7 +781,10 @@ export const grantReviewReward = onCall(
     return {
       approved: true,
       reason: parsed.reason ?? "ok",
-      success_message: parsed.success_message ?? "🎁 후기 업로드 확인 완료! 추가 앨범 생성권이 지급되었습니다.",
+      success_message: parsed.success_message ?? (isKo 
+        ? "🎁 와우! 멋진 후기 감사해요! 추가 앨범이 지급되었어요." 
+        : "🎁 Wow! Thanks for the great review! An additional album has been provided to you."),
+      daily_limit_info: "",
       daily_limit_info: "",
     };
   },
