@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Gift, X, Upload, Loader2 } from "lucide-react";
-import { useT } from "@/lib/i18n";
+import { useT, getLang } from "@/lib/i18n";
 import { httpsCallable, FunctionsError } from "firebase/functions";
 import { getFns } from "@/integrations/firebase/client";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
