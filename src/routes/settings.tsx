@@ -12,7 +12,8 @@ import { BackupPinDialog } from "@/components/BackupPinDialog";
 import { PRIVACY_POLICY_URL } from "@/lib/legal";
 import { APP_VERSION } from "@/generated/app-version";
 import { getNotificationsEnabled, setNotificationsEnabled, enableRemindersFlow } from "@/lib/reminders";
-import { requestPostNotificationsPermission, setNativeRemindersEnabled, requestMediaPermission, openNotificationSettings, openAppSettings, checkMediaPermission } from "@/plugins/notification-permission";
+import { requestPostNotificationsPermission, setNativeRemindersEnabled, requestMediaPermission, 
+        openNotificationSettings, openAppSettings, checkMediaPermission, checkNotificationPermission } from "@/plugins/notification-permission";
 import { App as CapacitorApp } from "@capacitor/app";
 
 
@@ -58,27 +59,22 @@ function SettingsPage() {
   const [remindersBusy, setRemindersBusy] = useState(false);
   const version = APP_VERSION;
 
+  const syncToggleWithRealPermissions = async () => {
+    const [notifOk, mediaOk] = await Promise.all([
+      checkNotificationPermission(),
+      checkMediaPermission(),
+    ]);
+    const trulyEnabled = notifOk && mediaOk;
+  
+    setNotificationsEnabled(trulyEnabled);
+    await setNativeRemindersEnabled(trulyEnabled);
+    setRemindersOn(trulyEnabled);
+  };
+  
   useEffect(() => {
     const sub = CapacitorApp.addListener("appStateChange", async ({ isActive }) => {
       if (!isActive) return;
-  
-      const wantsEnabled = getNotificationsEnabled(); // 사용자의 의도
-      if (!wantsEnabled) {
-        // 사용자가 끈 상태면 절대 자동으로 켜지 않음
-        setRemindersOn(false);
-        return;
-      }
-  
-      // 사용자가 켜고 싶은 상태일 때만 실제 권한을 확인
-      const mediaOk = await checkMediaPermission();
-      if (!mediaOk) {
-        // 권한이 없어졌으면 강제로 끔
-        setNotificationsEnabled(false);
-        await setNativeRemindersEnabled(false);
-        setRemindersOn(false);
-      } else {
-        setRemindersOn(true);
-      }
+      await syncToggleWithRealPermissions();
     });
     return () => { sub.then((s) => s.remove()); };
   }, []);
@@ -87,23 +83,7 @@ function SettingsPage() {
   
   useEffect(() => {
     refreshDiag();
-  
-    (async () => {
-      const wantsEnabled = getNotificationsEnabled();
-      if (!wantsEnabled) {
-        setRemindersOn(false);
-        return;
-      }
-  
-      const mediaOk = await checkMediaPermission();
-      if (!mediaOk) {
-        setNotificationsEnabled(false);
-        await setNativeRemindersEnabled(false);
-        setRemindersOn(false);
-      } else {
-        setRemindersOn(true);
-      }
-    })();
+    syncToggleWithRealPermissions();
   }, []);
     
   const onToggleReminders = async (next: boolean) => {
