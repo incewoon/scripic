@@ -1,148 +1,74 @@
-## 목표
-앱이 완전히 종료된 상태에서도 카메라 롤에 사진이 3장 이상 새로 쌓이면 시스템 알림을 띄우도록, 100% 네이티브 Android(WorkManager) 백그라운드 작업을 구현한다. `src/lib/reminders.ts`, `src/lib/native.ts`는 건드리지 않는다.
 
----
+# 이스터에그 비밀번호 게이트 + 일일 앨범 한도 초기화
 
-## 1) 의존성 & 매니페스트
+## 1. 서버 (`functions/src/index.ts`)
 
-**`android/app/build.gradle`** — `dependencies`에 추가:
-```
-implementation("androidx.work:work-runtime:2.9.0")
-```
+기존 콜러블(`dailyStatus`, `grantReviewReward`) 패턴을 그대로 따라 새 콜러블 `resetDailyAlbumLimit`를 추가한다.
 
-**`android/app/src/main/AndroidManifest.xml`** — 없는 것만 추가:
-- `POST_NOTIFICATIONS`
-- `READ_MEDIA_IMAGES`
-- `READ_EXTERNAL_STORAGE` (`android:maxSdkVersion="32"`)
+- 최상단에 시크릿 선언 추가:
+  ```ts
+  const EASTER_EGG_ANSWER = defineSecret("EASTER_EGG_ANSWER");
+  ```
+- `import { createHash, timingSafeEqual } from "crypto";` 추가.
+- `onCall({ enforceAppCheck: true, secrets: [EASTER_EGG_ANSWER] }, async (req) => { ... })`.
+- 요청 데이터에서 `answer: string`, `clientDate: string`, (rateLimitKey용) `deviceId?: string`를 받는다.
+  - `answer` 미존재 또는 문자열 아님 → `invalid-argument`.
+  - `answer.length > 200` 하드 리밋.
+- `const key = rateLimitKey(req);`
+- `const today = validateClientDate(clientDate);`
+- **잠금 로직**: `easter_egg_attempts/{key}` 문서를 트랜잭션으로 읽어 `windowStart`(첫 시도 시각)와 `failCount` 관리.
+  - 현재 시각 기준 60초 이내이고 `failCount >= 3` 이면 `permission-denied "invalid_answer"` 즉시 반환(성공/실패 사유를 노출하지 않기 위해 동일 코드/메시지).
+  - 60초 창이 지났으면 windowStart와 failCount를 초기화.
+- **정답 비교(타이밍 세이프)**:
+  - `const provided = String(answer).trim().toLowerCase();`
+  - `const expected = EASTER_EGG_ANSWER.value().trim().toLowerCase();`
+  - 두 문자열을 각각 SHA-256으로 해시(길이 통일) → `timingSafeEqual(Buffer, Buffer)`. 이렇게 하면 원문 길이 차이도 노출되지 않는다.
+- 실패 시:
+  - `easter_egg_attempts/{key}` 트랜잭션으로 `failCount` 증가(없으면 windowStart=now, failCount=1), `updatedAt` 갱신.
+  - `throw new HttpsError("permission-denied", "invalid_answer");`
+- 성공 시:
+  - `easter_egg_attempts/{key}` 문서 delete(선택) 또는 failCount 리셋.
+  - `daily_limits/{key}` 문서를 트랜잭션으로 `.set({ lastDate: today, count: 0, bonusGranted: false, updatedAt: FieldValue.serverTimestamp() }, { merge: false })`.
+  - `return { success: true };`
+- 로깅은 기존 함수 스타일로 `[easter] ok/fail key=... elapsedMs=...` 정도만 남기고 정답/시크릿 자체는 절대 로그에 포함하지 않는다.
 
----
+배포는 기존 GitHub Actions workflow에서 함수명을 추가하거나 수동 배포 안내(계획 범위 밖) — 코드만 추가한다. 시크릿(`EASTER_EGG_ANSWER`)은 사용자가 `firebase functions:secrets:set EASTER_EGG_ANSWER`로 별도 설정해야 한다는 점만 안내한다.
 
-## 2) 상태바용 알림 아이콘 (신규 리소스)
+## 2. 클라이언트 (`src/routes/easter.tsx`)
 
-`setSmallIcon`에 컬러 런처 아이콘을 쓰면 상태바에 흰 사각형/뭉개짐으로 표시되므로, 단색(흰색+투명배경) 벡터를 별도로 만든다.
+기존 콘텐츠는 그대로 두고, 진입 시 게이트를 먼저 렌더한다.
 
-- **`android/app/src/main/res/drawable/ic_stat_notification.xml`** (신규): 흰색 벡터 (예: 카메라/별 심볼, `android:fillColor="#FFFFFFFF"`, 24dp).
-- `PhotoReminderWorker`에서 `setSmallIcon(R.drawable.ic_stat_notification)` 사용.
+- 상단 상태: `const [unlocked, setUnlocked] = useState(false);`, `const [pw, setPw] = useState("");`, `const [submitting, setSubmitting] = useState(false);`.
+- `unlocked === false`일 때는 배경(gradient-warm)과 뒤로가기 버튼은 그대로 두고, 중앙에 카드 UI:
+  - 질문: **"세상에서 누가 제일 예쁜가?"**
+  - `<input type="password" value={pw} ... />` (자동완성 off, 엔터 = 제출)
+  - 확인 버튼 (`disabled={submitting || !pw.trim()}`)
+- 제출 핸들러:
+  ```ts
+  import { httpsCallable } from "firebase/functions";
+  import { getFns } from "@/integrations/firebase/client";
+  import { getDeviceId, getLocalDate } from "@/lib/dailyLimit";
+  import { toast } from "sonner";
 
----
+  const call = httpsCallable(getFns(), "resetDailyAlbumLimit");
+  await call({ answer: pw, clientDate: getLocalDate(), deviceId: getDeviceId() });
+  ```
+  - 성공 → `setUnlocked(true)` (토스트 없음), `pw` 초기화.
+  - 실패(에러 코드 상관없이) → 동일 문구 토스트 `"답이 틀렸어요"` (i18n 불필요, 단일 문구). `pw` 초기화 후 페이지 유지.
+- `unlocked === true`일 때 기존 하트/문구 컴포넌트를 그대로 렌더(기존 애니메이션 트리거는 unlock 이후 시작되도록 `show` state를 unlock 시점에 다시 세팅).
 
-## 3) `PhotoReminderWorker.java` (핵심 로직)
+## 3. Firestore 규칙 (`firestore.rules`)
 
-경로: `android/app/src/main/java/app/lovable/aialbum/PhotoReminderWorker.java`
-`androidx.work.Worker` 상속. `doWork()` 흐름 (순서 중요):
+`easter_egg_attempts` 컬렉션은 서버(Admin SDK)만 접근하므로 별도 규칙 추가 불필요(기본 규칙이 클라이언트 접근 차단).
 
-1. `SharedPreferences("scripic_reminder_prefs", MODE_PRIVATE)` 로드.
-2. **[필수] 리마인더 활성화 체크**: `reminders_enabled`가 false거나 미존재면 → `lastCheckedAt=now` 저장 후 `Result.success()`. (사용자가 설정에서 OFF했으면 즉시 종료)
-3. `lastCheckedAt`(default 0), `lastReminderSentAt`(default 0) 로드.
-4. **[필수] 최초 실행 가드**: `lastCheckedAt == 0`이면 미디어 쿼리 없이 `lastCheckedAt=now`만 저장 후 종료. (설치 직후 기존 카메라 롤 전체를 "새 사진"으로 오인하는 것을 방지)
-5. **Throttle**: `now - lastReminderSentAt < 7*24h`면 `lastCheckedAt=now` 저장 후 종료.
-6. **권한 체크**: SDK 33+는 `READ_MEDIA_IMAGES`, 이하는 `READ_EXTERNAL_STORAGE`. 없으면 `lastCheckedAt=now` 저장 후 종료.
-7. **미디어 카운트**: `contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, {_ID}, "date_added > ?", [String.valueOf(lastCheckedAt/1000)], null)` → `cursor.getCount()`.
-8. **3장 이상**이면:
-   - `NotificationChannel("photo_reminder_channel", "사진 리마인더", IMPORTANCE_DEFAULT)` 없으면 생성.
-   - `Intent(context, MainActivity.class)` + `FLAG_ACTIVITY_SINGLE_TOP|CLEAR_TOP`, `putExtra("deepLink", "/create")`.
-   - `PendingIntent.getActivity(..., FLAG_UPDATE_CURRENT|FLAG_IMMUTABLE)`.
-   - `NotificationCompat.Builder`: title "새로운 사진이 쌓였어요 ✨", text "새로운 이야기를 기록해볼까요?", `setSmallIcon(R.drawable.ic_stat_notification)`, `setAutoCancel(true)`, `setContentIntent(pi)`.
-   - `NotificationManagerCompat.from(ctx).notify(1001, notif)` (SDK 33+ 권한 재확인 후).
-   - `lastReminderSentAt = now`.
-9. 모든 경로에서 마지막에 `lastCheckedAt = now` 저장.
-10. 전 로직 `try/catch` → 예외 시 `Log.e` 후 `Result.success()` (재시도 폭주 방지).
-11. 단계마다 `Log.d("PhotoReminderWorker", ...)`: 활성화 여부, 최초 실행 여부, throttle 여부, 권한 여부, 새 사진 수, 알림 발송 여부.
+## 노출/보안
 
----
+- 시크릿 값은 서버 시크릿(`EASTER_EGG_ANSWER`)에만 존재, 번들·로그·에러 메시지 어디에도 나타나지 않는다.
+- 실패 사유(잘못된 답 vs 잠금)는 클라이언트에서 구분 불가 — 동일 코드/메시지 사용.
+- 성공 후에도 세션 저장 없음(새로고침하면 다시 게이트).
 
-## 4) 주기적 작업 등록
+## 파일 목록
 
-**`MainActivity.java`** — `onCreate`의 `registerPlugin(...)` 근처에 추가:
-```java
-PeriodicWorkRequest req =
-    new PeriodicWorkRequest.Builder(PhotoReminderWorker.class, 1, TimeUnit.HOURS).build();
-WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-    "photo_reminder_check", ExistingPeriodicWorkPolicy.KEEP, req);
-```
-
----
-
-## 5) 딥링크 (polling 방식)
-
-**이벤트 dispatch 방식은 사용하지 않는다** — 웹뷰 로딩 타이밍상 리스너 등록 전에 발사되면 콜드 스타트 시 유실됨. 대신 static 필드 + JS polling.
-
-**`MainActivity.java`**:
-- `public static volatile String pendingDeepLink = null;` static 필드.
-- `onCreate` super 이후, `onNewIntent(Intent i)` 오버라이드 (`super.onNewIntent(i); setIntent(i);`) 양쪽에서:
-  - `String path = intent.getStringExtra("deepLink");` → 있으면 `pendingDeepLink = path;`
-
-**`NotificationPermissionPlugin.java`**에 추가 메서드:
-- `@PluginMethod public void getPendingDeepLink(PluginCall call)`:
-  - `String p = MainActivity.pendingDeepLink; MainActivity.pendingDeepLink = null;`
-  - `JSObject r = new JSObject(); r.put("path", p); call.resolve(r);` (한 번 조회 후 초기화)
-
-**`src/plugins/notification-permission.ts`**: `getPendingDeepLink(): Promise<{path: string | null}>` 래퍼 추가.
-
-**`src/lib/deepLink.ts` (신규)**:
-- `export async function consumePendingDeepLink(router)`:
-  - `const { path } = await NotificationPermission.getPendingDeepLink();`
-  - `if (path) router.navigate({ to: path });`
-- (window CustomEvent 방식 없음)
-
-**`src/router.tsx`**: 라우터 생성 직후 `(window as any).__scripicRouter = router;` 노출.
-**`src/routes/__root.tsx`**: 마운트 시 `useEffect(() => { import("@/lib/deepLink").then(m => m.consumePendingDeepLink((window as any).__scripicRouter)); }, [])`.
-
----
-
-## 6) 알림 권한 + 토글 네이티브 동기화
-
-**`android/app/src/main/java/app/lovable/aialbum/NotificationPermissionPlugin.java` (신규)** — `@CapacitorPlugin(name = "NotificationPermission")`.
-
-메서드:
-- **`request(PluginCall)`**:
-  - SDK < 33 → `resolve({granted: true})`.
-  - 이미 `PERMISSION_GRANTED` → `resolve({granted: true})`.
-  - 그 외 Capacitor `@PermissionCallback` 패턴으로 `POST_NOTIFICATIONS` 런타임 요청 후 결과 resolve.
-- **[필수] `setRemindersEnabled(PluginCall)`**:
-  - `boolean enabled = call.getBoolean("enabled", false);`
-  - `getContext().getSharedPreferences("scripic_reminder_prefs", MODE_PRIVATE).edit().putBoolean("reminders_enabled", enabled).apply();`
-  - `resolve()`.
-- **`getPendingDeepLink(PluginCall)`** — §5 참고.
-
-**`MainActivity.java`**: `registerPlugin(NotificationPermissionPlugin.class)` 추가.
-
-**`src/plugins/notification-permission.ts` (신규)**:
-```ts
-import { registerPlugin } from "@capacitor/core";
-export interface NotificationPermissionPlugin {
-  request(): Promise<{ granted: boolean }>;
-  setRemindersEnabled(opts: { enabled: boolean }): Promise<void>;
-  getPendingDeepLink(): Promise<{ path: string | null }>;
-}
-export const NotificationPermission =
-  registerPlugin<NotificationPermissionPlugin>("NotificationPermission");
-export async function requestPostNotificationsPermission(): Promise<boolean> {
-  try { return (await NotificationPermission.request()).granted; } catch { return false; }
-}
-export async function setNativeRemindersEnabled(enabled: boolean): Promise<void> {
-  try { await NotificationPermission.setRemindersEnabled({ enabled }); } catch { /* web no-op */ }
-}
-```
-기존 `native.ts`의 `requestNotificationPermission`과 이름 겹치지 않게 별도 함수.
-
-**`src/routes/settings.tsx`** — "Memory reminders" 토글:
-- **ON 핸들러**: `requestPostNotificationsPermission()` → false면 토글 되돌리고 안내 toast, true면 `await setNativeRemindersEnabled(true)`. 기존 `reminders.ts` 호출 로직 유지.
-- **OFF 핸들러**: `await setNativeRemindersEnabled(false)` 호출로 네이티브 프리퍼런스도 동기화.
-
----
-
-## 7) 기타/주의
-
-- 기존 Capacitor 플러그인들과 `build.gradle` 병합 시 충돌 없음(WorkManager는 신규).
-- 신규 Java 클래스는 모두 `app.lovable.aialbum` 패키지.
-- 카운트 대상은 MediaStore(카메라 롤) 기준 — 앱 내부 앨범 수와 무관.
-- 최소 SDK 24+ 가정, WorkManager 2.9.0.
-- `src/lib/reminders.ts`, `src/lib/native.ts`, `src/integrations/supabase/*` 자동생성 파일은 **미변경**.
-
----
-
-## 변경/신규 파일 요약
-- **수정**: `android/app/build.gradle`, `android/app/src/main/AndroidManifest.xml`, `android/app/src/main/java/app/lovable/aialbum/MainActivity.java`, `src/router.tsx`, `src/routes/__root.tsx`, `src/routes/settings.tsx`
-- **신규 (Android)**: `PhotoReminderWorker.java`, `NotificationPermissionPlugin.java`, `res/drawable/ic_stat_notification.xml`
-- **신규 (JS)**: `src/plugins/notification-permission.ts`, `src/lib/deepLink.ts`
+- 수정: `functions/src/index.ts`
+- 수정: `src/routes/easter.tsx`
+- (안내) `firebase functions:secrets:set EASTER_EGG_ANSWER` 한 번 실행 및 함수 배포 필요

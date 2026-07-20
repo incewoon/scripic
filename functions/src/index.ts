@@ -16,6 +16,7 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
+import { createHash, timingSafeEqual } from "crypto";
 
 import { 
   geminiGenerate, 
@@ -40,6 +41,7 @@ initializeApp();
 const db = getFirestore();
 
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const EASTER_EGG_ANSWER = defineSecret("EASTER_EGG_ANSWER");
 
 setGlobalOptions({
   region: "us-central1",
@@ -753,4 +755,87 @@ export const grantReviewReward = onCall(
   },
 );
 
+// ---------------- resetDailyAlbumLimit (easter egg) ----------------
+
+export const resetDailyAlbumLimit = onCall(
+  {
+    enforceAppCheck: true,
+    secrets: [EASTER_EGG_ANSWER],
+  },
+  async (req) => {
+    const t0 = Date.now();
+    const { answer } = (req.data ?? {}) as { answer?: unknown };
+
+    if (typeof answer !== "string" || answer.length === 0 || answer.length > 200) {
+      throw new HttpsError("invalid-argument", "invalid_answer");
+    }
+
+    const key = rateLimitKey(req);
+    const today = validateClientDate(req.data?.clientDate);
+
+    // Rate limit: max 3 wrong attempts per 60s window per key.
+    const attemptsRef = db.collection("easter_egg_attempts").doc(key);
+    const now = Date.now();
+    const WINDOW_MS = 60_000;
+    const MAX_FAILS = 3;
+
+    const locked = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(attemptsRef);
+      const data = snap.data() as { windowStart?: number; failCount?: number } | undefined;
+      const withinWindow = data?.windowStart && now - data.windowStart < WINDOW_MS;
+      if (withinWindow && (data?.failCount ?? 0) >= MAX_FAILS) return true;
+      return false;
+    });
+    if (locked) {
+      console.log(`[easter] locked key=${key}`);
+      throw new HttpsError("permission-denied", "invalid_answer");
+    }
+
+    // Timing-safe comparison via SHA-256 (equal-length buffers, hides input length).
+    const provided = answer.trim().toLowerCase();
+    const expected = EASTER_EGG_ANSWER.value().trim().toLowerCase();
+    const providedHash = createHash("sha256").update(provided).digest();
+    const expectedHash = createHash("sha256").update(expected).digest();
+    const ok = providedHash.length === expectedHash.length && timingSafeEqual(providedHash, expectedHash);
+
+    if (!ok) {
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(attemptsRef);
+        const data = snap.data() as { windowStart?: number; failCount?: number } | undefined;
+        const withinWindow = data?.windowStart && now - data.windowStart < WINDOW_MS;
+        if (withinWindow) {
+          tx.update(attemptsRef, {
+            failCount: FieldValue.increment(1),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        } else {
+          tx.set(attemptsRef, {
+            windowStart: now,
+            failCount: 1,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+      });
+      console.log(`[easter] fail key=${key} elapsedMs=${Date.now() - t0}`);
+      throw new HttpsError("permission-denied", "invalid_answer");
+    }
+
+    // Success — reset daily limit and clear attempts.
+    await db.collection("daily_limits").doc(key).set({
+      lastDate: today,
+      count: 0,
+      bonusGranted: false,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    try {
+      await attemptsRef.delete();
+    } catch {
+      // best effort
+    }
+    console.log(`[easter] ok key=${key} elapsedMs=${Date.now() - t0}`);
+    return { success: true };
+  },
+);
+
 export { searchPlaces, reverseGeocode, geocodeLocation } from "./places";
+

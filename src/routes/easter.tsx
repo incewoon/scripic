@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Heart, ChevronLeft } from "lucide-react";
+import { httpsCallable } from "firebase/functions";
+import { toast } from "sonner";
+import { getFns } from "@/integrations/firebase/client";
+import { getDeviceId, getLocalDate } from "@/lib/dailyLimit";
 
 export const Route = createFileRoute("/easter")({
   component: EasterPage,
@@ -13,11 +17,16 @@ export const Route = createFileRoute("/easter")({
 });
 
 function EasterPage() {
+  const [unlocked, setUnlocked] = useState(false);
+  const [pw, setPw] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [show, setShow] = useState(false);
+
   useEffect(() => {
+    if (!unlocked) return;
     const t = setTimeout(() => setShow(true), 80);
     return () => clearTimeout(t);
-  }, []);
+  }, [unlocked]);
 
   const hearts = useMemo(
     () =>
@@ -32,6 +41,23 @@ function EasterPage() {
     [],
   );
 
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!pw.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      const call = httpsCallable(getFns(), "resetDailyAlbumLimit");
+      await call({ answer: pw, clientDate: getLocalDate(), deviceId: getDeviceId() });
+      setPw("");
+      setUnlocked(true);
+    } catch {
+      setPw("");
+      toast.error("답이 틀렸어요");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div
       className="relative min-h-screen overflow-hidden flex items-center justify-center px-6"
@@ -40,49 +66,77 @@ function EasterPage() {
       <Link
         to="/settings"
         aria-label="back"
-        className="absolute top-5 left-5 p-2 rounded-full bg-card/40 backdrop-blur-sm text-foreground/70 hover:text-foreground"
+        className="absolute top-5 left-5 p-2 rounded-full bg-card/40 backdrop-blur-sm text-foreground/70 hover:text-foreground z-10"
       >
         <ChevronLeft size={20} />
       </Link>
 
-      {/* floating hearts */}
-      <div className="pointer-events-none absolute inset-0">
-        {hearts.map((h) => (
-          <Heart
-            key={h.id}
-            className="absolute text-rose-400/80"
-            style={{
-              left: `${h.left}%`,
-              bottom: `-40px`,
-              width: h.size,
-              height: h.size,
-              opacity: h.opacity,
-              fill: "currentColor",
-              animation: `floatUp ${h.duration}s ease-in ${h.delay}s infinite`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div
-        className={`relative text-center transition-all duration-[1200ms] ease-out ${
-          show ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"
-        }`}
-      >
-        <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-card/60 backdrop-blur-md flex items-center justify-center shadow-[var(--shadow-soft)]">
-          <Heart size={28} className="text-rose-500" fill="currentColor" />
-        </div>
-        <h1
-          className="font-display text-4xl sm:text-5xl leading-tight warm-text"
-          style={{ textShadow: "0 2px 18px rgba(255,180,180,0.45)" }}
+      {!unlocked ? (
+        <form
+          onSubmit={handleSubmit}
+          className="relative w-full max-w-xs rounded-2xl bg-card/60 backdrop-blur-md p-6 shadow-[var(--shadow-soft)] text-center"
         >
-          I love you
-          <br />
-          <span className="italic text-rose-500">all forever</span>
-          <span className="inline-block ml-2 animate-pulse text-rose-500">♡</span>
-        </h1>
-        <p className="mt-5 text-[13px] warm-muted">— a little secret from Scripic</p>
-      </div>
+          <p className="font-display text-lg warm-text mb-4">
+            세상에서 누가 제일 예쁜가?
+          </p>
+          <input
+            type="password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            autoComplete="off"
+            autoFocus
+            className="w-full rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm outline-none focus:border-rose-400"
+            disabled={submitting}
+          />
+          <button
+            type="submit"
+            disabled={submitting || !pw.trim()}
+            className="mt-4 w-full rounded-lg bg-rose-500 text-white text-sm py-2 disabled:opacity-50"
+          >
+            확인
+          </button>
+        </form>
+      ) : (
+        <>
+          <div className="pointer-events-none absolute inset-0">
+            {hearts.map((h) => (
+              <Heart
+                key={h.id}
+                className="absolute text-rose-400/80"
+                style={{
+                  left: `${h.left}%`,
+                  bottom: `-40px`,
+                  width: h.size,
+                  height: h.size,
+                  opacity: h.opacity,
+                  fill: "currentColor",
+                  animation: `floatUp ${h.duration}s ease-in ${h.delay}s infinite`,
+                }}
+              />
+            ))}
+          </div>
+
+          <div
+            className={`relative text-center transition-all duration-[1200ms] ease-out ${
+              show ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"
+            }`}
+          >
+            <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-card/60 backdrop-blur-md flex items-center justify-center shadow-[var(--shadow-soft)]">
+              <Heart size={28} className="text-rose-500" fill="currentColor" />
+            </div>
+            <h1
+              className="font-display text-4xl sm:text-5xl leading-tight warm-text"
+              style={{ textShadow: "0 2px 18px rgba(255,180,180,0.45)" }}
+            >
+              I love you
+              <br />
+              <span className="italic text-rose-500">all forever</span>
+              <span className="inline-block ml-2 animate-pulse text-rose-500">♡</span>
+            </h1>
+            <p className="mt-5 text-[13px] warm-muted">— a little secret from Scripic</p>
+          </div>
+        </>
+      )}
 
       <style>{`
         @keyframes floatUp {
