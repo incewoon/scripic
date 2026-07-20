@@ -41,6 +41,7 @@ initializeApp();
 const db = getFirestore();
 
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const EASTER_EGG_ANSWER = defineSecret("EASTER_EGG_ANSWER");
 
 setGlobalOptions({
   region: "us-central1",
