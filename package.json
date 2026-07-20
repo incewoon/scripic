@@ -15,7 +15,6 @@
   "dependencies": {
     "@capacitor-community/file-opener": "^8.0.1",
     "@capacitor-community/media": "^9.1.0",
-    
     "@capacitor/android": "^8.3.3",
     "@capacitor/app": "^8.1.0",
     "@capacitor/cli": "^8.3.3",
@@ -91,7 +90,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
-    "@lovable.dev/vite-tanstack-config": "2.7.1",
+    "@lovable.dev/vite-tanstack-config": "2.7.6",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
