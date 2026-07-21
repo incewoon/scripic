@@ -52,7 +52,7 @@ function EasterPage() {
       await call({ answer: pw, clientDate: getLocalDate(), deviceId: getDeviceId() });
       setPw("");
       setUnlocked(true);
-    } catch {
+    } catch (err: any) {
       console.error("[easter] failed", err?.code, err?.message); // 임시 진단용
       setPw("");
       toast.error("It is the wrong answer.");
