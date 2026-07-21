@@ -6,7 +6,7 @@ import { Heart, ChevronLeft } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
 import { toast } from "sonner";
 import { getFns } from "@/integrations/firebase/client";
-import { getDeviceId, getLocalDate } from "@/lib/dailyLimit";
+import { getDeviceId, getLocalDate, resetDailyAlbumToday } from "@/lib/dailyLimit";
 
 export const Route = createFileRoute("/easter")({
   component: EasterPage,
@@ -50,6 +50,7 @@ function EasterPage() {
     try {
       const call = httpsCallable(getFns(), "resetDailyAlbumLimit");
       await call({ answer: pw, clientDate: getLocalDate(), deviceId: getDeviceId() });
+      resetDailyAlbumToday();
       setPw("");
       setUnlocked(true);
     } catch (err: any) {
