@@ -761,6 +761,7 @@ export const resetDailyAlbumLimit = onCall(
   {
     enforceAppCheck: true,
     secrets: [EASTER_EGG_ANSWER],
+    cors: true,
   },
   async (req) => {
     const t0 = Date.now();
