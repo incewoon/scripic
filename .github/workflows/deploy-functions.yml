@@ -42,7 +42,7 @@ jobs:
 
       - name: Deploy to Firebase Functions (batch 2)
         working-directory: functions
-        run: firebase deploy --only functions:dailyStatus,functions:grantReviewReward --project ai-album-app --non-interactive
+        run: firebase deploy --only functions:dailyStatus,functions:grantReviewReward,functions:resetDailyAlbumLimit --project ai-album-app --non-interactive
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-key.json
 
