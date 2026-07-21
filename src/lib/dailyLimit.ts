@@ -79,3 +79,12 @@ export function nextAvailableDateLabel(lang: "en" | "ko"): string {
     year: "numeric", month: "short", day: "numeric",
   });
 }
+
+// 이스터에그 통과 시 클라이언트의 당일 앨범 생성 제한 및 보상 기록을 초기화합니다.
+ 
+export function resetDailyAlbumToday(): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.removeItem(KEY);
+  localStorage.removeItem(EXTRA_GRANTED_KEY);
+  localStorage.removeItem(EXTRA_USED_KEY);
+}
