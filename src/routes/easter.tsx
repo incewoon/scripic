@@ -54,7 +54,7 @@ function EasterPage() {
       setUnlocked(true);
     } catch {
       setPw("");
-      toast.error("답이 틀렸어요");
+      toast.error("It is the wrong answer.");
     } finally {
       setSubmitting(false);
     }
@@ -79,7 +79,7 @@ function EasterPage() {
           className="relative w-full max-w-xs rounded-2xl bg-card/60 backdrop-blur-md p-6 shadow-[var(--shadow-soft)] text-center"
         >
           <p className="font-display text-lg warm-text mb-4">
-            세상에서 누가 제일 예쁜가?
+            Who is the prettiest girl in the world?
           </p>
           <input
             type="password"
