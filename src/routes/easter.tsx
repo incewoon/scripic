@@ -53,6 +53,7 @@ function EasterPage() {
       setPw("");
       setUnlocked(true);
     } catch {
+      console.error("[easter] failed", err?.code, err?.message); // 임시 진단용
       setPw("");
       toast.error("It is the wrong answer.");
     } finally {
