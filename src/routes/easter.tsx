@@ -96,7 +96,7 @@ function EasterPage() {
             disabled={submitting || !pw.trim()}
             className="mt-4 w-full rounded-lg bg-rose-500 text-white text-sm py-2 disabled:opacity-50"
           >
-            확인
+            confirm
           </button>
         </form>
       ) : (
