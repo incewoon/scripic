@@ -165,6 +165,9 @@ const dict = {
     backupInfoWarnTitle: "Important",
     backupInfoWarnBody:
       "Only a backup file can bring your albums back. Please keep your backup file in a safe place and back up regularly.",
+    backupSavedToFolder: (folder: string) => `Saved to ${folder} folder`,
+    backupSavedToDownloads: "Saved to the Downloads folder",
+    easterWrongAnswer: "It is the wrong answer.",
     themeSection: "Theme",
     themeSectionDesc: "Choose how the app looks. Changes apply right away.",
     themeTimeless: "Timeless Script",
@@ -456,6 +459,9 @@ const dict = {
     backupInfoWarnTitle: "주의",
     backupInfoWarnBody:
       "백업 파일 없이는 복원할 수 없어요. 백업 파일은 안전한 곳에 보관하고, 정기적으로 백업해 주세요.",
+    backupSavedToFolder: (folder: string) => `${folder} 폴더에 저장되었습니다`,
+    backupSavedToDownloads: "다운로드 폴더에 저장 되었어요",
+    easterWrongAnswer: "정답이 아니에요.",
     themeSection: "테마",
     themeSectionDesc: "분위기를 골라보세요. 바로 적용돼요.",
     themeTimeless: "타임리스 스크립트",
