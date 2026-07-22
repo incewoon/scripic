@@ -170,6 +170,8 @@ function SettingsPage() {
               : t.backupSavedToFolder('Saved location')
           );
         } else {
+          toast.success(t.backupSavedToDownloads);
+        }
       } catch {
         toast.error(t.failed);
       } finally {
