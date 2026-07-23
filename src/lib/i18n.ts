@@ -162,6 +162,8 @@ const dict = {
     backupInfoStep2:
       "Enter your PIN. All albums, photos, and theme settings are bundled into an encrypted .bak file and saved to your device(Documents Folder).",
     backupInfoStep3: "To restore, tap 'Restore from backup file', pick the .bak file, and enter the same PIN.",
+    backupPinTitleImport: "Enter the 4-digit PIN",
+    backupPinHintImport: "Enter the PIN you set when you created this backup file.",
     backupInfoWarnTitle: "Important",
     backupInfoWarnBody:
       "Only a backup file can bring your albums back. Please keep your backup file in a safe place and back up regularly.",
@@ -456,6 +458,8 @@ const dict = {
     backupInfoStep1: '"백업 파일 다운로드" 버튼을 누르면 PIN 입력창이 나타나요.',
     backupInfoStep2:
       "PIN을 입력하면 모든 앨범·사진·테마 설정이 암호화된 scripic-backup-백업시점.bak 파일로 만들어져 사용자 기기(Documents 폴더)에 저장돼요.",
+    backupPinTitleImport: "4자리 PIN을 입력해주세요",
+    backupPinHintImport: "이 백업 파일을 만들 때 설정했던 PIN을 입력해주세요.",
     backupInfoStep3: "복원할 때는 '백업 파일에서 복원'을 누르고 .bak 파일을 선택한 뒤 같은 PIN을 입력하면 돼요.",
     backupInfoWarnTitle: "주의",
     backupInfoWarnBody:
