@@ -38,10 +38,14 @@ export function BackupPinDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-3">
-          <h2 className="font-display text-[19px] warm-text leading-tight">{t.backupPinTitle}</h2>
+          <h2 className="font-display text-[19px] warm-text leading-tight">
+            {mode === "import" ? t.backupPinTitleImport : t.backupPinTitle}
+          </h2>
           <button onClick={onClose} className="p-1.5 -mr-1 -mt-1 text-muted-foreground hover:text-foreground"><X size={18} /></button>
         </div>
-        <p className="text-[12.5px] warm-muted leading-relaxed mb-4">{t.backupPinHint}</p>
+        <p className="text-[12.5px] warm-muted leading-relaxed mb-4">
+          {mode === "import" ? t.backupPinHintImport : t.backupPinHint}
+        </p>
 
         <input
           ref={ref}
