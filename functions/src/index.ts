@@ -122,6 +122,48 @@ async function reserveDailyAlbum(key: string, today: string, commit: boolean): P
   });
 }
 
+const DAILY_CHAT_LIMIT = 30; // 하루 최대 대화 턴 수 (원하시면 조정)
+
+async function reserveChatTurn(key: string, today: string): Promise<void> {
+  const docRef = db.collection("daily_limits").doc(key);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(docRef);
+    const data = snap.data();
+    const sameDay = data?.lastDate === today;
+    const chatCount = sameDay ? (data?.chatCount ?? 0) : 0;
+
+    if (chatCount >= DAILY_CHAT_LIMIT) {
+      throw new HttpsError("resource-exhausted", "daily_chat_limit_reached", {
+        kind: "daily_chat_limit",
+        used: chatCount,
+        limit: DAILY_CHAT_LIMIT,
+      });
+    }
+
+    if (sameDay) {
+      tx.update(docRef, {
+        chatCount: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    } else {
+      // 새로운 날이면 chatCount만 1로 초기화 (앨범 count는 건드리지 않음)
+      tx.set(
+        docRef,
+        {
+          lastDate: today,
+          chatCount: 1,
+          // 기존 필드가 없으면 기본값 유지
+          count: data?.count ?? 0,
+          bonusGranted: data?.bonusGranted ?? false,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
+  });
+}
+
+
 /**
  * Grant a +1 album bonus for today (idempotent: a second call same day reports alreadyGranted).
  */
