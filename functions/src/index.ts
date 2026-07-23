@@ -221,6 +221,12 @@ export const chat = onCall(
     const photoBytes = Array.isArray(photos)
       ? photos.reduce((a, p) => a + (typeof p === "string" ? p.length : 0), 0)
       : 0;
+
+    const key = rateLimitKey(request);
+    const today = validateClientDate(request.data?.localDate);
+
+    // ★ 일일 대화 횟수 제한 추가
+    await reserveChatTurn(key, today);
     
     // 교정: 템플릿 리터럴 내부 변수 바인딩 구문 오류 수정
     console.log(`[chat] recv rid=${rid} msgs=${messages?.length ?? 0} photoBytes=${photoBytes} lang=${lang} mode=${mode}`);
@@ -641,6 +647,8 @@ export const grantReviewReward = onCall(
     const key = rateLimitKey(req);
     const today = validateClientDate(req.data?.localDate);
 
+    await reserveChatTurn(key, today);
+    
     const existing = await db.collection("daily_limits").doc(key).get();
     const exData = existing.data();
     if (exData?.lastDate === today && exData?.bonusGranted === true) {
