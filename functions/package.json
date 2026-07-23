@@ -18,5 +18,8 @@
   },
   "devDependencies": {
     "typescript": "^5.6.0"
+  },
+  "overrides": {
+    "websocket-driver": "^0.7.5"
   }
 }
