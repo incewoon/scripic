@@ -12,6 +12,7 @@ export function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPho
 
   if (lang === "ko") {
     return `\n\n[응대 횟수 제한 — 매우 중요]
+- 전체 대화에서 어시스턴트 메시지 수는 최대 ${totalCap}개를 넘지 마세요.
 - 사진 한 장당 질문/응답은 최대 ${maxTurnsPerPhoto}번입니다.
 - 한 사진에서 사용자가 짧게만 답해도, 다른 각도로 ${maxTurnsPerPhoto}번에 가깝게 이어서 물어보세요. 한두 번 묻고 바로 다음 사진으로 넘기지 마세요.
 - 정말 ${maxTurnsPerPhoto}번을 채웠을 때만 다음 사진(사진 번호 +1)으로 이동하세요.
@@ -36,6 +37,7 @@ export function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPho
   }
 
   return `\n\n[Response cap — VERY IMPORTANT]
+- The total number of assistant messages must not exceed ${totalCap}.
 - Ask about each photo up to ${maxTurnsPerPhoto} times.
 - Even if the user answers briefly, follow up from another angle until you are close to ${maxTurnsPerPhoto} turns on that photo. Do not move on after only one question.
 - Only move to the next photo after using the turns for the current one.
