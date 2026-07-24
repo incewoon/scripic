@@ -242,9 +242,18 @@ function Home() {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) => tg);
   })();
 
-  const onCreate = () => {
+  const onCreate = async () => {
     if (!requireOnline(t.offlineNotice)) return;
+    // 빠른 UX: local이 막혀 있으면 바로 다이얼로그
     if (!canCreateAlbumToday()) {
+      setLimitOpen(true);
+      return;
+    }
+    // local은 통과 → 서버로 최종 확인
+    const ok = await canCreateAlbumTodayServer();
+    if (!ok) {
+      // 서버만 막힌 경우 local도 맞춰 둠 (동기화)
+      markAlbumCreatedToday();
       setLimitOpen(true);
       return;
     }
