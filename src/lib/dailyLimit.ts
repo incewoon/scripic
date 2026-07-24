@@ -1,3 +1,5 @@
+// src/lib/dailyLimit.ts
+
 // Daily album-creation limit (1 album per local day, +1 extra by review reward).
 // Client-side enforcement only.
 
