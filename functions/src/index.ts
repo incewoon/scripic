@@ -588,7 +588,9 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
   const snap = await db.collection("daily_limits").doc(key).get();
   const data = snap.data();
   const used = data?.lastDate === today ? (data?.count ?? 0) : 0;
-  return { used, limit: 1, today };
+  const bonusToday = data?.lastDate === today && data?.bonusGranted === true;
+  const limit = bonusToday ? 2 : 1;
+  return { used, limit, today, bonusGranted: !!bonusToday };
 });
 
 // ---------------- grantReviewReward ----------------
