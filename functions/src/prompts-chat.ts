@@ -12,9 +12,10 @@ export function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPho
 
   if (lang === "ko") {
     return `\n\n[응대 횟수 제한 — 매우 중요]
-- 사진 한 장당 최대 ${maxTurnsPerPhoto}번까지만 질문/응답할 수 있습니다.
-- 전체 대화에서 어시스턴트 메시지 수는 최대 ${totalCap}개를 넘지 마세요.
-- 한 사진에 대해 ${maxTurnsPerPhoto}번을 채우면 그 사진은 더 이상 다루지 말고 다음 사진으로 넘어가세요.
+- 사진 한 장당 질문/응답은 최대 ${maxTurnsPerPhoto}번입니다.
+- 한 사진에서 사용자가 짧게만 답해도, 다른 각도로 ${maxTurnsPerPhoto}번에 가깝게 이어서 물어보세요. 한두 번 묻고 바로 다음 사진으로 넘기지 마세요.
+- 정말 ${maxTurnsPerPhoto}번을 채웠을 때만 다음 사진(사진 번호 +1)으로 이동하세요.
+- 모든 사진을 고르게 다루세요. 앞 사진만 오래 다루고 뒤 사진을 건너뛰지 마세요.
 
 [마무리 규칙 — 반드시 지켜야 함]
 1) 사용자가 "마무리해줘", "정리해줘", "완성해줘", "끝내줘", "앨범 만들어줘" 등 명시적으로 끝내달라고 요청하면:
