@@ -36,9 +36,10 @@ export function turnLimitClause(lang: string, photoCount: number, maxTurnsPerPho
   }
 
   return `\n\n[Response cap — VERY IMPORTANT]
-- You may ask/respond about each photo at most ${maxTurnsPerPhoto} times.
-- The total number of assistant messages must not exceed ${totalCap}.
-- Once a photo has reached its cap, move on.
+- Ask about each photo up to ${maxTurnsPerPhoto} times.
+- Even if the user answers briefly, follow up from another angle until you are close to ${maxTurnsPerPhoto} turns on that photo. Do not move on after only one question.
+- Only move to the next photo after using the turns for the current one.
+- Cover every photo evenly; do not skip later photos.
 
 [Wrap-up rules — MUST follow exactly]
 1) If the user explicitly asks to finish (e.g. "finish it", "wrap up", "make the album", "create the album"):
