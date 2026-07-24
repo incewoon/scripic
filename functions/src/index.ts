@@ -329,9 +329,9 @@ export const chat = onCall(
     const WRAP_HINT_EN =
       /(shall i (put|wrap|finish)|wrap (this|it) up|finish (the|your) album|put (this|these) together|create the album now)/i;
     const WRAP_SENT_KO =
-      /(?:^|\n)[^\n]?(?:정리|마무리|완성)\s?(?:해\s?)?(?:드릴까요??|드릴게요.?|할까요??|할게요.?)[^\n]/g;
+      /(?:^|\n)[^\n]?(?:정리|마무리|완성)\s?(?:해\s?)?(?:드릴까요??|드릴게요.?|할까요??|할게요.?)/g;    
     const WRAP_SENT_EN =
-      /(?:^|\n)[^\n]?(?:shall i (?:put|wrap|finish)|let me put|putting (?:it|this|these) together|wrap (?:this|it) up)[^\n]/gi;
+      /(?:^|\n)[^\n]?(?:shall i (?:put|wrap|finish)|let me put|putting (?:it|this|these) together|wrap (?:this|it) up)/gi;
 
     const userExplicitFinish = EXPLICIT_FINISH_KO.test(lastUserText) || EXPLICIT_FINISH_EN.test(lastUserText);
     const userPositive = POSITIVE_KO.test(lastUserText) || POSITIVE_EN.test(lastUserText);
