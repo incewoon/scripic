@@ -4,7 +4,7 @@
 // Client-side enforcement only.
 
 import { httpsCallable } from "firebase/functions";
-import { getFns } from "@/integrations/firebase/fns";
+import { getFns } from "@/integrations/firebase/client";
 
 const KEY = "moara_last_album_date";
 const DEVICE_KEY = "moara_device_id";
@@ -92,4 +92,24 @@ export function resetDailyAlbumToday(): void {
   localStorage.removeItem(KEY);
   localStorage.removeItem(EXTRA_GRANTED_KEY);
   localStorage.removeItem(EXTRA_USED_KEY);
+}
+
+/** 서버 기준으로 오늘 앨범을 더 만들 수 있는지 확인. 실패 시 local 값으로 폴백 */
+export async function canCreateAlbumTodayServer(): Promise<boolean> {
+  try {
+    const call = httpsCallable(getFns(), "dailyStatus");
+    const res = await call({
+      localDate: getLocalDate(),
+      deviceId: getDeviceId(),
+    });
+    const data = res.data as { used?: number; limit?: number };
+    const used = data?.used ?? 0;
+    const limit = data?.limit ?? 1;
+    // 보너스는 서버 dailyStatus가 limit을 올려주지 않으면 local extra로 보완
+    const effectiveLimit =
+      limit + (hasExtraGrantedToday() && !hasExtraUsedToday() ? 1 : 0);
+    return used < effectiveLimit;
+  } catch {
+    return canCreateAlbumToday(); // 네트워크 실패 시 local 폴백
+  }
 }
