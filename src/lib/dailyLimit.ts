@@ -105,11 +105,9 @@ export async function canCreateAlbumTodayServer(): Promise<boolean> {
     const data = res.data as { used?: number; limit?: number };
     const used = data?.used ?? 0;
     const limit = data?.limit ?? 1;
-    // 보너스는 서버 dailyStatus가 limit을 올려주지 않으면 local extra로 보완
-    const effectiveLimit =
-      limit + (hasExtraGrantedToday() && !hasExtraUsedToday() ? 1 : 0);
-    return used < effectiveLimit;
+    // 서버 limit이 이미 bonus를 포함한 값 → 그대로 사용
+    return used < limit;
   } catch {
-    return canCreateAlbumToday(); // 네트워크 실패 시 local 폴백
+    return canCreateAlbumToday();
   }
 }
