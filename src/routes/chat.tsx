@@ -840,6 +840,7 @@ function Chat() {
       else if (code === "functions/resource-exhausted") toast.error(t.rateLimit);
       else toast.error(t.failed);
       setGenerating(false);
+      setBusy(false);
       finishingRef.current = false;
     }
   }
