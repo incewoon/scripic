@@ -3,6 +3,9 @@
 // Daily album-creation limit (1 album per local day, +1 extra by review reward).
 // Client-side enforcement only.
 
+import { httpsCallable } from "firebase/functions";
+import { getFns } from "@/integrations/firebase/fns";
+
 const KEY = "moara_last_album_date";
 const DEVICE_KEY = "moara_device_id";
 const EXTRA_GRANTED_KEY = "moara_extra_album_granted_date";
