@@ -255,14 +255,6 @@ function Home() {
       setLimitOpen(true);
       return;
     }
-    // local은 통과 → 서버로 최종 확인
-    const ok = await canCreateAlbumTodayServer();
-    if (!ok) {
-      // 서버만 막힌 경우 local도 맞춰 둠 (동기화)
-      markAlbumCreatedToday();
-      setLimitOpen(true);
-      return;
-    }
     navigate({ to: "/create" });
   };
 
