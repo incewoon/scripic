@@ -16,7 +16,11 @@ import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@d
 import { CSS } from "@dnd-kit/utilities";
 import { extractMeta, summarizePeriod, type PhotoMeta } from "@/lib/photoMeta";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
-import { canCreateAlbumToday } from "@/lib/dailyLimit";
+import {
+  canCreateAlbumToday,
+  canCreateAlbumTodayServer,
+  markAlbumCreatedToday,
+} from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
 import { CreateUsageCoachmark, shouldShowCreateUsage } from "@/components/CreateUsageCoachmark";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
