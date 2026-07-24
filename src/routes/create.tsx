@@ -159,11 +159,23 @@ function Create() {
 
   // Daily limit guard — kick back to home if user navigated here directly.
   useEffect(() => {
-    if (!canCreateAlbumToday()) {
-      toast(t.dailyLimitBody);
-      navigate({ to: "/" });
-    }
-  }, [navigate, t.dailyLimitBody]);
+    let cancelled = false;
+    (async () => {
+      const localOk = canCreateAlbumToday();
+      if (!localOk) {
+        // 토스트 없이 홈으로 (메인의 다이얼로그와 중복 방지)
+        navigate({ to: "/" });
+        return;
+      }
+      const serverOk = await canCreateAlbumTodayServer();
+      if (cancelled) return;
+      if (!serverOk) {
+        markAlbumCreatedToday(); // local을 서버에 맞춤
+        navigate({ to: "/" });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [navigate]);
 
   // First-visit coachmark on this device.
   useEffect(() => {
