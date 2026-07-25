@@ -16,11 +16,7 @@ import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@d
 import { CSS } from "@dnd-kit/utilities";
 import { extractMeta, summarizePeriod, type PhotoMeta } from "@/lib/photoMeta";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
-import {
-  canCreateAlbumToday,
-  canCreateAlbumTodayServer,
-  markAlbumCreatedToday,
-} from "@/lib/dailyLimit";
+import { syncDailyLimitFromServer } from "@/lib/dailyLimit";
 import { UploadLimitDialog } from "@/components/UploadLimitDialog";
 import { CreateUsageCoachmark, shouldShowCreateUsage } from "@/components/CreateUsageCoachmark";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
@@ -161,26 +157,21 @@ function Create() {
   const prevCountRef = useRef(0);
   const navigate = useNavigate();
 
-  // Daily limit guard — kick back to home if user navigated here directly.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const localOk = canCreateAlbumToday();
-      if (!localOk) {
-        // 토스트 없이 홈으로 (메인의 다이얼로그와 중복 방지)
-        navigate({ to: "/" });
-        return;
-      }
-      const serverOk = await canCreateAlbumTodayServer();
+      // 서버 기준으로 로컬을 맞춘 뒤, 더 만들 수 없으면 홈으로
+      const ok = await syncDailyLimitFromServer();
       if (cancelled) return;
-      if (!serverOk) {
-        markAlbumCreatedToday(); // local을 서버에 맞춤
+      if (!ok) {
         navigate({ to: "/" });
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
-
+  
   // First-visit coachmark on this device.
   useEffect(() => {
     if (shouldShowCreateUsage()) setCoachOpen(true);
