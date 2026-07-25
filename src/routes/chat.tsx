@@ -834,6 +834,7 @@ function Chat() {
     } catch (err: any) {
       const code = err?.code ?? "";
       const kind = err?.details?.kind;
+      console.error("[finish] failed", { code, kind, details: err?.details, message: err?.message });
       if (kind === "ai_unavailable" || code === "functions/unavailable") toast.error(t.aiBusy);
       else if (kind === "ai_quota") toast.error(t.aiQuota);
       else if (kind === "daily_limit") toast.error(t.dailyLimitBody);
