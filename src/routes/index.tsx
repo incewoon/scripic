@@ -8,8 +8,7 @@ import { Plus, BookHeart, MapPin, Settings, ArrowUpDown, X, Sparkles, Search, St
 import { useT } from "@/lib/i18n";
 import {
   canCreateAlbumToday,
-  canCreateAlbumTodayServer,
-  markAlbumCreatedToday,
+  syncDailyLimitFromServer,
   nextAvailableDateLabel,
   hasExtraUsedToday,
 } from "@/lib/dailyLimit";
