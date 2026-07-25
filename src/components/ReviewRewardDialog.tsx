@@ -72,7 +72,7 @@ export function ReviewRewardDialog({ open, onClose, onGranted }: Props) {
       const res = await call({ imageDataUrl: preview, deviceId: getDeviceId(), localDate: getLocalDate(), lang: getLang() });
       const result = res.data;
       if (result.approved) {
-        grantExtraAlbumToday();
+        await syncDailyLimitFromServer();
         setMessage({ kind: "success", text: result.success_message || t.reviewRewardSuccess });
         onGranted?.();
       } else if (result.daily_limit_info) {
