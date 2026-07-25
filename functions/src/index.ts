@@ -888,6 +888,7 @@ export const resetDailyAlbumLimit = onCall(
     await db.collection("daily_limits").doc(key).set({
       lastDate: today,
       count: 0,
+      chatCount: 0,
       bonusGranted: false,
       updatedAt: FieldValue.serverTimestamp(),
     });
