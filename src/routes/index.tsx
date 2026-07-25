@@ -259,7 +259,7 @@ function Home() {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) => tg);
   })();
 
-  const onCreate = async () => {
+  const onCreate = () => {
     if (!requireOnline(t.offlineNotice)) return;
     // 빠른 UX: local이 막혀 있으면 바로 다이얼로그
     if (!canCreateAlbumToday()) {
