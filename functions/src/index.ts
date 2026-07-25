@@ -393,9 +393,13 @@ export const chat = onCall(
     if (userNegative) {
       // 일반 대화 진행
     } else if (wrapProposedPrev && (userPositive || userExplicitFinish)) {
-      full = stripWrapSentences(full);
-      const tail = lang === "ko" ? "네, 바로 정리해드릴게요.\n[READY_TO_FINISH]" : "Got it, putting it together now.\n[READY_TO_FINISH]";
-      full = full ? `${full}\n\n${tail}` : tail; 
+      // AI가 쓴 마무리 문장은 그대로 두고, 토큰만 없으면 추가
+      const trimmed = full.trim();
+      if (!trimmed.includes("[READY_TO_FINISH]")) {
+        full = trimmed ? `${trimmed}\n[READY_TO_FINISH]` : "[READY_TO_FINISH]";
+      } else {
+        full = trimmed;
+      }
     } else if (userExplicitFinish) { 
       full = stripWrapSentences(full); 
       const tail = lang === "ko" ? "그럼 지금까지 이야기 나눈 내용으로 앨범을 정리해드릴까요?\n[PROPOSE_FINISH]" : "Shall I put together the album based on what we've shared so far?\n[PROPOSE_FINISH]"; 
