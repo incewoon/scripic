@@ -106,7 +106,12 @@ async function reserveDailyAlbum(key: string, today: string, commit: boolean): P
     const usedToday = sameDay ? (data?.count ?? 0) : 0;
     const bonusToday = sameDay && data?.bonusGranted === true;
     const limit = bonusToday ? 2 : 1;
+
     if (usedToday >= limit) {
+        console.log(
+          `[reserveDailyAlbum] REJECT key=${key} today=${today} lastDate=${data?.lastDate} usedToday=${usedToday} limit=${limit} bonusGranted=${data?.bonusGranted}`
+        );
+
       throw new HttpsError("resource-exhausted", "daily_limit_reached", {
         kind: "daily_limit",
         usedToday,
