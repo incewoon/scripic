@@ -111,3 +111,51 @@ export async function canCreateAlbumTodayServer(): Promise<boolean> {
     return canCreateAlbumToday();
   }
 }
+
+/**
+ * 서버 dailyStatus를 기준으로 localStorage를 맞춘다.
+ * 로컬은 서버의 거울일 뿐, 여기서 한도를 "판단"하지 않는다.
+ * @returns 오늘 앨범을 더 만들 수 있으면 true
+ */
+export async function syncDailyLimitFromServer(): Promise<boolean> {
+  try {
+    const call = httpsCallable(getFns(), "dailyStatus");
+    const res = await call({
+      localDate: getLocalDate(),
+      deviceId: getDeviceId(),
+    });
+    const data = res.data as {
+      used?: number;
+      limit?: number;
+      bonusGranted?: boolean;
+    };
+
+    if (typeof localStorage === "undefined") {
+      return true;
+    }
+
+    const today = todayKey();
+    const used = data?.used ?? 0;
+    const limit = data?.limit ?? 1;
+    const bonusGranted = data?.bonusGranted === true;
+
+    // 사용 횟수 → KEY
+    if (used >= 1) localStorage.setItem(KEY, today);
+    else localStorage.removeItem(KEY);
+
+    // 보너스 → EXTRA_*
+    if (bonusGranted) {
+      localStorage.setItem(EXTRA_GRANTED_KEY, today);
+      if (used >= 2) localStorage.setItem(EXTRA_USED_KEY, today);
+      else localStorage.removeItem(EXTRA_USED_KEY);
+    } else {
+      localStorage.removeItem(EXTRA_GRANTED_KEY);
+      localStorage.removeItem(EXTRA_USED_KEY);
+    }
+
+    return used < limit;
+  } catch {
+    // 오프라인 등: 기존 로컬 캐시로 폴백
+    return canCreateAlbumToday();
+  }
+}
