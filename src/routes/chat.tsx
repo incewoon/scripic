@@ -798,6 +798,7 @@ function Chat() {
       });
       const id = crypto.randomUUID();
       markAlbumCreatedToday();
+      void syncDailyLimitFromServer();
 
       await saveAlbum({
         id,
