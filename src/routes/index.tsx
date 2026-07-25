@@ -197,22 +197,15 @@ function Home() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const ok = await canCreateAlbumTodayServer();
-        if (cancelled) return;
-        // 서버는 이미 소진인데 로컬만 비어 있으면 → 로컬을 서버에 맞춤
-        if (!ok && canCreateAlbumToday()) {
-          markAlbumCreatedToday();
-        }
-      } catch {
-        /* ignore — 다음 진입/create에서 다시 맞춤 */
-      }
+      await syncDailyLimitFromServer();
+      if (cancelled) return;
+      // 필요 시 setState로 버튼/다이얼로그 갱신
     })();
     return () => {
       cancelled = true;
     };
   }, []);
-    
+  
   const count = albums?.length ?? 0;
 
   const sortedAlbums = albums
