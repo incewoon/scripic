@@ -1,4 +1,4 @@
-//chat.tsx - ai대화입력 관련 코드
+//src/routes/chat.tsx - ai대화입력 관련 코드
 
 "use client";
 
