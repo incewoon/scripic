@@ -6,7 +6,7 @@ import { useT, getLang } from "@/lib/i18n";
 import { httpsCallable, FunctionsError } from "firebase/functions";
 import { getFns } from "@/integrations/firebase/client";
 import { ensureFirebaseUser } from "@/integrations/firebase/auth";
-import { grantExtraAlbumToday, getDeviceId, getLocalDate } from "@/lib/dailyLimit";
+import { getDeviceId, getLocalDate, syncDailyLimitFromServer } from "@/lib/dailyLimit";
 
 type Props = {
   open: boolean;
