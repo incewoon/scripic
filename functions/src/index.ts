@@ -107,6 +107,18 @@ async function reserveDailyAlbum(key: string, today: string, commit: boolean): P
     const bonusToday = sameDay && data?.bonusGranted === true;
     const limit = bonusToday ? 2 : 1;
 
+    // ★ 진단용 로그 — 어떤 값을 근거로 판단했는지 전부 남긴다
+    console.log("[reserveDailyAlbum] check", {
+      key,
+      today,
+      docExists: snap.exists,
+      rawData: data ?? null,
+      sameDay,
+      usedToday,
+      bonusToday,
+      limit,
+    });
+
     if (usedToday >= limit) {
         console.log(
           `[reserveDailyAlbum] REJECT key=${key} today=${today} lastDate=${data?.lastDate} usedToday=${usedToday} limit=${limit} bonusGranted=${data?.bonusGranted}`
