@@ -169,9 +169,8 @@ async function reserveChatTurn(key: string, today: string): Promise<void> {
         {
           lastDate: today,
           chatCount: 1,
-          // 기존 필드가 없으면 기본값 유지
-          count: data?.count ?? 0,
-          bonusGranted: data?.bonusGranted ?? false,
+          count: 0,
+          bonusGranted: false,
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
