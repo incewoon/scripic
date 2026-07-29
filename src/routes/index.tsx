@@ -52,6 +52,11 @@ export const Route = createFileRoute("/")({
       : typeof s.tags === "string" && s.tags
         ? [s.tags]
         : [],
+    showLimit:
+      s.showLimit === true ||
+      s.showLimit === "true" ||
+      s.showLimit === "1" ||
+      s.showLimit === 1,
   }),
   head: () => ({
     meta: [
