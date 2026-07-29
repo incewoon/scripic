@@ -19,7 +19,6 @@ import {
 import { Capacitor } from "@capacitor/core";
 import appCss from "../styles.css?url";
 import { useT } from "@/lib/i18n";
-import { navigateFromDeepLink, consumePendingDeepLink } from "@/lib/deepLink";
 
 function NotFoundComponent() {
   return (
