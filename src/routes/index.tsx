@@ -90,8 +90,28 @@ function Home() {
   const searchRef = useRef<HTMLDivElement | null>(null);
   const settingsRef = useRef<HTMLAnchorElement | null>(null);
   const sortRef = useRef<HTMLDivElement | null>(null);
-  const { q: query, tags: selectedTags } = Route.useSearch();
+  const { q: query, tags: selectedTags, showLimit } = Route.useSearch();
   const navigate = useNavigate();
+
+  // 알림 딥링크 등 ?showLimit 으로 메인 진입 시 → 한도 다이얼로그 즉시 표시
+  useEffect(() => {
+    if (!showLimit) return;
+  
+    setLimitOpen(true);
+  
+    // URL에서 showLimit 제거 (뒤로가기 시 다시 뜨지 않게)
+    navigate({
+      to: "/",
+      search: {
+        q: query,
+        tags: selectedTags,
+        // showLimit 는 넣지 않음 → validateSearch 에서 false 로 처리됨
+      },
+      replace: true,
+    });
+  }, [showLimit, navigate, query, selectedTags]);
+
+  
   const [inputValue, setInputValue] = useState(query);
   const isComposingRef = useRef(false);
   const debounceRef = useRef<number | null>(null);
