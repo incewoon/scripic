@@ -139,6 +139,12 @@ function RootComponent() {
         m.navigateFromDeepLink(router, path);
       });
     };
+
+    // 앱 시작 시 알림으로 남겨 둔 pending deep link 처리
+    import("@/lib/deepLink").then((m) => {
+      const router = (window as any).__scripicRouter;
+      m.consumePendingDeepLink(router);
+    });
     
     return () => {
       delete (window as any).__scripicHandleDeepLink;
