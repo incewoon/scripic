@@ -19,6 +19,7 @@ import {
 import { Capacitor } from "@capacitor/core";
 import appCss from "../styles.css?url";
 import { useT } from "@/lib/i18n";
+import { navigateFromDeepLink, consumePendingDeepLink } from "@/lib/deepLink";
 
 function NotFoundComponent() {
   return (
@@ -139,12 +140,6 @@ function RootComponent() {
         m.navigateFromDeepLink(router, path);
       });
     };
-      
-    import("@/lib/deepLink").then((m) => {
-      const router = (window as any).__scripicRouter;
-      m.consumePendingDeepLink(router);
-    });
-
     
     return () => {
       delete (window as any).__scripicHandleDeepLink;
