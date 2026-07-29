@@ -131,10 +131,13 @@ function RootComponent() {
       }
     }
     
-    // One-shot: consume a pending deep link left by a notification tap.
     (window as any).__scripicHandleDeepLink = (path: string) => {
       const router = (window as any).__scripicRouter;
-      if (router) router.navigate({ to: path });
+      if (!router) return;
+      // 동적 import 회피: deepLink는 이미 consume에서도 쓰므로 static import 권장
+      import("@/lib/deepLink").then((m) => {
+        m.navigateFromDeepLink(router, path);
+      });
     };
       
     import("@/lib/deepLink").then((m) => {
