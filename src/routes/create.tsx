@@ -422,7 +422,14 @@ function Create() {
               </div>
             </SortableContext>
           </DndContext>
-          <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*,.heic,.heif,image/heic,image/heif"
+            multiple
+            onChange={onPick}
+            className="hidden"
+          />
         </div>
         <div ref={modeSectionRef} className="mt-5 mb-5">
           <div className="text-[13px] font-medium warm-muted mb-2">
