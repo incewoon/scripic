@@ -301,7 +301,7 @@ function Create() {
       if (files.length > remaining) toast(t.photoMax3);
       const slice = files.slice(0, Math.max(0, remaining));
 
-      const results = await mapWithConcurrency(slice, 2, async (f) => {
+      const results = await mapWithConcurrency<File, Item | null>(slice, 2, async (f) => {
         try {
           // 1) 표시용 픽셀: HEIC면 JPEG로 변환 후 canvas
           const decodable = await ensureDecodableImage(f);
