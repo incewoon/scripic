@@ -15,7 +15,9 @@ Android 고효율(HEIC/HEIF) 사진이 앨범 생성 화면에서 추가되지 �
 - `onPick`의 검증 로직(ALLOWED_EXT/타입/용량)은 그대로 두고 처리 루프만 교체:
   - `mapWithConcurrency(slice, 2, ...)` — 동시 처리 최대 2장
   - 표시용 픽셀: `ensureDecodableImage` → `fileToDataUrl`
-  - EXIF: 항상 원본 `f`로 `extractMeta` 먼저, throw될 때만 변환본 폴백 (변환 JPEG는 EXIF가 비는 경우가 많음)
+  - EXIF: 항상 원본 `f`로 `extractMeta` 먼저, throw될 때만 변환본 폴백
+    - `extractMeta`는 실패 시 throw가 아니라 빈 객체 `{}`를 반환한다. 원본 우선 호출과 throw 폴백만 유지하고, 빈 `{}`를 실패로 간주해 변환본을 다시 호출하지는 않는다 (변환 JPEG도 EXIF가 비는 경우가 많아 이득이 없음).
+
   - 파일별 try/catch로 실패한 사진만 건너뛰고 나머지는 추가
   - 실패가 있으면 `toast.error(t.photoProcessFailed)`
 - `ALLOWED_EXT`에는 이미 `heic|heif`가 포함되어 있어 그대로 유지
