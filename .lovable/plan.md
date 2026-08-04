@@ -23,6 +23,10 @@ Android 고효율(HEIC/HEIF) 사진이 앨범 생성 화면에서 추가되지 �
 - `ALLOWED_EXT`에는 이미 `heic|heif`가 포함되어 있어 그대로 유지
 - `fileToDataUrl`의 JPEG 리사이즈(canvas) 로직은 유지
 
+### 타입 처리
+`heic2any`는 타입 정의가 없거나 약할 수 있다. 빌드 에러가 나면 다음 중 하나로 처리한다: `const mod: any = await import("heic2any")`, `// @ts-expect-error`, 또는 `src/types/heic2any.d.ts`에 `declare module "heic2any"` 선언.
+
+
 ## 3. `src/lib/i18n.ts`
 `photoProcessFailed` 키 추가 (en/ko):
 - en: "Some photos could not be loaded. If you use High efficiency (HEIC) in the camera, try again or switch to JPEG in camera settings."
