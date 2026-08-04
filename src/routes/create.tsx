@@ -300,17 +300,36 @@ function Create() {
       const remaining = PHOTO_MAX - items.length;
       if (files.length > remaining) toast(t.photoMax3);
       const slice = files.slice(0, Math.max(0, remaining));
-      const processed = await Promise.all(
-        slice.map(async (f) => {
-          const [url, meta] = await Promise.all([fileToDataUrl(f), extractMeta(f)]);
+
+      const results = await mapWithConcurrency(slice, 2, async (f) => {
+        try {
+          // 1) 표시용 픽셀: HEIC면 JPEG로 변환 후 canvas
+          const decodable = await ensureDecodableImage(f);
+          const url = await fileToDataUrl(decodable);
+          // 2) EXIF: 반드시 원본(f) 먼저 — 변환 JPEG는 EXIF가 비는 경우가 많음
+          let meta: PhotoMeta;
+          try {
+            meta = await extractMeta(f);
+          } catch {
+            meta = await extractMeta(decodable);
+          }
           return { id: crypto.randomUUID(), url, meta };
-        }),
-      );
+        } catch (err) {
+          console.error("[create] photo process failed", f.name, err);
+          return null;
+        }
+      });
+
+      const processed = results.filter((x): x is Item => x != null);
       if (processed.length) setItems((p) => [...p, ...processed]);
+      if (processed.length < slice.length) {
+        toast.error(t.photoProcessFailed);
+      }
     } finally {
       setBusy(false);
     }
   };
+
 
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
