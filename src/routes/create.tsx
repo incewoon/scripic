@@ -34,6 +34,39 @@ export const Route = createFileRoute("/create")({
   head: () => ({ meta: [{ title: "New album — Scripic" }] }),
 });
 
+function isHeicFile(file: File): boolean {
+  const t = (file.type || "").toLowerCase();
+  const n = (file.name || "").toLowerCase();
+  return (
+    t === "image/heic" ||
+    t === "image/heif" ||
+    t === "image/heic-sequence" ||
+    t === "image/heif-sequence" ||
+    n.endsWith(".heic") ||
+    n.endsWith(".heif")
+  );
+}
+
+/** HEIC/HEIF만 JPEG File로 변환. 그 외는 원본 반환. heic2any는 필요할 때만 동적 로드 */
+async function ensureDecodableImage(file: File): Promise<File> {
+  if (!isHeicFile(file)) return file;
+  const { default: heic2any } = await import("heic2any");
+  const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+  const blob = (Array.isArray(result) ? result[0] : result) as Blob;
+  const base = file.name.replace(/\.(heic|heif)$/i, "") || "photo";
+  return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+}
+
+/** 동시 실행 개수 제한 맵 (저사양 Android 메모리 보호) */
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += limit) {
+    const batch = items.slice(i, i + limit);
+    results.push(...(await Promise.all(batch.map(fn))));
+  }
+  return results;
+}
+
 async function fileToDataUrl(file: File, maxDim = 1280): Promise<string> {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
     const i = new Image();
