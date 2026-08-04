@@ -240,6 +240,8 @@ const dict = {
     backupPinMismatch: "PINs don't match.",
     backupPinWrong: "Wrong PIN. The file couldn't be opened.",
     photoMax3: "Up to 3 photos at a time.",
+    photoProcessFailed:
+      "Some photos could not be loaded. If you use High efficiency (HEIC) in the camera, try again or switch to JPEG in camera settings.",
     uploadLimitTitle: "Can't add this file",
     uploadLimitType: "Only image files can be uploaded. Videos and audio files aren't allowed.",
     uploadLimitSize: "Each image must be 10 MB or smaller.",
