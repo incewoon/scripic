@@ -240,6 +240,8 @@ const dict = {
     backupPinMismatch: "PINs don't match.",
     backupPinWrong: "Wrong PIN. The file couldn't be opened.",
     photoMax3: "Up to 3 photos at a time.",
+    photoProcessFailed:
+      "Some photos could not be loaded. If you use High efficiency (HEIC) in the camera, try again or switch to JPEG in camera settings.",
     uploadLimitTitle: "Can't add this file",
     uploadLimitType: "Only image files can be uploaded. Videos and audio files aren't allowed.",
     uploadLimitSize: "Each image must be 10 MB or smaller.",
@@ -537,6 +539,8 @@ const dict = {
     backupPinMismatch: "PIN이 일치하지 않아요.",
     backupPinWrong: "PIN이 올라요.",
     photoMax3: "한 번에 사진 3장까지 올릴 수 있어요.",
+    photoProcessFailed:
+      "일부 사진을 불러오지 못했습니다. 카메라 고효율(HEIC) 사진일 수 있어요. 다시 시도하거나 카메라 설정에서 고효율 사진을 끄고 JPEG로 촬영해 보세요.",
     uploadLimitTitle: "추가할 수 없는 파일이에요",
     uploadLimitType: "사진(이미지) 파일만 올릴 수 있어요. 영상이나 음성 파일은 사용할 수 없어요.",
     uploadLimitSize: "사진 한 장은 10MB 이하만 올릴 수 있어요.",

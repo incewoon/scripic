@@ -34,6 +34,39 @@ export const Route = createFileRoute("/create")({
   head: () => ({ meta: [{ title: "New album — Scripic" }] }),
 });
 
+function isHeicFile(file: File): boolean {
+  const t = (file.type || "").toLowerCase();
+  const n = (file.name || "").toLowerCase();
+  return (
+    t === "image/heic" ||
+    t === "image/heif" ||
+    t === "image/heic-sequence" ||
+    t === "image/heif-sequence" ||
+    n.endsWith(".heic") ||
+    n.endsWith(".heif")
+  );
+}
+
+/** HEIC/HEIF만 JPEG File로 변환. 그 외는 원본 반환. heic2any는 필요할 때만 동적 로드 */
+async function ensureDecodableImage(file: File): Promise<File> {
+  if (!isHeicFile(file)) return file;
+  const { default: heic2any } = await import("heic2any");
+  const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+  const blob = (Array.isArray(result) ? result[0] : result) as Blob;
+  const base = file.name.replace(/\.(heic|heif)$/i, "") || "photo";
+  return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+}
+
+/** 동시 실행 개수 제한 맵 (저사양 Android 메모리 보호) */
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += limit) {
+    const batch = items.slice(i, i + limit);
+    results.push(...(await Promise.all(batch.map(fn))));
+  }
+  return results;
+}
+
 async function fileToDataUrl(file: File, maxDim = 1280): Promise<string> {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
     const i = new Image();
@@ -267,17 +300,36 @@ function Create() {
       const remaining = PHOTO_MAX - items.length;
       if (files.length > remaining) toast(t.photoMax3);
       const slice = files.slice(0, Math.max(0, remaining));
-      const processed = await Promise.all(
-        slice.map(async (f) => {
-          const [url, meta] = await Promise.all([fileToDataUrl(f), extractMeta(f)]);
+
+      const results = await mapWithConcurrency<File, Item | null>(slice, 2, async (f) => {
+        try {
+          // 1) 표시용 픽셀: HEIC면 JPEG로 변환 후 canvas
+          const decodable = await ensureDecodableImage(f);
+          const url = await fileToDataUrl(decodable);
+          // 2) EXIF: 반드시 원본(f) 먼저 — 변환 JPEG는 EXIF가 비는 경우가 많음
+          let meta: PhotoMeta;
+          try {
+            meta = await extractMeta(f);
+          } catch {
+            meta = await extractMeta(decodable);
+          }
           return { id: crypto.randomUUID(), url, meta };
-        }),
-      );
+        } catch (err) {
+          console.error("[create] photo process failed", f.name, err);
+          return null;
+        }
+      });
+
+      const processed = results.filter((x): x is Item => x != null);
       if (processed.length) setItems((p) => [...p, ...processed]);
+      if (processed.length < slice.length) {
+        toast.error(t.photoProcessFailed);
+      }
     } finally {
       setBusy(false);
     }
   };
+
 
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
@@ -370,7 +422,14 @@ function Create() {
               </div>
             </SortableContext>
           </DndContext>
-          <input ref={inputRef} type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*,.heic,.heif,image/heic,image/heif"
+            multiple
+            onChange={onPick}
+            className="hidden"
+          />
         </div>
         <div ref={modeSectionRef} className="mt-5 mb-5">
           <div className="text-[13px] font-medium warm-muted mb-2">
