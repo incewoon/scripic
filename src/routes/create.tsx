@@ -379,9 +379,11 @@ function Create() {
 
       const results = await mapWithConcurrency<File, Item | null>(slice, 2, async (f) => {
         try {
-          // 1) 표시용 픽셀: HEIC면 JPEG로 변환 후 canvas
-          const decodable = await ensureDecodableImage(f);
-          const url = await fileToDataUrl(decodable);
+          // 1) 표시용 픽셀: HEIC면 JPEG로 변환(네이티브 우선) 후 필요 시에만 canvas
+          const { file: decodable, skipCanvasResize } = await ensureDecodableImage(f);
+          const url = skipCanvasResize
+            ? await fileToDataUrlNoResize(decodable)
+            : await fileToDataUrl(decodable);
           // 2) EXIF: 반드시 원본(f) 먼저 — 변환 JPEG는 EXIF가 비는 경우가 많음
           let meta: PhotoMeta;
           try {
