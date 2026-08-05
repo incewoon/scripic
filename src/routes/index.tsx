@@ -45,7 +45,7 @@ function parsePeriodDate(period?: string): number {
 
 export const Route = createFileRoute("/")({
   component: Home,
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { q?: string; tags?: string[]; showLimit?: boolean } => ({
     q: typeof s.q === "string" ? s.q : "",
     tags: Array.isArray(s.tags)
       ? (s.tags as unknown[]).filter((x): x is string => typeof x === "string")
