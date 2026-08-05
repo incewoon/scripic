@@ -45,7 +45,7 @@ function parsePeriodDate(period?: string): number {
 
 export const Route = createFileRoute("/")({
   component: Home,
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { q?: string; tags?: string[]; showLimit?: boolean } => ({
     q: typeof s.q === "string" ? s.q : "",
     tags: Array.isArray(s.tags)
       ? (s.tags as unknown[]).filter((x): x is string => typeof x === "string")
@@ -90,7 +90,7 @@ function Home() {
   const searchRef = useRef<HTMLDivElement | null>(null);
   const settingsRef = useRef<HTMLAnchorElement | null>(null);
   const sortRef = useRef<HTMLDivElement | null>(null);
-  const { q: query, tags: selectedTags, showLimit } = Route.useSearch();
+  const { q: query = "", tags: selectedTags = [], showLimit = false } = Route.useSearch();
   const navigate = useNavigate();
 
   // 알림 딥링크 등 ?showLimit 으로 메인 진입 시 → 한도 다이얼로그 즉시 표시

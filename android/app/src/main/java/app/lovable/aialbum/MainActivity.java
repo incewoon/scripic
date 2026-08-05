@@ -32,6 +32,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AppCheckPlugin.class);
         registerPlugin(ScripicSTTPlugin.class);
         registerPlugin(NotificationPermissionPlugin.class);
+        registerPlugin(HeicConvertPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Edge-to-edge: let the WebView extend behind status & navigation bars,
