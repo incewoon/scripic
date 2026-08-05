@@ -47,14 +47,90 @@ function isHeicFile(file: File): boolean {
   );
 }
 
-/** HEIC/HEIF만 JPEG File로 변환. 그 외는 원본 반환. heic2any는 필요할 때만 동적 로드 */
-async function ensureDecodableImage(file: File): Promise<File> {
-  if (!isHeicFile(file)) return file;
+async function fileToBase64(file: Blob): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+  const comma = dataUrl.indexOf(",");
+  return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+}
+
+/** HEIC 원본을 캐시에 임시 저장하고 네이티브 경로 반환 */
+async function writeTempHeic(file: File): Promise<{ path: string; relPath: string }> {
+  const { Filesystem, Directory } = await import("@capacitor/filesystem");
+  const relPath = `heic-src-${crypto.randomUUID()}.heic`;
+  const data = await fileToBase64(file);
+  await Filesystem.writeFile({ path: relPath, data, directory: Directory.Cache });
+  const { uri } = await Filesystem.getUri({ path: relPath, directory: Directory.Cache });
+  return { path: uri, relPath };
+}
+
+/** 네이티브가 만든 JPEG 경로를 읽어 메모리 File 생성 */
+async function readPathAsJpegFile(path: string, name: string): Promise<File> {
+  const { Filesystem } = await import("@capacitor/filesystem");
+  const { data } = await Filesystem.readFile({ path });
+  const base64 = typeof data === "string" ? data : await fileToBase64(data);
+  const blob = await (await fetch(`data:image/jpeg;base64,${base64}`)).blob();
+  return new File([blob], name, { type: "image/jpeg" });
+}
+
+/** canvas 재인코딩 없이 data URL만 생성 */
+async function fileToDataUrlNoResize(file: File): Promise<string> {
+  return await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+/**
+ * HEIC/HEIF만 JPEG File로 변환. 그 외는 원본 반환.
+ * Android 네이티브 플러그인 우선, 실패 시 heic2any(WASM) 폴백.
+ */
+async function ensureDecodableImage(file: File): Promise<{ file: File; skipCanvasResize: boolean }> {
+  if (!isHeicFile(file)) return { file, skipCanvasResize: false };
+  const base = file.name.replace(/\.(heic|heif)$/i, "") || "photo";
+
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
+      const { Filesystem, Directory } = await import("@capacitor/filesystem");
+      let temp: { path: string; relPath: string } | null = null;
+      try {
+        temp = await writeTempHeic(file);
+        const { HeicConvert } = await import("@/plugins/heic-convert");
+        const out = await HeicConvert.convert({ path: temp.path, quality: 90, maxDim: 1280 });
+        const jpegFile = await readPathAsJpegFile(out.path, `${base}.jpg`);
+        // 메모리 File 생성 이후에만 결과 임시 파일 삭제
+        try {
+          await Filesystem.deleteFile({ path: out.path });
+        } catch {
+          /* ignore */
+        }
+        return { file: jpegFile, skipCanvasResize: true };
+      } finally {
+        if (temp) {
+          try {
+            await Filesystem.deleteFile({ path: temp.relPath, directory: Directory.Cache });
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[create] native HEIC convert failed, fallback heic2any", e);
+  }
+
+  // 폴백 실패는 삼키지 않고 그대로 throw → onPick 파일별 catch가 처리
   const { default: heic2any } = await import("heic2any");
   const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
   const blob = (Array.isArray(result) ? result[0] : result) as Blob;
-  const base = file.name.replace(/\.(heic|heif)$/i, "") || "photo";
-  return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+  return { file: new File([blob], `${base}.jpg`, { type: "image/jpeg" }), skipCanvasResize: false };
 }
 
 /** 동시 실행 개수 제한 맵 (저사양 Android 메모리 보호) */
