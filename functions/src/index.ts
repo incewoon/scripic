@@ -218,9 +218,11 @@ async function grantDailyBonus(key: string, today: string): Promise<{ alreadyGra
         count: 0,
         chatCount: 0,
         bonusGranted: true,
+        firstSeenDate: data?.firstSeenDate ?? today,
         bonusGrantedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
+
     }
     return { alreadyGranted: false };
   });
