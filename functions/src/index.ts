@@ -187,6 +187,8 @@ async function reserveChatTurn(key: string, today: string): Promise<void> {
           chatCount: 1,
           count: 0,
           bonusGranted: false,
+          firstSeenDate: data?.firstSeenDate ?? today,
+
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
