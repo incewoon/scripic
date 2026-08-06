@@ -918,14 +918,19 @@ export const resetDailyAlbumLimit = onCall(
       throw new HttpsError("permission-denied", "invalid_answer");
     }
 
-    // Success — reset daily limit and clear attempts.
-    await db.collection("daily_limits").doc(key).set({
+    // Success — reset daily limit and clear attempts. (firstSeenDate는 반드시 보존)
+    const limitRef = db.collection("daily_limits").doc(key);
+    const prevSnap = await limitRef.get();
+    const prev = prevSnap.data();
+    await limitRef.set({
       lastDate: today,
       count: 0,
       chatCount: 0,
       bonusGranted: false,
+      firstSeenDate: prev?.firstSeenDate ?? today,
       updatedAt: FieldValue.serverTimestamp(),
     });
+
     try {
       await attemptsRef.delete();
     } catch {
