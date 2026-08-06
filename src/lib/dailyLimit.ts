@@ -74,6 +74,10 @@ export function grantExtraAlbumToday(): void {
 }
 
 export function canCreateAlbumToday(): boolean {
+  // 서버 캐시가 오늘 것이면 그것이 진실
+  const cache = readDailyCache();
+  if (cache) return cache.used < cache.limit;
+
   const last = getLastAlbumDate();
   const today = todayKey();
   if (last !== today) return true;
@@ -84,6 +88,11 @@ export function canCreateAlbumToday(): boolean {
 export function markAlbumCreatedToday(): void {
   if (typeof localStorage === "undefined") return;
   const today = todayKey();
+
+  // 서버 캐시 used를 낙관적으로 +1 (직후 syncDailyLimitFromServer가 재정렬)
+  const cache = readDailyCache();
+  if (cache) writeDailyCache(cache.used + 1, cache.limit);
+
   const last = localStorage.getItem(KEY);
   if (last === today) {
     // Base slot already used → this counts as the extra album.
@@ -94,6 +103,7 @@ export function markAlbumCreatedToday(): void {
     localStorage.setItem(KEY, today);
   }
 }
+
 
 /** Stable per-install device id. */
 export function getDeviceId(): string {
