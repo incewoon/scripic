@@ -10,6 +10,36 @@ const KEY = "moara_last_album_date";
 const DEVICE_KEY = "moara_device_id";
 const EXTRA_GRANTED_KEY = "moara_extra_album_granted_date";
 const EXTRA_USED_KEY = "moara_extra_album_used_date";
+// 서버 dailyStatus 캐시 (한도의 진실은 서버)
+const CACHE_DATE_KEY = "moara_daily_cache_date";
+const CACHE_USED_KEY = "moara_daily_used";
+const CACHE_LIMIT_KEY = "moara_daily_limit";
+
+type DailyCache = { used: number; limit: number };
+
+function readDailyCache(): DailyCache | null {
+  if (typeof localStorage === "undefined") return null;
+  if (localStorage.getItem(CACHE_DATE_KEY) !== todayKey()) return null;
+  const used = Number(localStorage.getItem(CACHE_USED_KEY));
+  const limit = Number(localStorage.getItem(CACHE_LIMIT_KEY));
+  if (!Number.isFinite(used) || !Number.isFinite(limit) || limit <= 0) return null;
+  return { used, limit };
+}
+
+function writeDailyCache(used: number, limit: number): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(CACHE_DATE_KEY, todayKey());
+  localStorage.setItem(CACHE_USED_KEY, String(used));
+  localStorage.setItem(CACHE_LIMIT_KEY, String(limit));
+}
+
+function clearDailyCache(): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.removeItem(CACHE_DATE_KEY);
+  localStorage.removeItem(CACHE_USED_KEY);
+  localStorage.removeItem(CACHE_LIMIT_KEY);
+}
+
 
 export function todayKey(d = new Date()): string {
   const y = d.getFullYear();
