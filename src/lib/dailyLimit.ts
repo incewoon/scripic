@@ -132,7 +132,9 @@ export function resetDailyAlbumToday(): void {
   localStorage.removeItem(KEY);
   localStorage.removeItem(EXTRA_GRANTED_KEY);
   localStorage.removeItem(EXTRA_USED_KEY);
+  clearDailyCache();
 }
+
 
 /** 서버 기준으로 오늘 앨범을 더 만들 수 있는지 확인. 실패 시 local 값으로 폴백 */
 export async function canCreateAlbumTodayServer(): Promise<boolean> {
