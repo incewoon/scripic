@@ -35,10 +35,10 @@ sameDay=true인 update 분기는 손대지 않는다.
 - `resetDailyAlbumToday()`: 캐시 키도 함께 제거.
 - 로컬에 별도 "설치일" 플래그는 만들지 않는다 — 한도의 진실은 서버 limit.
 
-호출부(index.tsx, create.tsx, chat.tsx, deepLink.ts, ReviewRewardDialog.tsx)는 시그니처가 그대로라 수정 없음.
+호출부(index.tsx, create.tsx, easter.tsx, chat.tsx 생성 완료 시점, ReviewRewardDialog.tsx)에는 이미 `syncDailyLimitFromServer()` 호출이 있으므로 새 호출부를 만들지 않는다. 변경은 dailyLimit.ts 내부(캐시 + canCreateAlbumToday/markAlbumCreatedToday)로 한정한다.
 
 ## 검증
-설치 당일 3회 연속 생성 → 후기 인증 후 4회차 가능 → 다음날 1(후기 시 2) → 재설치 시 다시 3회 → 이스터 리셋 후 firstSeenDate 유지. dailyStatus.limit과 reserveDailyAlbum 한도 일치 확인.
+설치 당일 3회 연속 생성 → 후기 인증 후 4회차 가능 → 다음날 1(후기 시 2) → 재설치 시 다시 3회 → 이스터 리셋 후 firstSeenDate 유지. 새로고침 없이 2회차 진입과 후기 인증 직후 4회차 진입이 열리는지, dailyStatus.limit과 reserveDailyAlbum 한도가 일치하는지 확인.
 
 ## 변경 파일
 - `functions/src/index.ts`
