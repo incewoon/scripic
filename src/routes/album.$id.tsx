@@ -23,7 +23,7 @@ import { Media } from '@capacitor-community/media';
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
   ssr: false,
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { q?: string; tags?: string[] } => ({
     q: typeof s.q === "string" ? s.q : "",
     tags: Array.isArray(s.tags)
       ? (s.tags as unknown[]).filter((x): x is string => typeof x === "string")
@@ -31,6 +31,7 @@ export const Route = createFileRoute("/album/$id")({
         ? [s.tags]
         : [],
   }),
+
 });
 
 function EditableText({
