@@ -10,6 +10,36 @@ const KEY = "moara_last_album_date";
 const DEVICE_KEY = "moara_device_id";
 const EXTRA_GRANTED_KEY = "moara_extra_album_granted_date";
 const EXTRA_USED_KEY = "moara_extra_album_used_date";
+// 서버 dailyStatus 캐시 (한도의 진실은 서버)
+const CACHE_DATE_KEY = "moara_daily_cache_date";
+const CACHE_USED_KEY = "moara_daily_used";
+const CACHE_LIMIT_KEY = "moara_daily_limit";
+
+type DailyCache = { used: number; limit: number };
+
+function readDailyCache(): DailyCache | null {
+  if (typeof localStorage === "undefined") return null;
+  if (localStorage.getItem(CACHE_DATE_KEY) !== todayKey()) return null;
+  const used = Number(localStorage.getItem(CACHE_USED_KEY));
+  const limit = Number(localStorage.getItem(CACHE_LIMIT_KEY));
+  if (!Number.isFinite(used) || !Number.isFinite(limit) || limit <= 0) return null;
+  return { used, limit };
+}
+
+function writeDailyCache(used: number, limit: number): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(CACHE_DATE_KEY, todayKey());
+  localStorage.setItem(CACHE_USED_KEY, String(used));
+  localStorage.setItem(CACHE_LIMIT_KEY, String(limit));
+}
+
+function clearDailyCache(): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.removeItem(CACHE_DATE_KEY);
+  localStorage.removeItem(CACHE_USED_KEY);
+  localStorage.removeItem(CACHE_LIMIT_KEY);
+}
+
 
 export function todayKey(d = new Date()): string {
   const y = d.getFullYear();
@@ -44,6 +74,10 @@ export function grantExtraAlbumToday(): void {
 }
 
 export function canCreateAlbumToday(): boolean {
+  // 서버 캐시가 오늘 것이면 그것이 진실
+  const cache = readDailyCache();
+  if (cache) return cache.used < cache.limit;
+
   const last = getLastAlbumDate();
   const today = todayKey();
   if (last !== today) return true;
@@ -54,6 +88,11 @@ export function canCreateAlbumToday(): boolean {
 export function markAlbumCreatedToday(): void {
   if (typeof localStorage === "undefined") return;
   const today = todayKey();
+
+  // 서버 캐시 used를 낙관적으로 +1 (직후 syncDailyLimitFromServer가 재정렬)
+  const cache = readDailyCache();
+  if (cache) writeDailyCache(cache.used + 1, cache.limit);
+
   const last = localStorage.getItem(KEY);
   if (last === today) {
     // Base slot already used → this counts as the extra album.
@@ -64,6 +103,7 @@ export function markAlbumCreatedToday(): void {
     localStorage.setItem(KEY, today);
   }
 }
+
 
 /** Stable per-install device id. */
 export function getDeviceId(): string {
@@ -92,7 +132,9 @@ export function resetDailyAlbumToday(): void {
   localStorage.removeItem(KEY);
   localStorage.removeItem(EXTRA_GRANTED_KEY);
   localStorage.removeItem(EXTRA_USED_KEY);
+  clearDailyCache();
 }
+
 
 /** 서버 기준으로 오늘 앨범을 더 만들 수 있는지 확인. 실패 시 local 값으로 폴백 */
 export async function canCreateAlbumTodayServer(): Promise<boolean> {
@@ -139,9 +181,13 @@ export async function syncDailyLimitFromServer(): Promise<boolean> {
     const limit = data?.limit ?? 1;
     const bonusGranted = data?.bonusGranted === true;
 
+    // 서버 used/limit 캐시 (canCreateAlbumToday의 기준)
+    writeDailyCache(used, limit);
+
     // 사용 횟수 → KEY
     if (used >= 1) localStorage.setItem(KEY, today);
     else localStorage.removeItem(KEY);
+
 
     // 보너스 → EXTRA_*
     if (bonusGranted) {

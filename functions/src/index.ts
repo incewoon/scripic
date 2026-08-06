@@ -105,7 +105,10 @@ async function reserveDailyAlbum(key: string, today: string, commit: boolean): P
     const sameDay = data?.lastDate === today;
     const usedToday = sameDay ? (data?.count ?? 0) : 0;
     const bonusToday = sameDay && data?.bonusGranted === true;
-    const limit = bonusToday ? 2 : 1;
+    // 설치 당일(문서 최초 생성일 == 오늘)은 기본 3회, 그 외는 1회. 후기 보너스는 +1.
+    const isFirstDay = data?.firstSeenDate === today;
+    const baseLimit = isFirstDay ? 3 : 1;
+    const limit = baseLimit + (bonusToday ? 1 : 0);
 
     // ★ 진단용 로그 — 어떤 값을 근거로 판단했는지 전부 남긴다
     console.log("[reserveDailyAlbum] check", {
@@ -116,12 +119,14 @@ async function reserveDailyAlbum(key: string, today: string, commit: boolean): P
       sameDay,
       usedToday,
       bonusToday,
+      isFirstDay,
+      firstSeenDate: data?.firstSeenDate ?? null,
       limit,
     });
 
     if (usedToday >= limit) {
         console.log(
-          `[reserveDailyAlbum] REJECT key=${key} today=${today} lastDate=${data?.lastDate} usedToday=${usedToday} limit=${limit} bonusGranted=${data?.bonusGranted}`
+          `[reserveDailyAlbum] REJECT key=${key} today=${today} lastDate=${data?.lastDate} usedToday=${usedToday} limit=${limit} bonusGranted=${data?.bonusGranted} isFirstDay=${isFirstDay} firstSeenDate=${data?.firstSeenDate ?? null}`
         );
 
       throw new HttpsError("resource-exhausted", "daily_limit_reached", {
@@ -134,8 +139,19 @@ async function reserveDailyAlbum(key: string, today: string, commit: boolean): P
     if (sameDay) {
       tx.update(docRef, { count: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
     } else {
-      tx.set(docRef, { lastDate: today, count: 1, bonusGranted: false, updatedAt: FieldValue.serverTimestamp() });
+      tx.set(
+        docRef,
+        {
+          lastDate: today,
+          count: 1,
+          bonusGranted: false,
+          firstSeenDate: data?.firstSeenDate ?? today,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
     }
+
   });
 }
 
@@ -171,6 +187,8 @@ async function reserveChatTurn(key: string, today: string): Promise<void> {
           chatCount: 1,
           count: 0,
           bonusGranted: false,
+          firstSeenDate: data?.firstSeenDate ?? today,
+
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
@@ -200,9 +218,11 @@ async function grantDailyBonus(key: string, today: string): Promise<{ alreadyGra
         count: 0,
         chatCount: 0,
         bonusGranted: true,
+        firstSeenDate: data?.firstSeenDate ?? today,
         bonusGrantedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
+
     }
     return { alreadyGranted: false };
   });
@@ -609,8 +629,11 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
   const data = snap.data();
   const used = data?.lastDate === today ? (data?.count ?? 0) : 0;
   const bonusToday = data?.lastDate === today && data?.bonusGranted === true;
-  const limit = bonusToday ? 2 : 1;
+  const isFirstDay = data?.firstSeenDate === today;
+  const baseLimit = isFirstDay ? 3 : 1;
+  const limit = baseLimit + (bonusToday ? 1 : 0);
   return { used, limit, today, bonusGranted: !!bonusToday };
+
 });
 
 // ---------------- grantReviewReward ----------------
@@ -895,14 +918,19 @@ export const resetDailyAlbumLimit = onCall(
       throw new HttpsError("permission-denied", "invalid_answer");
     }
 
-    // Success — reset daily limit and clear attempts.
-    await db.collection("daily_limits").doc(key).set({
+    // Success — reset daily limit and clear attempts. (firstSeenDate는 반드시 보존)
+    const limitRef = db.collection("daily_limits").doc(key);
+    const prevSnap = await limitRef.get();
+    const prev = prevSnap.data();
+    await limitRef.set({
       lastDate: today,
       count: 0,
       chatCount: 0,
       bonusGranted: false,
+      firstSeenDate: prev?.firstSeenDate ?? today,
       updatedAt: FieldValue.serverTimestamp(),
     });
+
     try {
       await attemptsRef.delete();
     } catch {
