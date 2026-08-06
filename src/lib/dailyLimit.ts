@@ -181,9 +181,13 @@ export async function syncDailyLimitFromServer(): Promise<boolean> {
     const limit = data?.limit ?? 1;
     const bonusGranted = data?.bonusGranted === true;
 
+    // 서버 used/limit 캐시 (canCreateAlbumToday의 기준)
+    writeDailyCache(used, limit);
+
     // 사용 횟수 → KEY
     if (used >= 1) localStorage.setItem(KEY, today);
     else localStorage.removeItem(KEY);
+
 
     // 보너스 → EXTRA_*
     if (bonusGranted) {
