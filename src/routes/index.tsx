@@ -11,8 +11,11 @@ import {
   syncDailyLimitFromServer,
   nextAvailableDateLabel,
   hasExtraUsedToday,
+  getDailyLimitSnapshot,
+  isWelcomeDayLimit,
 } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
+import { WelcomeLimitDialog, hasSeenWelcomeLimitNotice } from "@/components/WelcomeLimitDialog";
 import { ReviewRewardDialog } from "@/components/ReviewRewardDialog";
 import { HomeUsageCoachmark, shouldShowHomeCoach } from "@/components/HomeUsageCoachmark";
 import { Hl, tokenize } from "@/lib/highlight";
