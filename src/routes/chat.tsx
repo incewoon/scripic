@@ -802,8 +802,23 @@ function Chat() {
         tone,
       });
       const id = crypto.randomUUID();
-      markAlbumCreatedToday();
-      void syncDailyLimitFromServer();
+      const marked = markAlbumCreatedToday();
+      let lastSlotToasted = false;
+      const showLastSlotToast = (snap: { used: number; limit: number }) => {
+        if (lastSlotToasted) return;
+        if (snap.used < snap.limit) return;
+        lastSlotToasted = true;
+        window.setTimeout(() => {
+          toast(
+            isWelcomeDayLimit(snap.limit) ? t.dailyLimitLastSlotToastWelcome : t.dailyLimitLastSlotToastNormal,
+          );
+        }, 1200);
+      };
+      if (marked) showLastSlotToast(marked);
+      void syncDailyLimitFromServer().then(() => {
+        const snap = getDailyLimitSnapshot();
+        if (snap) showLastSlotToast(snap);
+      });
 
       await saveAlbum({
         id,
