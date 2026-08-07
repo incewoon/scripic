@@ -520,6 +520,17 @@ const dict = {
     dailyLimitTitle: "하루에 한 개만 만들 수 있어요",
     dailyLimitBody: "오늘은 이미 추억을 하나 엮었어요. 내일 다시 새로운 앨범을 만들 수 있어요.",
     dailyLimitNextAt: (d: string) => `다음 가능 · ${d}`,
+    dailyLimitTitleNormal: "오늘은 여기까지예요",
+    dailyLimitBodyNormal: "하루에 앨범 1개까지 만들 수 있어요. 내일 다시 시도해 주세요.",
+    dailyLimitTitleWelcome: "설치 환영 혜택을 모두 썼어요",
+    dailyLimitBodyWelcome:
+      "설치 당일에는 최대 3개(후기 인증까지 총 4개)까지 만들 수 있어요. 내일부터는 하루 1개(후기 인증까지 총 2개)예요.",
+    welcomeLimitTitle: "설치 환영 안내",
+    welcomeLimitBody:
+      "설치 당일인 오늘은 앨범을 최대 3개까지 만들 수 있어요. (내일부터는 하루 1개예요) 후기를 인증하면 +1개를 더 받을 수 있어요.",
+    welcomeLimitOk: "확인",
+    dailyLimitLastSlotToastWelcome: "오늘 환영 혜택을 모두 사용했어요. 내일부터는 하루 1개 씩만 만들수 있어요.",
+    dailyLimitLastSlotToastNormal: "오늘의 앨범을 만들었어요. 내일 다시 가능해요.",
     okay: "확인",
     // Review reward
     reviewRewardCta: "후기 올리고 +1개 더 만들기",
