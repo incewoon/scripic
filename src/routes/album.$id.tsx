@@ -19,6 +19,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 import { Media } from '@capacitor-community/media';
+import { pushNativeBackHandler } from "@/lib/nativeBack";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumView,
@@ -33,6 +34,13 @@ export const Route = createFileRoute("/album/$id")({
   }),
 
 });
+
+useEffect(() => {
+  return pushNativeBackHandler(() => {
+    navigate({ to: "/", search: { q: "", tags: [] } }); // 기존 Link search 패턴에 맞출 것
+    return true; // 이벤트 소비 → history.back() 방지
+  });
+}, [navigate]);
 
 function EditableText({
   editKey,
