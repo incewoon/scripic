@@ -226,12 +226,23 @@ function Home() {
     (async () => {
       await syncDailyLimitFromServer();
       if (cancelled) return;
-      // 필요 시 setState로 버튼/다이얼로그 갱신
+      setSyncedOnce(true);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // 설치 당일(서버 limit >= 3)에만, 저장소 안내가 닫힌 뒤 1회 환영 안내
+  useEffect(() => {
+    if (!syncedOnce) return;
+    if (noticeOpen) return;
+    if (hasSeenWelcomeLimitNotice()) return;
+    const limit = getDailyLimitSnapshot()?.limit ?? 0;
+    if (!isWelcomeDayLimit(limit)) return;
+    const tm = window.setTimeout(() => setWelcomeOpen(true), 300);
+    return () => window.clearTimeout(tm);
+  }, [syncedOnce, noticeOpen]);
   
   const count = albums?.length ?? 0;
 
