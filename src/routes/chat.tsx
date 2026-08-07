@@ -814,7 +814,13 @@ function Chat() {
           );
         }, 1200);
       };
-      if (marked) showLastSlotToast(marked);
+      
+      // mark 직후: limit이 이미 환영 한도(>=3)로 확실할 때만 즉시 토스트
+      if (marked && isWelcomeDayLimit(marked.limit)) {
+        showLastSlotToast(marked);
+      }
+      
+      // 그 외(limit===1 등)는 sync 후 최종 판정 — 첫 앨범 false positive 방지
       void syncDailyLimitFromServer().then(() => {
         const snap = getDailyLimitSnapshot();
         if (snap) showLastSlotToast(snap);
