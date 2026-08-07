@@ -617,7 +617,11 @@ function Home() {
                 <X size={18} />
               </button>
             </div>
-            <p className="text-[13.5px] warm-muted leading-relaxed mb-2">{t.dailyLimitBody}</p>
+            <p className="text-[13.5px] warm-muted leading-relaxed mb-2">
+              {isWelcomeDayLimit(getDailyLimitSnapshot()?.limit ?? 0)
+                ? t.dailyLimitBodyWelcome
+                : t.dailyLimitBodyNormal}
+            </p>
             <p className="text-[12px] warm-muted mb-5">{t.dailyLimitNextAt(nextAvailableDateLabel(lang))}</p>
             {!hasExtraUsedToday() && (
               <button
