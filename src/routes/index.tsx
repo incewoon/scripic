@@ -85,6 +85,8 @@ function Home() {
   const online = useOnlineStatus();
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [syncedOnce, setSyncedOnce] = useState(false);
   const [rewardOpen, setRewardOpen] = useState(false);
   const [homeCoachOpen, setHomeCoachOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("created");
