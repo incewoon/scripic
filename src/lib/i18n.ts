@@ -126,9 +126,10 @@ const dict = {
       "Your photos and the captions woven from your conversation are kept only on this device. Even with the same account, they don't sync to other devices.",
 
     freeNoticeTitle: "Free during beta",
-    freeNoticeBody: "Scripic is free right now. \nWhile in beta, each album holds up to 1 album and 3 photos per day.",
+    freeNoticeBody:
+      "Scripic is free right now. \nOn your first day you can create up to 3 albums; after that, 1 album per day. Each album holds up to 3 photos.",
     freeNoticeSoon:
-      "Post a review on social media to create one extra album per day. (Each verified review can only be used once.)",
+      "Share a review on social media to get +1 extra album that day. (Each verified review can only be used once.)",
     gotIt: "Got it",
     // Storage diagnostics
     storageDiagSection: "Storage status",
@@ -210,6 +211,17 @@ const dict = {
     dailyLimitTitle: "One album per day",
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
     dailyLimitNextAt: (d: string) => `Next available · ${d}`,
+    dailyLimitTitleNormal: "That's all for today",
+    dailyLimitBodyNormal: "You can create one album per day. Come back tomorrow for the next one.",
+    dailyLimitTitleWelcome: "Welcome bonus used up",
+    dailyLimitBodyWelcome:
+      "On your first day you could create up to 3 albums (4 with a review). From tomorrow, the daily limit is 1 album (2 with a review).",
+    welcomeLimitTitle: "A little welcome gift",
+    welcomeLimitBody:
+      "Today (your first day) you can create up to 3 albums. From tomorrow, one album per day. Share a review anytime to get +1 extra album that day.",
+    welcomeLimitOk: "Got it",
+    dailyLimitLastSlotToastWelcome: "You've used today's welcome albums. From tomorrow, one per day.",
+    dailyLimitLastSlotToastNormal: "Today's album is done. See you tomorrow.",
     okay: "Okay",
     // Review reward
     reviewRewardCta: "Share a review · get +1 album today",
@@ -426,9 +438,10 @@ const dict = {
     storageNoticeBody: "사진과 정리된 대화 내용은 이 기기에만 저장되며, 다른 기기와는 연동되지 않아요.",
 
     freeNoticeTitle: "무료 베타 안내",
-    freeNoticeBody: "Scripic는 현재 무료로 제공돼요. \n베타 기간 동안은 하루 앨범 1개, 사진 3장으로 제한돼요.",
+    freeNoticeBody:
+      "Scripic는 현재 무료로 제공돼요. \n설치 당일에는 앨범을 최대 3개까지, 그 다음부터는 하루 1개까지 만들 수 있어요. (앨범당 사진 3장)",
     freeNoticeSoon:
-      "하지만, SNS에 후기를 올려주시면 하루에 앨범을 하나 더 만들 수 있어요 \n(단, 한번 인증된 후기는 재사용할 수 없어요.)",
+      "SNS에 후기를 올려주시면 그날 앨범을 하나 더 만들 수 있어요 \n(단, 한번 인증된 후기는 재사용할 수 없어요.)",
     gotIt: "확인했어요",
     // Storage diagnostics
     storageDiagSection: "저장소 상태",
@@ -509,6 +522,17 @@ const dict = {
     dailyLimitTitle: "하루에 한 개만 만들 수 있어요",
     dailyLimitBody: "오늘은 이미 추억을 하나 엮었어요. 내일 다시 새로운 앨범을 만들 수 있어요.",
     dailyLimitNextAt: (d: string) => `다음 가능 · ${d}`,
+    dailyLimitTitleNormal: "오늘은 여기까지예요",
+    dailyLimitBodyNormal: "하루에 앨범 1개까지 만들 수 있어요. 내일 다시 시도해 주세요.",
+    dailyLimitTitleWelcome: "설치 환영 혜택을 모두 썼어요",
+    dailyLimitBodyWelcome:
+      "설치 당일에는 최대 3개(후기 인증까지 총 4개)까지 만들 수 있어요. 내일부터는 하루 1개(후기 인증까지 총 2개)예요.",
+    welcomeLimitTitle: "설치 환영 안내",
+    welcomeLimitBody:
+      "설치 당일인 오늘은 앨범을 최대 3개까지 만들 수 있어요. (내일부터는 하루 1개예요) 후기를 인증하면 +1개를 더 받을 수 있어요.",
+    welcomeLimitOk: "확인",
+    dailyLimitLastSlotToastWelcome: "오늘 환영 혜택을 모두 사용했어요. 내일부터는 하루 1개 씩만 만들수 있어요.",
+    dailyLimitLastSlotToastNormal: "오늘의 앨범을 만들었어요. 내일 다시 가능해요.",
     okay: "확인",
     // Review reward
     reviewRewardCta: "후기 올리고 +1개 더 만들기",

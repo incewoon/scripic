@@ -11,8 +11,11 @@ import {
   syncDailyLimitFromServer,
   nextAvailableDateLabel,
   hasExtraUsedToday,
+  getDailyLimitSnapshot,
+  isWelcomeDayLimit,
 } from "@/lib/dailyLimit";
 import { StorageNoticeDialog, hasSeenStorageNotice } from "@/components/StorageNoticeDialog";
+import { WelcomeLimitDialog, hasSeenWelcomeLimitNotice } from "@/components/WelcomeLimitDialog";
 import { ReviewRewardDialog } from "@/components/ReviewRewardDialog";
 import { HomeUsageCoachmark, shouldShowHomeCoach } from "@/components/HomeUsageCoachmark";
 import { Hl, tokenize } from "@/lib/highlight";
@@ -82,6 +85,8 @@ function Home() {
   const online = useOnlineStatus();
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [syncedOnce, setSyncedOnce] = useState(false);
   const [rewardOpen, setRewardOpen] = useState(false);
   const [homeCoachOpen, setHomeCoachOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("created");
@@ -223,12 +228,23 @@ function Home() {
     (async () => {
       await syncDailyLimitFromServer();
       if (cancelled) return;
-      // 필요 시 setState로 버튼/다이얼로그 갱신
+      setSyncedOnce(true);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // 설치 당일(서버 limit >= 3)에만, 저장소 안내가 닫힌 뒤 1회 환영 안내
+  useEffect(() => {
+    if (!syncedOnce) return;
+    if (noticeOpen) return;
+    if (hasSeenWelcomeLimitNotice()) return;
+    const limit = getDailyLimitSnapshot()?.limit ?? 0;
+    if (!isWelcomeDayLimit(limit)) return;
+    const tm = window.setTimeout(() => setWelcomeOpen(true), 300);
+    return () => window.clearTimeout(tm);
+  }, [syncedOnce, noticeOpen]);
   
   const count = albums?.length ?? 0;
 
@@ -571,6 +587,8 @@ function Home() {
 
       <StorageNoticeDialog open={noticeOpen} onClose={() => setNoticeOpen(false)} />
 
+      <WelcomeLimitDialog open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
+
       {limitOpen && (
         <div
           className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 backdrop-blur-sm"
@@ -588,7 +606,11 @@ function Home() {
                 >
                   <Sparkles size={16} className="text-primary-foreground" />
                 </div>
-                <h2 className="font-display text-[20px] warm-text leading-tight">{t.dailyLimitTitle}</h2>
+                <h2 className="font-display text-[20px] warm-text leading-tight">
+                  {isWelcomeDayLimit(getDailyLimitSnapshot()?.limit ?? 0)
+                    ? t.dailyLimitTitleWelcome
+                    : t.dailyLimitTitleNormal}
+                </h2>
               </div>
               <button
                 onClick={() => setLimitOpen(false)}
@@ -597,7 +619,11 @@ function Home() {
                 <X size={18} />
               </button>
             </div>
-            <p className="text-[13.5px] warm-muted leading-relaxed mb-2">{t.dailyLimitBody}</p>
+            <p className="text-[13.5px] warm-muted leading-relaxed mb-2">
+              {isWelcomeDayLimit(getDailyLimitSnapshot()?.limit ?? 0)
+                ? t.dailyLimitBodyWelcome
+                : t.dailyLimitBodyNormal}
+            </p>
             <p className="text-[12px] warm-muted mb-5">{t.dailyLimitNextAt(nextAvailableDateLabel(lang))}</p>
             {!hasExtraUsedToday() && (
               <button

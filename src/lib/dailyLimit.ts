@@ -85,13 +85,33 @@ export function canCreateAlbumToday(): boolean {
   return hasExtraGrantedToday() && !hasExtraUsedToday();
 }
 
-export function markAlbumCreatedToday(): void {
-  if (typeof localStorage === "undefined") return;
+/** 오늘자 서버 캐시 스냅샷 (없으면 null) */
+export function getDailyLimitSnapshot(): DailyCache | null {
+  return readDailyCache();
+}
+
+/** limit >= 3 이면 설치 당일(환영) 한도 */
+export function isWelcomeDayLimit(limit: number): boolean {
+  return limit >= 3;
+}
+
+/** 캐시 기준 오늘 마지막 슬롯까지 소진했는지 */
+export function wasLastSlotJustUsed(): boolean {
+  const c = readDailyCache();
+  return !!c && c.used >= c.limit;
+}
+
+export function markAlbumCreatedToday(): DailyCache | null {
+  if (typeof localStorage === "undefined") return null;
   const today = todayKey();
 
   // 서버 캐시 used를 낙관적으로 +1 (직후 syncDailyLimitFromServer가 재정렬)
   const cache = readDailyCache();
-  if (cache) writeDailyCache(cache.used + 1, cache.limit);
+  let next: DailyCache | null = null;
+  if (cache) {
+    next = { used: cache.used + 1, limit: cache.limit };
+    writeDailyCache(next.used, next.limit);
+  }
 
   const last = localStorage.getItem(KEY);
   if (last === today) {
@@ -102,6 +122,7 @@ export function markAlbumCreatedToday(): void {
   } else {
     localStorage.setItem(KEY, today);
   }
+  return next;
 }
 
 

@@ -10,7 +10,12 @@ import { toast } from "sonner";
 import { useT, getLang, type ChatMode, type ChatTone } from "@/lib/i18n";
 import type { PhotoMeta } from "@/lib/photoMeta";
 import { aiChatStream, aiGenerateAlbum } from "@/lib/aiClient";
-import { markAlbumCreatedToday, syncDailyLimitFromServer } from "@/lib/dailyLimit";
+import {
+  markAlbumCreatedToday,
+  syncDailyLimitFromServer,
+  getDailyLimitSnapshot,
+  isWelcomeDayLimit,
+} from "@/lib/dailyLimit";
 import { useAuthReady } from "@/lib/useAuthReady";
 import { ChatUsageCoachmark, shouldShowChatUsage } from "@/components/ChatUsageCoachmark";
 import { useOnlineStatus, requireOnline } from "@/lib/network";
@@ -797,8 +802,23 @@ function Chat() {
         tone,
       });
       const id = crypto.randomUUID();
-      markAlbumCreatedToday();
-      void syncDailyLimitFromServer();
+      const marked = markAlbumCreatedToday();
+      let lastSlotToasted = false;
+      const showLastSlotToast = (snap: { used: number; limit: number }) => {
+        if (lastSlotToasted) return;
+        if (snap.used < snap.limit) return;
+        lastSlotToasted = true;
+        window.setTimeout(() => {
+          toast(
+            isWelcomeDayLimit(snap.limit) ? t.dailyLimitLastSlotToastWelcome : t.dailyLimitLastSlotToastNormal,
+          );
+        }, 1200);
+      };
+      if (marked) showLastSlotToast(marked);
+      void syncDailyLimitFromServer().then(() => {
+        const snap = getDailyLimitSnapshot();
+        if (snap) showLastSlotToast(snap);
+      });
 
       await saveAlbum({
         id,
