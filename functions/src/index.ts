@@ -106,7 +106,8 @@ async function reserveDailyAlbum(key: string, today: string, commit: boolean): P
     const usedToday = sameDay ? (data?.count ?? 0) : 0;
     const bonusToday = sameDay && data?.bonusGranted === true;
     // 설치 당일(문서 최초 생성일 == 오늘)은 기본 3회, 그 외는 1회. 후기 보너스는 +1.
-    const isFirstDay = data?.firstSeenDate === today;
+    // 문서 없음/미설정 = 아직 첫 사용일 후보 → 환영 한도 적용
+    const isFirstDay = !data?.firstSeenDate || data.firstSeenDate === today;
     const baseLimit = isFirstDay ? 3 : 1;
     const limit = baseLimit + (bonusToday ? 1 : 0);
 
