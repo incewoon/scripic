@@ -172,10 +172,18 @@ function Home() {
   useEffect(() => {
     if (!albums || albums.length === 0) return;
     if (noticeOpen) return;
+    if (welcomeOpen) return; // 환영 모달 떠 있는 동안 코치 금지
+  
+    // 환영 대상인데 아직 안 봤으면 → 환영 먼저 (코치 대기)
+    if (!hasSeenWelcomeLimitNotice()) {
+      const limit = getDailyLimitSnapshot()?.limit ?? 0;
+      if (isWelcomeDayLimit(limit)) return;
+    }
+  
     if (!shouldShowHomeCoach()) return;
     const tm = window.setTimeout(() => setHomeCoachOpen(true), 400);
     return () => window.clearTimeout(tm);
-  }, [albums, noticeOpen]);
+  }, [albums, noticeOpen, welcomeOpen, syncedOnce]);
 
   useEffect(() => {
     try {
