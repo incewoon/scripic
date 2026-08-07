@@ -210,6 +210,17 @@ const dict = {
     dailyLimitTitle: "One album per day",
     dailyLimitBody: "You've already woven a memory today. Come back tomorrow for the next one.",
     dailyLimitNextAt: (d: string) => `Next available · ${d}`,
+    dailyLimitTitleNormal: "That's all for today",
+    dailyLimitBodyNormal: "You can create one album per day. Come back tomorrow for the next one.",
+    dailyLimitTitleWelcome: "Welcome bonus used up",
+    dailyLimitBodyWelcome:
+      "On your first day you could create up to 3 albums (4 with a review). From tomorrow, the daily limit is 1 album (2 with a review).",
+    welcomeLimitTitle: "A little welcome gift",
+    welcomeLimitBody:
+      "Today (your first day) you can create up to 3 albums. From tomorrow, one album per day. Share a review anytime to get +1 extra album that day.",
+    welcomeLimitOk: "Got it",
+    dailyLimitLastSlotToastWelcome: "You've used today's welcome albums. From tomorrow, one per day.",
+    dailyLimitLastSlotToastNormal: "Today's album is done. See you tomorrow.",
     okay: "Okay",
     // Review reward
     reviewRewardCta: "Share a review · get +1 album today",
