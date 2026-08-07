@@ -35,13 +35,6 @@ export const Route = createFileRoute("/album/$id")({
 
 });
 
-useEffect(() => {
-  return pushNativeBackHandler(() => {
-    navigate({ to: "/", search: { q: "", tags: [] } }); // 기존 Link search 패턴에 맞출 것
-    return true; // 이벤트 소비 → history.back() 방지
-  });
-}, [navigate]);
-
 function EditableText({
   editKey,
   activeKey,
@@ -268,6 +261,16 @@ function AlbumView() {
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    return pushNativeBackHandler(() => {
+      navigate({
+        to: "/",
+        search: { q, tags: searchTags }, // Link와 동일
+      });
+      return true;
+    });
+  }, [navigate, q, searchTags]);
 
   useEffect(() => {
     let cancelled = false;
