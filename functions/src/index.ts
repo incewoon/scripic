@@ -630,7 +630,7 @@ export const dailyStatus = onCall({ enforceAppCheck: true }, async (req) => {
   const data = snap.data();
   const used = data?.lastDate === today ? (data?.count ?? 0) : 0;
   const bonusToday = data?.lastDate === today && data?.bonusGranted === true;
-  const isFirstDay = data?.firstSeenDate === today;
+  const isFirstDay = !data?.firstSeenDate || data.firstSeenDate === today;
   const baseLimit = isFirstDay ? 3 : 1;
   const limit = baseLimit + (bonusToday ? 1 : 0);
   return { used, limit, today, bonusGranted: !!bonusToday };
