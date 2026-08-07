@@ -604,7 +604,11 @@ function Home() {
                 >
                   <Sparkles size={16} className="text-primary-foreground" />
                 </div>
-                <h2 className="font-display text-[20px] warm-text leading-tight">{t.dailyLimitTitle}</h2>
+                <h2 className="font-display text-[20px] warm-text leading-tight">
+                  {isWelcomeDayLimit(getDailyLimitSnapshot()?.limit ?? 0)
+                    ? t.dailyLimitTitleWelcome
+                    : t.dailyLimitTitleNormal}
+                </h2>
               </div>
               <button
                 onClick={() => setLimitOpen(false)}
